@@ -303,7 +303,7 @@ impl App {
 
         tokio::task::spawn(async move {
             let mut engine = crate::crawler::CrawlEngine::new().await;
-            let results = engine.crawl(&target_url).await;
+            let results = engine.crawl(&target_url, false).await;
             for data in results {
                 let _ = tx.send(data);
                 // Slight delay to make TUI look "real-time" and not overwhelm

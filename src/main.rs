@@ -41,7 +41,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     if !cli.url.is_empty() {
         // Handle the actions here
         let mut crawler = CrawlEngine::new().await;
-        crawler.crawl(&cli.url).await;
+        crawler.crawl(&cli.url, true).await;
         return Ok(());
     } else {
         // In case no arguments are passed then continue rendering the UI for CLI
