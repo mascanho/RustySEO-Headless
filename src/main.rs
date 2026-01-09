@@ -3,22 +3,30 @@ use crossterm::{
         self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers, MouseEventKind,
     },
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use ratatui::{
-    backend::{Backend, CrosstermBackend},
     Terminal,
+    backend::{Backend, CrosstermBackend},
 };
 use std::{error::Error, io};
 
 pub mod app;
 pub mod crawler;
 pub mod models;
+pub mod settings;
 pub mod ui;
 
 use crate::{app::AppState, models::App, ui::ui};
 
-fn main() -> Result<(), Box<dyn Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    // Logging
+    tracing_subscriber::fmt::fmt().without_time().init();
+
+    // Create the file for the settings
+    settings::utils::create::create_settings_file().await;
+
     // setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -48,8 +56,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<()> {
     let tick_rate = std::time::Duration::from_millis(100);
+
     loop {
-        terminal.draw(|f| ui(f, app))?;
+        terminal.draw(|f| ui(f, app)).expect("Something went wrong");
 
         if event::poll(tick_rate)? {
             match event::read()? {

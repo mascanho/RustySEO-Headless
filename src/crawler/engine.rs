@@ -1,4 +1,4 @@
-use reqwest::blocking::Client;
+use reqwest::{blocking::Client, redirect};
 use scraper::{Html, Selector};
 use std::collections::HashSet;
 use url::Url;
@@ -11,6 +11,8 @@ pub struct PageData {
     pub title_len: usize,
     pub h1: String,
     pub h1_len: usize,
+    pub h2: String,
+    pub h2_len: usize,
     pub description: String,
     pub description_len: usize,
     pub status: String,
@@ -26,7 +28,7 @@ impl CrawlEngine {
     pub fn new() -> Self {
         Self {
             client: Client::builder()
-                .user_agent("AtalaiaBot/1.0 (+https://atalaia.example.com)")
+                .user_agent("RustySEO/1.0 (+https://rustyseo.com)")
                 .timeout(std::time::Duration::from_secs(10))
                 .build()
                 .unwrap(),
@@ -81,31 +83,40 @@ impl CrawlEngine {
             response.status().as_u16(),
             response.status().canonical_reason().unwrap_or("")
         );
+
         let html_content = response.text()?;
         let document = Html::parse_document(&html_content);
 
         let title_selector = Selector::parse("title").unwrap();
         let h1_selector = Selector::parse("h1").unwrap();
+        let h2_selector = Selector::parse("h2").unwrap();
+
         let desc_selector = Selector::parse("meta[name='description']").unwrap();
 
         let title = document
             .select(&title_selector)
             .next()
             .map(|e| e.text().collect::<String>())
-            .unwrap_or_default();
+            .unwrap_or("".into());
 
         let h1 = document
             .select(&h1_selector)
             .next()
             .map(|e| e.text().collect::<String>())
-            .unwrap_or_default();
+            .unwrap_or("".into());
 
         let description = document
             .select(&desc_selector)
             .next()
             .and_then(|e| e.value().attr("content"))
             .map(|s| s.to_string())
-            .unwrap_or_default();
+            .unwrap_or("".into());
+
+        let h2 = document
+            .select(&h2_selector)
+            .next()
+            .map(|e| e.text().collect::<String>())
+            .unwrap_or("".into());
 
         Ok(PageData {
             id,
@@ -114,6 +125,9 @@ impl CrawlEngine {
             title,
             h1_len: h1.len(),
             h1,
+            h2_len: h2.len(),
+            h2,
+
             description_len: description.len(),
             description,
             status,

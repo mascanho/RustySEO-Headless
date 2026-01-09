@@ -1,14 +1,16 @@
 use ratatui::{
+    Frame,
     layout::{Constraint, Rect},
     style::{Color, Modifier, Style},
     widgets::{Block, Borders, Cell, Row, Table},
-    Frame,
 };
 
 use crate::models::App;
 
 pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
-    let header_titles = ["ID", "URL", "Title", "Len", "H1", "H1 Len", "Status"];
+    let header_titles = [
+        "ID", "URL", "Title", "Len", "H1", "H1 Len", "H2", "H2 Len", "Status",
+    ];
 
     let header = Row::new(header_titles.iter().map(|h| {
         Cell::from(*h).style(
@@ -30,6 +32,8 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             &data[3], // Title Len
             &data[4], // H1
             &data[5], // H1 Len
+            &data[6], // H2
+            &data[7], // H2 Len
             &data[8], // Status
         ];
 
@@ -46,13 +50,15 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     });
 
     let widths = [
-        Constraint::Length(4),
-        Constraint::Percentage(30),
-        Constraint::Percentage(25),
-        Constraint::Length(5),
-        Constraint::Percentage(20),
-        Constraint::Length(7),
-        Constraint::Min(10),
+        Constraint::Length(4),      // ID
+        Constraint::Percentage(30), // URL
+        Constraint::Percentage(25), // Title
+        Constraint::Length(5),      // Len
+        Constraint::Percentage(15), // H1
+        Constraint::Length(7),      // H1 Len
+        Constraint::Percentage(10), // H2
+        Constraint::Length(7),      // H2 Len
+        Constraint::Min(10),        // Status
     ];
 
     let table = Table::new(rows, widths)

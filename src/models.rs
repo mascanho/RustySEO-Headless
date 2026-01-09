@@ -1,14 +1,21 @@
-use crate::{app::AppState, crawler::PageData};
+use crate::{app::AppState, crawler::PageData, settings};
 
 use std::sync::mpsc::{self, Receiver};
 
+#[derive(Debug, Clone)]
 pub struct AppSettings {
-    pub crawl_depth: usize,
+    pub max_pages: usize,
 }
 
 impl Default for AppSettings {
     fn default() -> Self {
-        Self { crawl_depth: 50 }
+        Self { max_pages: 50 }
+    }
+}
+
+impl AppSettings {
+    pub async fn new() -> Self {
+        Self { max_pages: 50 }
     }
 }
 
