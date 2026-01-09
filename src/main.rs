@@ -112,21 +112,21 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 app.input_mode = true;
                             }
                             // Vim Navigation
-                            KeyCode::Char('h') | KeyCode::Left => {
+                            KeyCode::Char('h') => {
                                 if app.sidebar_visible {
                                     app.sidebar_visible = false;
                                 } else {
                                     app.previous_state();
                                 }
                             }
-                            KeyCode::Char('l') | KeyCode::Right => {
+                            KeyCode::Char('l') => {
                                 if !app.sidebar_visible {
                                     app.sidebar_visible = true;
                                 } else {
                                     app.next_state();
                                 }
                             }
-                            KeyCode::Char('k') | KeyCode::Up => {
+                            KeyCode::Char('k') => {
                                 if app.sidebar_visible {
                                     app.sidebar_tab = if app.sidebar_tab == 0 {
                                         3
@@ -139,7 +139,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     app.previous_log();
                                 }
                             }
-                            KeyCode::Char('j') | KeyCode::Down => {
+                            KeyCode::Char('j') => {
                                 if app.sidebar_visible {
                                     app.sidebar_tab = (app.sidebar_tab + 1) % 4;
                                 } else if app.current_state == AppState::Dashboard {
