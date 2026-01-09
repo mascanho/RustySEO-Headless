@@ -4,13 +4,18 @@ use ratatui::{
     widgets::{Block, Borders, Cell, Row, Table},
     Frame,
 };
-use crate::app::App;
+
+use crate::models::App;
 
 pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     let header_titles = ["ID", "URL", "Title", "Len", "H1", "H1 Len", "Status"];
-    
+
     let header = Row::new(header_titles.iter().map(|h| {
-        Cell::from(*h).style(Style::default().add_modifier(Modifier::BOLD).fg(Color::Yellow))
+        Cell::from(*h).style(
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(Color::Yellow),
+        )
     }))
     .style(Style::default().bg(Color::Rgb(30, 30, 60)))
     .height(1);
@@ -52,7 +57,11 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
     let table = Table::new(rows, widths)
         .header(header)
-        .block(Block::default().borders(Borders::ALL).title(" SEO Audit - Dashboard "))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(" SEO Audit - Dashboard "),
+        )
         .column_spacing(2)
         .highlight_style(
             Style::default()

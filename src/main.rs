@@ -11,12 +11,12 @@ use ratatui::{
 };
 use std::{error::Error, io};
 
-mod app;
-mod ui;
-mod crawler;
+pub mod app;
+pub mod crawler;
+pub mod models;
+pub mod ui;
 
-use crate::app::{App, AppState};
-use crate::ui::ui;
+use crate::{app::AppState, models::App, ui::ui};
 
 fn main() -> Result<(), Box<dyn Error>> {
     // setup terminal
@@ -126,6 +126,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     };
                                 } else if app.current_state == AppState::Dashboard {
                                     app.previous_row();
+                                } else if app.current_state == AppState::Logs {
+                                    app.previous_log();
                                 }
                             }
                             KeyCode::Char('j') | KeyCode::Down => {
@@ -133,6 +135,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     app.sidebar_tab = (app.sidebar_tab + 1) % 4;
                                 } else if app.current_state == AppState::Dashboard {
                                     app.next_row();
+                                } else if app.current_state == AppState::Logs {
+                                    app.next_log();
                                 }
                             }
                             // Quick jumps to sidebar tools

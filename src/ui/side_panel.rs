@@ -1,10 +1,11 @@
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, List, ListItem, Paragraph, Tabs, Clear},
+    widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Tabs},
     Frame,
 };
-use crate::app::App;
+
+use crate::models::App;
 
 pub fn render(f: &mut Frame, app: &mut App) {
     if !app.sidebar_visible {
@@ -30,7 +31,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     let sidebar_tab_area = sidebar_chunks[0];
     let sidebar_content_area = sidebar_chunks[1];
-    
+
     app.sidebar_tab_rect = Some(sidebar_tab_area);
 
     let sidebar_titles = vec!["Settings", "Filters", "Stats", "Actions"];
@@ -50,7 +51,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
     let content_block = Block::default()
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::DarkGray));
-        
+
     match app.sidebar_tab {
         0 => {
             let items = vec![

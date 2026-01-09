@@ -3,12 +3,11 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Wrap},
     Frame,
 };
-use crate::app::App;
+
+use crate::models::App;
 
 pub fn render(f: &mut Frame, _app: &mut App, area: Rect) {
-    let block = Block::default()
-        .title(" AI Chat ")
-        .borders(Borders::ALL);
+    let block = Block::default().title(" AI Chat ").borders(Borders::ALL);
     let p = Paragraph::new("AI functionality coming soon...")
         .block(block)
         .wrap(Wrap { trim: true });

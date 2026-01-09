@@ -1,3 +1,7 @@
+use std::sync::mpsc;
+
+use crate::models::{App, AppSettings};
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum AppState {
     Crawl,
@@ -6,33 +10,6 @@ pub enum AppState {
     Dashboard,
     Reports,
     Chat,
-}
-
-use std::sync::mpsc::{self, Receiver};
-use crate::crawler::PageData;
-
-pub struct App {
-    pub sidebar_visible: bool,
-    pub task_panel_visible: bool,
-    pub current_state: AppState,
-    pub sidebar_tab: usize,
-    pub table_data: Vec<Vec<String>>,
-    pub table_state: ratatui::widgets::TableState,
-    pub logs_data: Vec<String>,
-    pub connectors_data: Vec<(String, bool)>,
-    pub tab_rect: Option<ratatui::layout::Rect>,
-    pub sidebar_tab_rect: Option<ratatui::layout::Rect>,
-    pub keyword_rects: Vec<(String, ratatui::layout::Rect)>,
-    pub show_help: bool,
-    pub show_details: bool,
-    pub crawl_progress: f64,
-    pub input: String,
-    pub input_mode: bool,
-    pub cursor_position: usize,
-    pub detail_tab: usize,
-    pub input_url: String,
-    pub crawl_receiver: Option<Receiver<PageData>>,
-    pub is_crawling: bool,
 }
 
 impl Default for App {
@@ -48,6 +25,11 @@ impl Default for App {
             table_data,
             table_state,
             logs_data: vec!["System Initialized - Ready for Crawl".to_string()],
+            logs_state: {
+                let mut state = ratatui::widgets::ListState::default();
+                state.select(Some(0));
+                state
+            },
             connectors_data: vec![],
             tab_rect: None,
             sidebar_tab_rect: None,
@@ -62,6 +44,7 @@ impl Default for App {
             input_url: String::new(),
             crawl_receiver: None,
             is_crawling: false,
+            settings: Some(AppSettings::default()),
         }
     }
 }
@@ -108,7 +91,8 @@ impl App {
             self.is_crawling = false;
             self.crawl_receiver = None;
             self.crawl_progress = 1.0;
-            self.logs_data.insert(0, "SYSTEM - Crawl finished successfully.".to_string());
+            self.logs_data
+                .insert(0, "SYSTEM - Crawl finished successfully.".to_string());
         }
 
         if self.input_url.is_empty() {
@@ -146,7 +130,11 @@ impl App {
         let i = match self.table_state.selected() {
             Some(i) => {
                 if i == 0 {
-                    self.table_data.len() - 1
+                    if self.table_data.is_empty() {
+                        0
+                    } else {
+                        self.table_data.len() - 1
+                    }
                 } else {
                     i - 1
                 }
@@ -154,6 +142,40 @@ impl App {
             None => 0,
         };
         self.table_state.select(Some(i));
+    }
+
+    pub fn next_log(&mut self) {
+        if self.logs_data.is_empty() {
+            return;
+        }
+        let i = match self.logs_state.selected() {
+            Some(i) => {
+                if i >= self.logs_data.len() - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.logs_state.select(Some(i));
+    }
+
+    pub fn previous_log(&mut self) {
+        if self.logs_data.is_empty() {
+            return;
+        }
+        let i = match self.logs_state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.logs_data.len() - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.logs_state.select(Some(i));
     }
 
     pub fn set_sidebar_tab(&mut self, index: usize) {
@@ -270,7 +292,8 @@ impl App {
         self.table_data.clear();
         self.crawl_progress = 0.0;
         self.is_crawling = true;
-        self.logs_data.insert(0, format!("Starting crawl for: {}", self.input_url));
+        self.logs_data
+            .insert(0, format!("Starting crawl for: {}", self.input_url));
 
         let (tx, rx) = mpsc::channel();
         self.crawl_receiver = Some(rx);

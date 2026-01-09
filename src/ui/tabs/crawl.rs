@@ -1,4 +1,3 @@
-use crate::app::App;
 use ratatui::{
     layout::Rect,
     style::{Color, Modifier, Style},
@@ -6,6 +5,8 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Wrap},
     Frame,
 };
+
+use crate::models::App;
 
 pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     let block = Block::default()
@@ -60,20 +61,36 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
     if app.is_crawling {
         content.push(Line::from(vec![
-            Span::styled("ACTIVE CRAWL: ", Style::default().fg(Color::Blue).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                "ACTIVE CRAWL: ",
+                Style::default()
+                    .fg(Color::Blue)
+                    .add_modifier(Modifier::BOLD),
+            ),
             Span::styled(&app.input_url, Style::default().fg(Color::White)),
         ]));
         content.push(Line::from(""));
-        content.push(Line::from("Analyzing site structure and extracting SEO metadata..."));
-        content.push(Line::from("Check the 'Logs' tab for real-time URI discovery."));
+        content.push(Line::from(
+            "Analyzing site structure and extracting SEO metadata...",
+        ));
+        content.push(Line::from(
+            "Check the 'Logs' tab for real-time URI discovery.",
+        ));
     } else if app.crawl_progress >= 1.0 {
         content.push(Line::from(vec![
-            Span::styled("CRAWL COMPLETE: ", Style::default().fg(Color::LightBlue).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                "CRAWL COMPLETE: ",
+                Style::default()
+                    .fg(Color::LightBlue)
+                    .add_modifier(Modifier::BOLD),
+            ),
             Span::styled(&app.input_url, Style::default().fg(Color::White)),
         ]));
         content.push(Line::from(""));
         content.push(Line::from("All discovered pages have been audited."));
-        content.push(Line::from("Head to the 'Dashboard' to view the full SEO report."));
+        content.push(Line::from(
+            "Head to the 'Dashboard' to view the full SEO report.",
+        ));
         content.push(Line::from(""));
         content.push(Line::from(" (Press Ctrl+I to start a new crawl) "));
     } else {
