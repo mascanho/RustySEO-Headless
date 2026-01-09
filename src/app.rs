@@ -8,145 +8,152 @@ pub enum AppState {
     Chat,
 }
 
+use std::sync::mpsc::{self, Receiver};
+use crate::crawler::PageData;
+
 pub struct App {
     pub sidebar_visible: bool,
     pub task_panel_visible: bool,
     pub current_state: AppState,
     pub sidebar_tab: usize,
-    pub tasks: Vec<String>,
     pub table_data: Vec<Vec<String>>,
+    pub table_state: ratatui::widgets::TableState,
     pub logs_data: Vec<String>,
     pub connectors_data: Vec<(String, bool)>,
-    pub table_scroll_x: usize,
     pub tab_rect: Option<ratatui::layout::Rect>,
     pub sidebar_tab_rect: Option<ratatui::layout::Rect>,
     pub keyword_rects: Vec<(String, ratatui::layout::Rect)>,
     pub show_help: bool,
+    pub show_details: bool,
+    pub crawl_progress: f64,
+    pub input: String,
+    pub input_mode: bool,
+    pub cursor_position: usize,
+    pub detail_tab: usize,
+    pub input_url: String,
+    pub crawl_receiver: Option<Receiver<PageData>>,
+    pub is_crawling: bool,
 }
 
 impl Default for App {
     fn default() -> Self {
-        let table_data = vec![
-            vec![
-                "1".to_string(),
-                "Item A".to_string(),
-                "Active".to_string(),
-                "2023-01-01".to_string(),
-                "100".to_string(),
-                "Cat1".to_string(),
-                "Note1".to_string(),
-            ],
-            vec![
-                "2".to_string(),
-                "Item B".to_string(),
-                "Inactive".to_string(),
-                "2023-01-02".to_string(),
-                "200".to_string(),
-                "Cat2".to_string(),
-                "Note2".to_string(),
-            ],
-            vec![
-                "3".to_string(),
-                "Item C".to_string(),
-                "Active".to_string(),
-                "2023-01-03".to_string(),
-                "300".to_string(),
-                "Cat3".to_string(),
-                "Note3".to_string(),
-            ],
-            vec![
-                "4".to_string(),
-                "Item D".to_string(),
-                "Inactive".to_string(),
-                "2023-01-04".to_string(),
-                "400".to_string(),
-                "Cat1".to_string(),
-                "Note4".to_string(),
-            ],
-            vec![
-                "5".to_string(),
-                "Item E".to_string(),
-                "Active".to_string(),
-                "2023-01-05".to_string(),
-                "500".to_string(),
-                "Cat2".to_string(),
-                "Note5".to_string(),
-            ],
-            vec![
-                "6".to_string(),
-                "Item F".to_string(),
-                "Inactive".to_string(),
-                "2023-01-06".to_string(),
-                "600".to_string(),
-                "Cat3".to_string(),
-                "Note6".to_string(),
-            ],
-            vec![
-                "7".to_string(),
-                "Item G".to_string(),
-                "Active".to_string(),
-                "2023-01-07".to_string(),
-                "700".to_string(),
-                "Cat1".to_string(),
-                "Note7".to_string(),
-            ],
-            vec![
-                "8".to_string(),
-                "Item H".to_string(),
-                "Inactive".to_string(),
-                "2023-01-08".to_string(),
-                "800".to_string(),
-                "Cat2".to_string(),
-                "Note8".to_string(),
-            ],
-            vec![
-                "9".to_string(),
-                "Item I".to_string(),
-                "Active".to_string(),
-                "2023-01-09".to_string(),
-                "900".to_string(),
-                "Cat3".to_string(),
-                "Note9".to_string(),
-            ],
-            vec![
-                "10".to_string(),
-                "Item J".to_string(),
-                "Inactive".to_string(),
-                "2023-01-10".to_string(),
-                "1000".to_string(),
-                "Cat1".to_string(),
-                "Note10".to_string(),
-            ],
-        ];
+        let table_data = Vec::new();
+        let table_state = ratatui::widgets::TableState::default();
+
         Self {
-            sidebar_visible: false, // Hidden by default now
+            sidebar_visible: false,
             task_panel_visible: false,
             current_state: AppState::Crawl,
             sidebar_tab: 0,
-            tasks: vec!["Sample Task 1".to_string(), "Sample Task 2".to_string()],
             table_data,
-            logs_data: vec![
-                "INFO - 2023-10-01 12:00:00 - Crawl started".to_string(),
-                "DEBUG - 2023-10-01 12:00:05 - Found 50 URLs".to_string(),
-                "ERROR - 2023-10-01 12:00:10 - Connection timeout on example.com".to_string(),
-            ],
-            connectors_data: vec![
-                ("Google Search Console".to_string(), true),
-                ("Google Analytics".to_string(), false),
-                ("Screaming Frog".to_string(), true),
-            ],
-            table_scroll_x: 0,
+            table_state,
+            logs_data: vec!["System Initialized - Ready for Crawl".to_string()],
+            connectors_data: vec![],
             tab_rect: None,
             sidebar_tab_rect: None,
             keyword_rects: vec![],
             show_help: false,
+            show_details: false,
+            crawl_progress: 0.0,
+            input: String::new(),
+            input_mode: false,
+            cursor_position: 0,
+            detail_tab: 0,
+            input_url: String::new(),
+            crawl_receiver: None,
+            is_crawling: false,
         }
     }
 }
 
 impl App {
+    pub fn on_tick(&mut self) {
+        // Collect results from background crawler thread
+        let mut finished = false;
+        if let Some(ref rx) = self.crawl_receiver {
+            loop {
+                match rx.try_recv() {
+                    Ok(data) => {
+                        // ID, URL, Title, Title Len, H1, H1 Len, Meta Desc, Meta Len, Status
+                        let row = vec![
+                            data.id.to_string(),
+                            data.url.clone(),
+                            data.title.clone(),
+                            data.title_len.to_string(),
+                            data.h1.clone(),
+                            data.h1_len.to_string(),
+                            data.description.clone(),
+                            data.description_len.to_string(),
+                            data.status.clone(),
+                        ];
+                        self.table_data.push(row);
+                        self.logs_data.insert(0, format!("Crawled: {}", data.url));
+                        if self.logs_data.len() > 100 {
+                            self.logs_data.pop();
+                        }
+
+                        // Smoothly update overall progress based on some limit (e.g. 50 pages)
+                        self.crawl_progress = (self.table_data.len() as f64 / 50.0).min(1.0);
+                    }
+                    Err(mpsc::TryRecvError::Empty) => break,
+                    Err(mpsc::TryRecvError::Disconnected) => {
+                        finished = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if finished {
+            self.is_crawling = false;
+            self.crawl_receiver = None;
+            self.crawl_progress = 1.0;
+            self.logs_data.insert(0, "SYSTEM - Crawl finished successfully.".to_string());
+        }
+
+        if self.input_url.is_empty() {
+            return;
+        }
+
+        // Only do progress simulation if NOT actually crawling
+        if !self.is_crawling && self.crawl_progress < 1.0 {
+            self.crawl_progress += 0.005;
+            if self.crawl_progress > 1.0 {
+                self.crawl_progress = 0.0;
+            }
+        }
+    }
+
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn next_row(&mut self) {
+        let i = match self.table_state.selected() {
+            Some(i) => {
+                if i >= self.table_data.len() - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.table_state.select(Some(i));
+    }
+
+    pub fn previous_row(&mut self) {
+        let i = match self.table_state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.table_data.len() - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.table_state.select(Some(i));
     }
 
     pub fn set_sidebar_tab(&mut self, index: usize) {
@@ -167,12 +174,28 @@ impl App {
         self.sidebar_tab = 0;
     }
 
-    pub fn toggle_sidebar(&mut self) {
-        self.sidebar_visible = !self.sidebar_visible;
+    pub fn next_sidebar_tab(&mut self) {
+        self.sidebar_tab = (self.sidebar_tab + 1) % 4;
     }
 
-    pub fn toggle_task_panel(&mut self) {
-        self.task_panel_visible = !self.task_panel_visible;
+    pub fn previous_sidebar_tab(&mut self) {
+        self.sidebar_tab = if self.sidebar_tab == 0 {
+            3
+        } else {
+            self.sidebar_tab - 1
+        };
+    }
+
+    pub fn next_detail_tab(&mut self) {
+        self.detail_tab = (self.detail_tab + 1) % 3;
+    }
+
+    pub fn previous_detail_tab(&mut self) {
+        self.detail_tab = if self.detail_tab == 0 {
+            2
+        } else {
+            self.detail_tab - 1
+        };
     }
 
     pub fn next_state(&mut self) {
@@ -197,19 +220,6 @@ impl App {
         }
     }
 
-    pub fn scroll_table_left(&mut self) {
-        if self.table_scroll_x > 0 {
-            self.table_scroll_x -= 1;
-        }
-    }
-
-    pub fn scroll_table_right(&mut self) {
-        const VISIBLE_COLS: usize = 4;
-        if self.table_scroll_x < 7 - VISIBLE_COLS {
-            self.table_scroll_x += 1;
-        }
-    }
-
     pub fn get_state_index(&self) -> usize {
         match self.current_state {
             AppState::Crawl => 0,
@@ -219,5 +229,65 @@ impl App {
             AppState::Reports => 4,
             AppState::Chat => 5,
         }
+    }
+
+    pub fn enter_char(&mut self, new_char: char) {
+        self.input.insert(self.cursor_position, new_char);
+        self.move_cursor_right();
+    }
+
+    pub fn delete_char(&mut self) {
+        if self.cursor_position != 0 {
+            let from_left_to_cursor_index = self.cursor_position - 1;
+            self.input.remove(from_left_to_cursor_index);
+            self.move_cursor_left();
+        }
+    }
+
+    pub fn move_cursor_left(&mut self) {
+        let cursor_moved_left = self.cursor_position.saturating_sub(1);
+        self.cursor_position = self.clamp_cursor(cursor_moved_left);
+    }
+
+    pub fn move_cursor_right(&mut self) {
+        let cursor_moved_right = self.cursor_position.saturating_add(1);
+        self.cursor_position = self.clamp_cursor(cursor_moved_right);
+    }
+
+    fn clamp_cursor(&self, new_cursor_pos: usize) -> usize {
+        new_cursor_pos.clamp(0, self.input.len())
+    }
+
+    pub fn add_input(&mut self, new_input: String) {
+        self.input = new_input;
+    }
+
+    pub fn start_crawl(&mut self) {
+        if self.input_url.is_empty() {
+            return;
+        }
+
+        self.table_data.clear();
+        self.crawl_progress = 0.0;
+        self.is_crawling = true;
+        self.logs_data.insert(0, format!("Starting crawl for: {}", self.input_url));
+
+        let (tx, rx) = mpsc::channel();
+        self.crawl_receiver = Some(rx);
+        let target_url = self.input_url.clone();
+
+        std::thread::spawn(move || {
+            let mut engine = crate::crawler::CrawlEngine::new();
+            let results = engine.crawl(&target_url);
+            for data in results {
+                let _ = tx.send(data);
+                // Slight delay to make TUI look "real-time" and not overwhelm
+                std::thread::sleep(std::time::Duration::from_millis(50));
+            }
+        });
+    }
+
+    pub fn reset_cursor(&mut self) {
+        self.cursor_position = 0;
     }
 }

@@ -12,11 +12,12 @@ pub fn render(f: &mut Frame, app: &mut App) {
     }
 
     let area = f.size();
-    // Modal area for side panel (left side, covering about 30% width)
+    let width = (area.width / 3).max(35).min(area.width);
+    // Modal area for side panel (right side, covering about 30% width)
     let modal_area = Rect {
-        x: 0,
+        x: area.width.saturating_sub(width),
         y: 0,
-        width: (area.width / 3).max(35).min(area.width),
+        width,
         height: area.height,
     };
 
@@ -39,7 +40,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         .style(Style::default().fg(Color::White))
         .highlight_style(
             Style::default()
-                .fg(Color::Cyan)
+                .fg(Color::Blue)
                 .add_modifier(Modifier::BOLD),
         );
 

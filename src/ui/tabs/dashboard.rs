@@ -7,7 +7,7 @@ use ratatui::{
 use crate::app::App;
 
 pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
-    let header_titles = ["ID", "Name", "Status", "Date", "Value", "Category", "Notes"];
+    let header_titles = ["ID", "URL", "Title", "Len", "H1", "H1 Len", "Status"];
     
     let header = Row::new(header_titles.iter().map(|h| {
         Cell::from(*h).style(Style::default().add_modifier(Modifier::BOLD).fg(Color::Yellow))
@@ -16,10 +16,23 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     .height(1);
 
     let rows = app.table_data.iter().map(|data| {
-        let cells = data.iter().map(|c| {
+        // We only show a subset of columns in the table to keep it readable
+        // [ID, URL, Title, Title Len, H1, H1 Len, Status]
+        let displayed_data = vec![
+            &data[0], // ID
+            &data[1], // URL
+            &data[2], // Title
+            &data[3], // Title Len
+            &data[4], // H1
+            &data[5], // H1 Len
+            &data[8], // Status
+        ];
+
+        let cells = displayed_data.iter().map(|c| {
             let style = match c.as_str() {
-                "Active" => Style::default().fg(Color::Green),
-                "Inactive" => Style::default().fg(Color::Red),
+                s if s.contains("200 OK") => Style::default().fg(Color::Green),
+                s if s.contains("404") => Style::default().fg(Color::Red),
+                s if s.contains("301") => Style::default().fg(Color::Blue),
                 _ => Style::default(),
             };
             Cell::from(c.as_str()).style(style)
@@ -29,20 +42,24 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
     let widths = [
         Constraint::Length(4),
+        Constraint::Percentage(30),
+        Constraint::Percentage(25),
+        Constraint::Length(5),
         Constraint::Percentage(20),
-        Constraint::Length(10),
-        Constraint::Length(12),
-        Constraint::Length(8),
-        Constraint::Percentage(15),
-        Constraint::Min(20),
+        Constraint::Length(7),
+        Constraint::Min(10),
     ];
 
     let table = Table::new(rows, widths)
         .header(header)
-        .block(Block::default().borders(Borders::ALL).title(" SEO Data Overview "))
+        .block(Block::default().borders(Borders::ALL).title(" SEO Audit - Dashboard "))
         .column_spacing(2)
-        .highlight_style(Style::default().bg(Color::DarkGray).add_modifier(Modifier::BOLD))
+        .highlight_style(
+            Style::default()
+                .fg(Color::Blue)
+                .add_modifier(Modifier::BOLD),
+        )
         .highlight_symbol(">> ");
 
-    f.render_widget(table, area);
+    f.render_stateful_widget(table, area, &mut app.table_state);
 }

@@ -1,7 +1,8 @@
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
-    widgets::{Block, Borders, Tabs},
+    text::{Line, Span},
+    widgets::{Block, Borders, Tabs, Paragraph},
     Frame,
 };
 
@@ -9,20 +10,47 @@ use crate::app::{App, AppState};
 
 pub mod tabs;
 pub mod side_panel;
+pub mod footer;
+pub mod modals;
 
 pub fn ui(f: &mut Frame, app: &mut App) {
     let size = f.size();
 
-    // Main layout: Top Navigation + Content Area
+    // Main layout: Input (3 if active) + Navigation (3) + Content Area (Min 0) + Footer (3)
+    let input_height = if app.input_mode { 3 } else { 0 };
     let main_layout = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Length(3), Constraint::Min(0)])
+        .constraints([
+            Constraint::Length(input_height),
+            Constraint::Length(3), // Navigation
+            Constraint::Min(0),    // Content Area
+            Constraint::Length(3), // Footer
+        ])
         .split(size);
 
-    let tab_area = main_layout[0];
-    let content_area = main_layout[1];
+    let input_area = main_layout[0];
+    let tab_area = main_layout[1];
+    let content_area = main_layout[2];
+    let footer_area = main_layout[3];
 
     app.tab_rect = Some(tab_area);
+
+    // Render Input Bar ONLY when in input mode
+    if app.input_mode {
+        let input_block = Block::default()
+            .borders(Borders::ALL)
+            .title(" Command / URL Input (Press Esc to Cancel) ")
+            .border_style(Style::default().fg(Color::Blue));
+
+        let input_p = Paragraph::new(app.input.as_str()).block(input_block);
+        f.render_widget(input_p, input_area);
+
+        // Make the cursor visible
+        f.set_cursor(
+            input_area.x + app.cursor_position as u16 + 1,
+            input_area.y + 1,
+        );
+    }
 
     // Render Navigation Tabs
     let titles = vec!["Crawl", "Logs", "Connectors", "Dashboard", "Reports", "Chat"];
@@ -32,7 +60,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         .style(Style::default().fg(Color::White))
         .highlight_style(
             Style::default()
-                .fg(Color::Yellow)
+                .fg(Color::Blue)
                 .add_modifier(Modifier::BOLD),
         );
 
@@ -48,8 +76,15 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         AppState::Chat => tabs::chat::render(f, app, content_area),
     }
 
+    // Render Footer
+    footer::render(f, app, footer_area);
+
     // Render Modals (Side Panel, Help)
     side_panel::render(f, app);
+
+    if app.show_details {
+        modals::details::render(f, app);
+    }
 
     if app.show_help {
         render_help_modal(f);
@@ -59,35 +94,33 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 fn render_help_modal(f: &mut Frame) {
     let area = f.size();
     let help_area = centered_rect(70, 70, area);
-    
     let block = Block::default()
-        .title(" Keyboard Shortcuts ")
+        .title(" Help / Shortcuts ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+        .border_style(Style::default().fg(Color::Blue).add_modifier(Modifier::BOLD))
         .bg(Color::Black);
 
-    let text = vec![
-        ratatui::text::Line::from(vec![ratatui::text::Span::styled("Navigation", Style::default().add_modifier(Modifier::BOLD).fg(Color::Yellow))]),
-        ratatui::text::Line::from("  h / l | ← / →  - Change Main Tabs / Toggle Panel"),
-        ratatui::text::Line::from("  j / k | ↓ / ↑  - Navigate Tool Panel Tabs"),
-        ratatui::text::Line::from("  1 - 6          - Direct Main Tab Access"),
-        ratatui::text::Line::from("  Tab / S-Tab    - Cycle Main Tabs"),
-        ratatui::text::Line::from(""),
-        ratatui::text::Line::from(vec![ratatui::text::Span::styled("Tool Shortcuts", Style::default().add_modifier(Modifier::BOLD).fg(Color::Yellow))]),
-        ratatui::text::Line::from("  s              - Jump to Crawler Settings"),
-        ratatui::text::Line::from("  f              - Jump to Result Filters"),
-        ratatui::text::Line::from("  i              - Jump to Live Stats"),
-        ratatui::text::Line::from("  a              - Jump to Quick Actions"),
-        ratatui::text::Line::from(""),
-        ratatui::text::Line::from(vec![ratatui::text::Span::styled("General", Style::default().add_modifier(Modifier::BOLD).fg(Color::Yellow))]),
-        ratatui::text::Line::from("  ?              - Toggle this Help Menu"),
-        ratatui::text::Line::from("  Esc            - Reset View / Close Help"),
-        ratatui::text::Line::from("  q              - Quit Application"),
+    let help_text = vec![
+        Line::from(vec![Span::styled("Navigation:", Style::default().add_modifier(Modifier::BOLD).fg(Color::LightBlue))]),
+        Line::from("  h / ←  : Previous Tab / Close Sidebar"),
+        Line::from("  l / →  : Next Tab / Open Sidebar"),
+        Line::from("  k / ↑  : Scroll Up / Prev Sidebar Item"),
+        Line::from("  j / ↓  : Scroll Down / Next Sidebar Item"),
+        Line::from("  Tab    : Cycle Active Window"),
+        Line::from(""),
+        Line::from(vec![Span::styled("Shortcuts:", Style::default().add_modifier(Modifier::BOLD).fg(Color::LightBlue))]),
+        Line::from("  Ctrl+i : Focus Input Bar"),
+        Line::from("  Enter  : Show Row Details (Dashboard) / Submit Input"),
+        Line::from("  ?      : Toggle Help"),
+        Line::from("  Esc    : Close Modals / Reset View"),
+        Line::from("  q      : Quit"),
+        Line::from(""),
+        Line::from(vec![Span::styled("Tools:", Style::default().add_modifier(Modifier::BOLD).fg(Color::LightBlue))]),
+        Line::from("  s: Settings | f: Filters | i: Stats | a: Actions"),
     ];
 
-    let p = ratatui::widgets::Paragraph::new(text)
-        .block(block)
-        .wrap(ratatui::widgets::Wrap { trim: true });
+    let p = Paragraph::new(help_text).block(block);
+
 
     f.render_widget(ratatui::widgets::Clear, help_area);
     f.render_widget(p, help_area);
