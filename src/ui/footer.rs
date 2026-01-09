@@ -11,7 +11,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Percentage(30), // Progress Bar
+            Constraint::Percentage(10), // Progress Bar
             Constraint::Min(0),         // App Info / Status
         ])
         .split(area);
