@@ -1,3 +1,4 @@
+use clap::Parser;
 use crossterm::{
     event::{
         self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers, MouseEventKind,
@@ -12,12 +13,19 @@ use ratatui::{
 use std::{error::Error, io};
 
 pub mod app;
+pub mod cli;
 pub mod crawler;
 pub mod models;
 pub mod settings;
 pub mod ui;
 
-use crate::{app::AppState, models::App, ui::ui};
+use crate::{
+    app::AppState,
+    cli::Cli,
+    crawler::CrawlEngine,
+    models::App,
+    ui::{tabs::crawl, ui},
+};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -27,31 +35,41 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Create the file for the settings
     settings::utils::create::create_settings_file().await;
 
-    // setup terminal
-    enable_raw_mode()?;
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
+    // Conditionally render the UI based on the args passed
+    let cli = Cli::parse();
 
-    // create app and run it
-    let mut app = App::new();
-    let res = run_app(&mut terminal, &mut app);
+    if !cli.url.is_empty() {
+        // Handle the actions here
+        let mut crawler = CrawlEngine::new().await;
+        crawler.crawl(&cli.url).await;
+        return Ok(());
+    } else {
+        // In case no arguments are passed then continue rendering the UI for CLI
+        // setup terminal
+        enable_raw_mode()?;
+        let mut stdout = io::stdout();
+        execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+        let backend = CrosstermBackend::new(stdout);
+        let mut terminal = Terminal::new(backend)?;
 
-    // restore terminal
-    disable_raw_mode()?;
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    )?;
-    terminal.show_cursor()?;
+        // create app and run it
+        let mut app = App::new();
+        let res = run_app(&mut terminal, &mut app);
 
-    if let Err(err) = res {
-        println!("{:?}", err)
+        // restore terminal
+        disable_raw_mode()?;
+        execute!(
+            terminal.backend_mut(),
+            LeaveAlternateScreen,
+            DisableMouseCapture
+        )?;
+        terminal.show_cursor()?;
+
+        if let Err(err) = res {
+            println!("{:?}", err)
+        }
+        Ok(())
     }
-
-    Ok(())
 }
 
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<()> {
@@ -81,10 +99,18 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 app.delete_char();
                             }
                             KeyCode::Left => {
-                                app.move_cursor_left();
+                                if app.current_state == AppState::Dashboard && !app.input_mode {
+                                    app.scroll_left();
+                                } else {
+                                    app.move_cursor_left();
+                                }
                             }
                             KeyCode::Right => {
-                                app.move_cursor_right();
+                                if app.current_state == AppState::Dashboard && !app.input_mode {
+                                    app.scroll_right(50);
+                                } else {
+                                    app.move_cursor_right();
+                                }
                             }
                             _ => {}
                         }
@@ -133,16 +159,25 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     } else {
                                         app.sidebar_tab - 1
                                     };
-                                } else if app.current_state == AppState::Dashboard {
-                                    app.previous_row();
-                                } else if app.current_state == AppState::Logs {
-                                    app.previous_log();
                                 }
                             }
                             KeyCode::Char('j') => {
                                 if app.sidebar_visible {
                                     app.sidebar_tab = (app.sidebar_tab + 1) % 4;
-                                } else if app.current_state == AppState::Dashboard {
+                                } else if app.current_state == AppState::Logs {
+                                    app.next_log();
+                                }
+                            }
+                            // Arrow keys for dashboard navigation
+                            KeyCode::Up => {
+                                if app.current_state == AppState::Dashboard {
+                                    app.previous_row();
+                                } else if app.current_state == AppState::Logs {
+                                    app.previous_log();
+                                }
+                            }
+                            KeyCode::Down => {
+                                if app.current_state == AppState::Dashboard {
                                     app.next_row();
                                 } else if app.current_state == AppState::Logs {
                                     app.next_log();

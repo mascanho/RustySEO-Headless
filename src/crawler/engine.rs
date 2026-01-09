@@ -1,4 +1,4 @@
-use reqwest::{blocking::Client, redirect};
+use reqwest::Client;
 use scraper::{Html, Selector};
 use std::collections::HashSet;
 use url::Url;
@@ -25,7 +25,7 @@ pub struct CrawlEngine {
 }
 
 impl CrawlEngine {
-    pub fn new() -> Self {
+    pub async fn new() -> Self {
         Self {
             client: Client::builder()
                 .user_agent("RustySEO/1.0 (+https://rustyseo.com)")
@@ -33,11 +33,11 @@ impl CrawlEngine {
                 .build()
                 .unwrap(),
             visited: HashSet::new(),
-            max_pages: 50, // Safety limit
+            max_pages: 200, // Safety limit
         }
     }
 
-    pub fn crawl(&mut self, start_url: &str) -> Vec<PageData> {
+    pub async fn crawl(&mut self, start_url: &str) -> Vec<PageData> {
         let mut results = Vec::new();
         let mut to_visit = vec![start_url.to_string()];
         let base_url = match Url::parse(start_url) {
@@ -51,9 +51,9 @@ impl CrawlEngine {
             }
             self.visited.insert(current_url.clone());
 
-            if let Ok(data) = self.fetch_page(&current_url, results.len() + 1) {
+            if let Ok(data) = self.fetch_page(&current_url, results.len() + 1).await {
                 // Find links for next crawl
-                if let Ok(html) = self.get_html(&current_url) {
+                if let Ok(html) = self.get_html(&current_url).await {
                     let links = self.extract_links(&html, &base_url);
                     for link in links {
                         if !self.visited.contains(&link) {
@@ -64,27 +64,45 @@ impl CrawlEngine {
                 results.push(data);
             }
         }
+
+        // print results
+        for result in &results {
+            println!("Page ID: {}", result.id);
+            println!("URL: {}", result.url);
+            println!("Status: {}", result.status);
+            println!("Title: {}", result.title);
+            println!();
+        }
+
         results
     }
 
-    fn get_html(&self, url: &str) -> Result<String, Box<dyn std::error::Error>> {
-        let resp = self.client.get(url).send()?;
-        Ok(resp.text()?)
+    async fn get_html(&self, url: &str) -> Result<String, String> {
+        match self.client.get(url).send().await {
+            Ok(resp) => match resp.text().await {
+                Ok(text) => Ok(text),
+                Err(_) => Err("Failed to read response text".to_string()),
+            },
+            Err(_) => Err("Failed to send request".to_string()),
+        }
     }
 
-    pub fn fetch_page(
-        &self,
-        url_str: &str,
-        id: usize,
-    ) -> Result<PageData, Box<dyn std::error::Error>> {
-        let response = self.client.get(url_str).send()?;
+    pub async fn fetch_page(&self, url_str: &str, id: usize) -> Result<PageData, String> {
+        let response = match self.client.get(url_str).send().await {
+            Ok(resp) => resp,
+            Err(_) => return Err("Failed to send request".to_string()),
+        };
+
         let status = format!(
             "{} {}",
             response.status().as_u16(),
             response.status().canonical_reason().unwrap_or("")
         );
 
-        let html_content = response.text()?;
+        let html_content = match response.text().await {
+            Ok(text) => text,
+            Err(_) => return Err("Failed to read response text".to_string()),
+        };
         let document = Html::parse_document(&html_content);
 
         let title_selector = Selector::parse("title").unwrap();

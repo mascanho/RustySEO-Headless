@@ -37,39 +37,64 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             &data[8], // Status
         ];
 
-        let cells = displayed_data.iter().map(|c| {
-            let style = match c.as_str() {
+        // Apply horizontal scrolling to long content
+        let cells = displayed_data.iter().enumerate().map(|(i, c)| {
+            let content = if i == 1 || i == 2 || i == 4 || i == 6 {
+                // URL, Title, H1, H2 columns can be long - apply scrolling
+                let content = c.as_str();
+                if content.len() > 20 {
+                    let start = app.horizontal_scroll.min(content.len().saturating_sub(20));
+                    let end = (start + 20).min(content.len());
+                    if start > 0 {
+                        format!("...{}", &content[start..end])
+                    } else {
+                        content[start..end].to_string()
+                    }
+                } else {
+                    content.to_string()
+                }
+            } else {
+                c.as_str().to_string()
+            };
+
+            let style = match content.as_str() {
                 s if s.contains("200 OK") => Style::default().fg(Color::Green),
                 s if s.contains("404") => Style::default().fg(Color::Red),
                 s if s.contains("301") => Style::default().fg(Color::Blue),
                 _ => Style::default(),
             };
-            Cell::from(c.as_str()).style(style)
+            Cell::from(content).style(style)
         });
         Row::new(cells).height(1).bottom_margin(0)
     });
 
     let widths = [
-        Constraint::Length(4),      // ID
-        Constraint::Percentage(30), // URL
-        Constraint::Percentage(25), // Title
-        Constraint::Length(5),      // Len
-        Constraint::Percentage(15), // H1
-        Constraint::Length(7),      // H1 Len
-        Constraint::Percentage(10), // H2
-        Constraint::Length(7),      // H2 Len
-        Constraint::Min(10),        // Status
+        Constraint::Length(4),  // ID
+        Constraint::Length(25), // URL - fixed width for scrolling
+        Constraint::Length(20), // Title - fixed width for scrolling
+        Constraint::Length(5),  // Len
+        Constraint::Length(20), // H1 - fixed width for scrolling
+        Constraint::Length(7),  // H1 Len
+        Constraint::Length(15), // H2 - fixed width for scrolling
+        Constraint::Length(7),  // H2 Len
+        Constraint::Min(10),    // Status
     ];
+
+    let scroll_indicator = if app.horizontal_scroll > 0 {
+        format!(" [Scroll: {}] ", app.horizontal_scroll)
+    } else {
+        String::new()
+    };
 
     let table = Table::new(rows, widths)
         .header(header)
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title(" SEO Audit - Dashboard "),
+                .title(format!(" SEO Audit - Dashboard{}", scroll_indicator)),
         )
         .column_spacing(2)
-        .highlight_style(
+        .row_highlight_style(
             Style::default()
                 .fg(Color::Blue)
                 .add_modifier(Modifier::BOLD),

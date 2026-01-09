@@ -24,12 +24,14 @@ impl Default for App {
             sidebar_tab: 0,
             table_data,
             table_state,
+            horizontal_scroll: 0,
             logs_data: vec!["System Initialized - Ready for Crawl".to_string()],
             logs_state: {
                 let mut state = ratatui::widgets::ListState::default();
                 state.select(Some(0));
                 state
             },
+            logs_horizontal_scroll: 0,
             connectors_data: vec![],
             tab_rect: None,
             sidebar_tab_rect: None,
@@ -299,18 +301,42 @@ impl App {
         self.crawl_receiver = Some(rx);
         let target_url = self.input_url.clone();
 
-        std::thread::spawn(move || {
-            let mut engine = crate::crawler::CrawlEngine::new();
-            let results = engine.crawl(&target_url);
+        tokio::task::spawn(async move {
+            let mut engine = crate::crawler::CrawlEngine::new().await;
+            let results = engine.crawl(&target_url).await;
             for data in results {
                 let _ = tx.send(data);
                 // Slight delay to make TUI look "real-time" and not overwhelm
-                std::thread::sleep(std::time::Duration::from_millis(50));
+                tokio::time::sleep(std::time::Duration::from_millis(50)).await;
             }
         });
     }
 
     pub fn reset_cursor(&mut self) {
         self.cursor_position = 0;
+    }
+
+    pub fn scroll_left(&mut self) {
+        if self.horizontal_scroll > 0 {
+            self.horizontal_scroll = self.horizontal_scroll.saturating_sub(1);
+        }
+    }
+
+    pub fn scroll_right(&mut self, max_scroll: usize) {
+        if self.horizontal_scroll < max_scroll {
+            self.horizontal_scroll = self.horizontal_scroll.saturating_add(1);
+        }
+    }
+
+    pub fn scroll_logs_left(&mut self) {
+        if self.logs_horizontal_scroll > 0 {
+            self.logs_horizontal_scroll = self.logs_horizontal_scroll.saturating_sub(1);
+        }
+    }
+
+    pub fn scroll_logs_right(&mut self, max_scroll: usize) {
+        if self.logs_horizontal_scroll < max_scroll {
+            self.logs_horizontal_scroll = self.logs_horizontal_scroll.saturating_add(1);
+        }
     }
 }

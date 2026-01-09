@@ -118,11 +118,13 @@ fn render_help_modal(f: &mut Frame) {
                 .add_modifier(Modifier::BOLD)
                 .fg(Color::LightBlue),
         )]),
-        Line::from("  h / ←  : Previous Tab / Close Sidebar"),
-        Line::from("  l / →  : Next Tab / Open Sidebar"),
-        Line::from("  k / ↑  : Scroll Up / Prev Sidebar Item"),
-        Line::from("  j / ↓  : Scroll Down / Next Sidebar Item"),
-        Line::from("  Tab    : Cycle Active Window"),
+        Line::from("  h       : Previous Tab / Close Sidebar"),
+        Line::from("  l       : Next Tab / Open Sidebar"),
+        Line::from("  k       : Previous Sidebar Item"),
+        Line::from("  j       : Next Sidebar Item"),
+        Line::from("  ↑ / ↓   : Vertical Scroll (Dashboard/Logs)"),
+        Line::from("  ← / →   : Horizontal Scroll (Dashboard)"),
+        Line::from("  Tab     : Cycle Active Window"),
         Line::from(""),
         Line::from(vec![Span::styled(
             "Shortcuts:",
