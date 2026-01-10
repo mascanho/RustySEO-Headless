@@ -130,7 +130,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
 fn render_help_modal(f: &mut Frame) {
     let area = f.size();
-    let help_area = centered_rect(60, 60, area);
+    let help_area = centered_rect(60, 80, area);
 
     let accent_color = Color::Rgb(80, 140, 255);
 
@@ -151,45 +151,14 @@ fn render_help_modal(f: &mut Frame) {
 
     let help_text = vec![
         Line::from(vec![Span::styled(
-            "Navigation",
+            "Global Navigation",
             Style::default()
                 .add_modifier(Modifier::BOLD)
                 .fg(accent_color),
         )]),
         Line::from(vec![
-            Span::styled("  h / l   ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Prev/Next Tab / Toggle Sidebar"),
-        ]),
-        Line::from(vec![
-            Span::styled("  k / j   ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Prev/Next Sidebar Item"),
-        ]),
-        Line::from(vec![
-            Span::styled("  ↑ / ↓   ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Vertical Scroll (Dashboard/Logs)"),
-        ]),
-        Line::from(vec![
-            Span::styled("  ← / →   ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Horizontal Scroll (Dashboard)"),
-        ]),
-        Line::from(vec![
-            Span::styled("  Tab     ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Cycle Active Window"),
-        ]),
-        Line::from(""),
-        Line::from(vec![Span::styled(
-            "Shortcuts",
-            Style::default()
-                .add_modifier(Modifier::BOLD)
-                .fg(accent_color),
-        )]),
-        Line::from(vec![
-            Span::styled("  Ctrl+i  ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Open Input Modal"),
-        ]),
-        Line::from(vec![
-            Span::styled("  Enter   ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Show Row Details / Submit Input"),
+            Span::styled("  q       ", Style::default().fg(Color::Red)),
+            Span::raw(": Quit"),
         ]),
         Line::from(vec![
             Span::styled("  ?       ", Style::default().fg(Color::Cyan)),
@@ -200,12 +169,152 @@ fn render_help_modal(f: &mut Frame) {
             Span::raw(": Close Modals / Reset View"),
         ]),
         Line::from(vec![
-            Span::styled("  q       ", Style::default().fg(Color::Red)),
-            Span::raw(": Quit"),
+            Span::styled("  Ctrl+i  ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Open Input Modal"),
+        ]),
+        Line::from(vec![
+            Span::styled("  Tab     ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Next Tab / Cycle Active Window"),
+        ]),
+        Line::from(vec![
+            Span::styled("  Shift+Tab", Style::default().fg(Color::Cyan)),
+            Span::raw(": Previous Tab"),
+        ]),
+        Line::from(vec![
+            Span::styled("  h / ←   ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Previous Tab"),
+        ]),
+        Line::from(vec![
+            Span::styled("  l / →   ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Next Tab / Toggle Sidebar"),
+        ]),
+        Line::from(vec![
+            Span::styled("  1-6     ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Jump to Tab (1:Crawl, 2:Logs, 3:Conn, 4:Dash, 5:Rep, 6:Chat)"),
         ]),
         Line::from(""),
         Line::from(vec![Span::styled(
-            "Quick Tools",
+            "Dashboard / Logs Navigation",
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(accent_color),
+        )]),
+        Line::from(vec![
+            Span::styled("  k / ↑   ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Previous Row / Log"),
+        ]),
+        Line::from(vec![
+            Span::styled("  j / ↓   ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Next Row / Log"),
+        ]),
+        Line::from(vec![
+            Span::styled("  g       ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Jump to Top"),
+        ]),
+        Line::from(vec![
+            Span::styled("  G       ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Jump to Bottom"),
+        ]),
+        Line::from(vec![
+            Span::styled("  ← / →   ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Horizontal Scroll (Dashboard)"),
+        ]),
+        Line::from(vec![
+            Span::styled("  Enter   ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Show Row Details"),
+        ]),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "Input Mode",
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(accent_color),
+        )]),
+        Line::from(vec![
+            Span::styled("  Enter   ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Submit Input"),
+        ]),
+        Line::from(vec![
+            Span::styled("  Esc     ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Cancel Input"),
+        ]),
+        Line::from(vec![
+            Span::styled("  Any Char", Style::default().fg(Color::Cyan)),
+            Span::raw(": Type Character"),
+        ]),
+        Line::from(vec![
+            Span::styled("  Backsp  ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Delete Character"),
+        ]),
+        Line::from(vec![
+            Span::styled("  ← / →   ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Move Cursor"),
+        ]),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "Sidebar Navigation",
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(accent_color),
+        )]),
+        Line::from(vec![
+            Span::styled("  Esc/h/← ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Close Sidebar"),
+        ]),
+        Line::from(vec![
+            Span::styled("  k / ↑   ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Previous Item"),
+        ]),
+        Line::from(vec![
+            Span::styled("  j / ↓   ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Next Item"),
+        ]),
+        Line::from(vec![
+            Span::styled("  l / →   ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Next Tab"),
+        ]),
+        Line::from(vec![
+            Span::styled("  Tab     ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Next Item"),
+        ]),
+        Line::from(vec![
+            Span::styled("  Shift+Tab", Style::default().fg(Color::Cyan)),
+            Span::raw(": Previous Item"),
+        ]),
+        Line::from(vec![
+            Span::styled("  Enter   ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Select Bookmark"),
+        ]),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "Details Modal",
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(accent_color),
+        )]),
+        Line::from(vec![
+            Span::styled("  q / Esc ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Close Details"),
+        ]),
+        Line::from(vec![
+            Span::styled("  h / ←   ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Previous Tab"),
+        ]),
+        Line::from(vec![
+            Span::styled("  l / →   ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Next Tab"),
+        ]),
+        Line::from(vec![
+            Span::styled("  Tab     ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Next Tab"),
+        ]),
+        Line::from(vec![
+            Span::styled("  Shift+Tab", Style::default().fg(Color::Cyan)),
+            Span::raw(": Previous Tab"),
+        ]),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "Quick Sidebar Access",
             Style::default()
                 .add_modifier(Modifier::BOLD)
                 .fg(accent_color),
@@ -218,7 +327,20 @@ fn render_help_modal(f: &mut Frame) {
             Span::styled("i", Style::default().fg(Color::Cyan)),
             Span::raw(": Stats    | "),
             Span::styled("a", Style::default().fg(Color::Cyan)),
-            Span::raw(": Actions"),
+            Span::raw(": Actions  | "),
+            Span::styled("b", Style::default().fg(Color::Cyan)),
+            Span::raw(": Bookmarks"),
+        ]),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "Help Modal",
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(accent_color),
+        )]),
+        Line::from(vec![
+            Span::styled("  q/Esc/? ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Close Help"),
         ]),
     ];
 

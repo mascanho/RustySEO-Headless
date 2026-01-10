@@ -254,6 +254,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             KeyCode::Char('f') => app.set_sidebar_tab(1),
                             KeyCode::Char('i') => app.set_sidebar_tab(2),
                             KeyCode::Char('a') => app.set_sidebar_tab(3),
+                            KeyCode::Char('b') => app.set_sidebar_tab(4),
 
                             // Number jumps
                             KeyCode::Char('1') => app.current_state = AppState::Crawl,
