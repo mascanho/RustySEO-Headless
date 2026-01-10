@@ -350,6 +350,33 @@ impl App {
         self.cursor_position = 0;
     }
 
+    pub fn enter_bookmark_char(&mut self, new_char: char) {
+        self.bookmark_input.insert(self.bookmark_cursor, new_char);
+        self.move_bookmark_cursor_right();
+    }
+
+    pub fn delete_bookmark_char(&mut self) {
+        if self.bookmark_cursor != 0 {
+            let from_left_to_cursor_index = self.bookmark_cursor - 1;
+            self.bookmark_input.remove(from_left_to_cursor_index);
+            self.move_bookmark_cursor_left();
+        }
+    }
+
+    pub fn move_bookmark_cursor_left(&mut self) {
+        let cursor_moved_left = self.bookmark_cursor.saturating_sub(1);
+        self.bookmark_cursor = self.clamp_bookmark_cursor(cursor_moved_left);
+    }
+
+    pub fn move_bookmark_cursor_right(&mut self) {
+        let cursor_moved_right = self.bookmark_cursor.saturating_add(1);
+        self.bookmark_cursor = self.clamp_bookmark_cursor(cursor_moved_right);
+    }
+
+    fn clamp_bookmark_cursor(&self, new_cursor_pos: usize) -> usize {
+        new_cursor_pos.clamp(0, self.bookmark_input.len())
+    }
+
     pub fn scroll_left(&mut self) {
         if self.horizontal_scroll > 0 {
             self.horizontal_scroll = self.horizontal_scroll.saturating_sub(1);

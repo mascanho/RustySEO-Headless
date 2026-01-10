@@ -142,85 +142,65 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
 
                         // MODAL PRIORITY 3: Sidebar
                         if app.sidebar_visible {
-                            match key.code {
-                                KeyCode::Esc | KeyCode::Char('h') | KeyCode::Left => {
-                                    app.sidebar_visible = false
-                                }
-                                KeyCode::Char('k') | KeyCode::Up => {
-                                    if app.sidebar_tab == 4 {
-                                        app.previous_bookmark();
-                                    } else {
-                                        app.previous_sidebar_tab();
-                                    }
-                                }
-                                KeyCode::Char('j') | KeyCode::Down => {
-                                    if app.sidebar_tab == 4 {
-                                        app.next_bookmark();
-                                    } else {
-                                        app.next_sidebar_tab();
-                                    }
-                                }
-                                KeyCode::Char('l') | KeyCode::Right => app.next_state(),
-                                KeyCode::Tab => app.next_sidebar_tab(),
-                                KeyCode::BackTab => app.previous_sidebar_tab(),
-                                KeyCode::Enter => {
-                                    if app.sidebar_tab == 4 {
-                                        if let Some(url) = app.bookmarks.get(app.bookmark_index) {
+                            if app.sidebar_tab == 4 {
+                                match key.code {
+                                    KeyCode::Enter => {
+                                        if !app.bookmark_input.is_empty() {
+                                            crate::db::add_bookmark(&app.bookmark_input);
+                                            app.bookmarks = crate::db::load_bookmarks();
+                                            app.bookmark_input.clear();
+                                            app.bookmark_cursor = 0;
+                                        } else if let Some(url) = app.bookmarks.get(app.bookmark_index) {
                                             app.input_url = url.to_string();
                                             app.start_crawl();
                                         }
                                     }
+                                    KeyCode::Esc => {
+                                        if !app.bookmark_input.is_empty() {
+                                            app.bookmark_input.clear();
+                                            app.bookmark_cursor = 0;
+                                        } else {
+                                            app.sidebar_visible = false;
+                                        }
+                                    }
+                                    KeyCode::Char(c) => app.enter_bookmark_char(c),
+                                    KeyCode::Backspace => app.delete_bookmark_char(),
+                                    KeyCode::Left => app.move_bookmark_cursor_left(),
+                                    KeyCode::Right => app.move_bookmark_cursor_right(),
+                                    KeyCode::Up => app.previous_bookmark(),
+                                    KeyCode::Down => app.next_bookmark(),
+                                    KeyCode::Tab => app.next_sidebar_tab(),
+                                    KeyCode::BackTab => app.previous_sidebar_tab(),
+                                    _ => {}
                                 }
-                                _ => {}
+                            } else {
+                                match key.code {
+                                    KeyCode::Esc | KeyCode::Char('h') | KeyCode::Left => {
+                                        app.sidebar_visible = false
+                                    }
+                                    KeyCode::Char('k') | KeyCode::Up => app.previous_sidebar_tab(),
+                                    KeyCode::Char('j') | KeyCode::Down => app.next_sidebar_tab(),
+                                    KeyCode::Char('l') | KeyCode::Right => app.next_state(),
+                                    KeyCode::Tab => app.next_sidebar_tab(),
+                                    KeyCode::BackTab => app.previous_sidebar_tab(),
+                                    KeyCode::Enter => {
+                                        if app.sidebar_tab == 3 {
+                                            // Handle Control Pad actions if needed
+                                        }
+                                    }
+                                    _ => {}
+                                }
                             }
-                            // Sidebar usually steals most navigation if visible
-                            // We allow 'q' and '?' to work still
-                            if key.code == KeyCode::Char('q') {
+
+                            // Shared Sidebar actions (only if not handled by bookmark input)
+                            // We allow 'q' to quit unless we are in the bookmark tab and potentially typing
+                            if key.code == KeyCode::Char('q') && app.sidebar_tab != 4 {
                                 return Ok(());
                             }
-                            if key.code == KeyCode::Char('?') {
+                            if key.code == KeyCode::Char('?') && app.sidebar_tab != 4 {
                                 app.toggle_help();
                             }
-                            continue;
-                        }
 
-                        // BOOKMARK INPUT (when sidebar bookmarks tab is active)
-                        if app.sidebar_visible && app.sidebar_tab == 4 {
-                            match key.code {
-                                KeyCode::Enter => {
-                                    if !app.bookmark_input.is_empty() {
-                                        crate::db::add_bookmark(&app.bookmark_input);
-                                        app.bookmarks = crate::db::load_bookmarks();
-                                        app.bookmark_input.clear();
-                                        app.bookmark_cursor = 0;
-                                    }
-                                }
-                                KeyCode::Esc => {
-                                    app.bookmark_input.clear();
-                                    app.bookmark_cursor = 0;
-                                }
-                                KeyCode::Char(c) => {
-                                    app.bookmark_input.insert(app.bookmark_cursor, c);
-                                    app.bookmark_cursor += 1;
-                                }
-                                KeyCode::Backspace => {
-                                    if app.bookmark_cursor > 0 {
-                                        app.bookmark_cursor -= 1;
-                                        app.bookmark_input.remove(app.bookmark_cursor);
-                                    }
-                                }
-                                KeyCode::Left => {
-                                    if app.bookmark_cursor > 0 {
-                                        app.bookmark_cursor -= 1;
-                                    }
-                                }
-                                KeyCode::Right => {
-                                    if app.bookmark_cursor < app.bookmark_input.len() {
-                                        app.bookmark_cursor += 1;
-                                    }
-                                }
-                                _ => {}
-                            }
                             continue;
                         }
 
