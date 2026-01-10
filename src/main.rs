@@ -312,10 +312,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                         .min(num_tabs as u16 - 1)
                                         as usize;
                                     app.current_state = match tab_index {
-                                        0 => AppState::Crawl,
+                                        0 => AppState::Dashboard,
                                         1 => AppState::Logs,
                                         2 => AppState::Connectors,
-                                        3 => AppState::Dashboard,
+                                        3 => AppState::Crawl,
                                         4 => AppState::Reports,
                                         5 => AppState::Chat,
                                         _ => app.current_state,

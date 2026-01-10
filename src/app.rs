@@ -20,7 +20,7 @@ impl Default for App {
         Self {
             sidebar_visible: false,
             task_panel_visible: false,
-            current_state: AppState::Crawl,
+            current_state: AppState::Dashboard,
             sidebar_tab: 0,
             bookmark_index: 0,
             table_data,
@@ -209,7 +209,7 @@ impl App {
     pub fn reset(&mut self) {
         self.sidebar_visible = false;
         self.task_panel_visible = false;
-        self.current_state = AppState::Crawl;
+        self.current_state = AppState::Dashboard;
         self.sidebar_tab = 0;
     }
 
@@ -251,32 +251,32 @@ impl App {
 
     pub fn next_state(&mut self) {
         self.current_state = match self.current_state {
-            AppState::Crawl => AppState::Logs,
+            AppState::Dashboard => AppState::Logs,
             AppState::Logs => AppState::Connectors,
-            AppState::Connectors => AppState::Dashboard,
-            AppState::Dashboard => AppState::Reports,
+            AppState::Connectors => AppState::Crawl,
+            AppState::Crawl => AppState::Reports,
             AppState::Reports => AppState::Chat,
-            AppState::Chat => AppState::Crawl,
+            AppState::Chat => AppState::Dashboard,
         }
     }
 
     pub fn previous_state(&mut self) {
         self.current_state = match self.current_state {
-            AppState::Crawl => AppState::Chat,
-            AppState::Logs => AppState::Crawl,
+            AppState::Dashboard => AppState::Chat,
+            AppState::Logs => AppState::Dashboard,
             AppState::Connectors => AppState::Logs,
-            AppState::Dashboard => AppState::Connectors,
-            AppState::Reports => AppState::Dashboard,
+            AppState::Crawl => AppState::Connectors,
+            AppState::Reports => AppState::Crawl,
             AppState::Chat => AppState::Reports,
         }
     }
 
     pub fn get_state_index(&self) -> usize {
         match self.current_state {
-            AppState::Crawl => 0,
+            AppState::Dashboard => 0,
             AppState::Logs => 1,
             AppState::Connectors => 2,
-            AppState::Dashboard => 3,
+            AppState::Crawl => 3,
             AppState::Reports => 4,
             AppState::Chat => 5,
         }

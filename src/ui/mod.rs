@@ -71,10 +71,10 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
     // Render Navigation Tabs
     let titles = vec![
-        "🕸️ Crawl",
+        "🚀 Deep Crawler",
         "📄 Logs",
         "🔌 Connectors",
-        "📊 Dashboard",
+        "🕸️ Crawl",
         "📈 Reports",
         "💬 Chat",
     ];
