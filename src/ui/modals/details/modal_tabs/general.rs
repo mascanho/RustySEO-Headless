@@ -38,6 +38,35 @@ pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
             ),
             Span::raw(&row_data[4]),
         ]),
+        Line::from(vec![
+            Span::styled(
+                " 📏 H1 Len: ",
+                Style::default()
+                    .add_modifier(Modifier::BOLD)
+                    .fg(accent_color),
+            ),
+            Span::raw(&row_data[5]),
+            Span::raw(" characters"),
+        ]),
+        Line::from(vec![
+            Span::styled(
+                " 🏷️  H2:    ",
+                Style::default()
+                    .add_modifier(Modifier::BOLD)
+                    .fg(accent_color),
+            ),
+            Span::raw(&row_data[8]),
+        ]),
+        Line::from(vec![
+            Span::styled(
+                " 📏 H2 Len: ",
+                Style::default()
+                    .add_modifier(Modifier::BOLD)
+                    .fg(accent_color),
+            ),
+            Span::raw(&row_data[9]),
+            Span::raw(" characters"),
+        ]),
         Line::from(""),
         Line::from(vec![Span::styled(
             " 📄 Meta Description: ",
@@ -54,14 +83,34 @@ pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
                     .add_modifier(Modifier::BOLD)
                     .fg(accent_color),
             ),
+            Span::raw(&row_data[10]),
+        ]),
+        Line::from(vec![
             Span::styled(
-                &row_data[8],
-                if row_data[8].contains("200") {
-                    Style::default().fg(Color::Green)
-                } else {
-                    Style::default().fg(Color::Red)
-                },
+                " 📱 Mobile: ",
+                Style::default()
+                    .add_modifier(Modifier::BOLD)
+                    .fg(accent_color),
             ),
+            Span::raw(if row_data[11] == "true" { "Yes" } else { "No" }),
+        ]),
+        Line::from(vec![
+            Span::styled(
+                " 🌐 Language: ",
+                Style::default()
+                    .add_modifier(Modifier::BOLD)
+                    .fg(accent_color),
+            ),
+            Span::raw(&row_data[12]),
+        ]),
+        Line::from(vec![
+            Span::styled(
+                " 🔍 Indexable: ",
+                Style::default()
+                    .add_modifier(Modifier::BOLD)
+                    .fg(accent_color),
+            ),
+            Span::raw(&row_data[13]),
         ]),
     ];
     let p = Paragraph::new(info)

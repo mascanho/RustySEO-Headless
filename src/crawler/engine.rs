@@ -1,4 +1,3 @@
-use rand::seq::SliceRandom;
 use rand::thread_rng;
 use reqwest::Client;
 use scraper::{Html, Selector};
