@@ -238,12 +238,12 @@ impl App {
     }
 
     pub fn next_detail_tab(&mut self) {
-        self.detail_tab = (self.detail_tab + 1) % 3;
+        self.detail_tab = (self.detail_tab + 1) % 8;
     }
 
     pub fn previous_detail_tab(&mut self) {
         self.detail_tab = if self.detail_tab == 0 {
-            2
+            7
         } else {
             self.detail_tab - 1
         };

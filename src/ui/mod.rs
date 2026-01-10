@@ -43,18 +43,18 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
     // Render Navigation Tabs
     let titles = vec![
-        "🚀 Deep Crawler",
-        "📄 Logs",
-        "🔌 Connectors",
-        "🕸️ Crawl",
-        "📈 Reports",
-        "💬 Chat",
+        "Deep Crawler",
+        "Logs",
+        "Connectors",
+        "Crawl",
+        "Reports",
+        "Chat",
     ];
     let tabs = Tabs::new(titles)
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title(" 🚀 ATALAIA SEO ")
+                .title(" RustySEO - CLI ")
                 .border_style(Style::default().fg(border_color)),
         )
         .select(app.get_state_index())
