@@ -1,10 +1,10 @@
 use crate::{models::App, ui::centered_rect};
 use ratatui::{
     Frame,
-    layout::{Constraint, Direction, Layout},
+    layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style, Stylize},
     text::Span,
-    widgets::{Block, Borders, Clear, Tabs},
+    widgets::{Block, Borders, Clear, Paragraph, Tabs},
 };
 
 mod modal_tabs;
@@ -38,6 +38,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         .constraints([
             Constraint::Length(3), // Tabs
             Constraint::Min(0),    // Content
+            Constraint::Length(1), // Footer
         ])
         .split(inner_area);
 
@@ -96,4 +97,18 @@ pub fn render(f: &mut Frame, app: &mut App) {
         ),
         _ => {}
     }
+
+    // Render Footer
+    let footer_block = Block::default()
+        .bg(Color::Rgb(15, 15, 25))
+        .border_style(Style::default().fg(border_color));
+    let footer_text = Paragraph::new(Span::styled(
+        " Tab: Next Tab | Shift+Tab: Prev Tab | Q/Esc: Close ",
+        Style::default()
+            .fg(Color::Gray)
+            .add_modifier(Modifier::ITALIC),
+    ))
+    .block(footer_block)
+    .alignment(Alignment::Center);
+    f.render_widget(footer_text, chunks[2]);
 }
