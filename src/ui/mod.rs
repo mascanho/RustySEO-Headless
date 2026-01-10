@@ -3,7 +3,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, Borders, Paragraph, Tabs},
+    widgets::{Block, Borders, Clear, Paragraph, Tabs},
 };
 
 use crate::{app::AppState, models::App};
@@ -25,49 +25,21 @@ pub fn ui(f: &mut Frame, app: &mut App) {
     let accent_color = Color::Rgb(80, 140, 255);
     let border_color = Color::Rgb(40, 45, 60);
 
-    // Main layout: Input (3 if active) + Navigation (3) + Content Area (Min 0) + Footer (3)
-    let input_height = if app.input_mode { 3 } else { 0 };
+    // Main layout: Navigation (3) + Content Area (Min 0) + Footer (3)
     let main_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(input_height),
             Constraint::Length(3), // Navigation
             Constraint::Min(0),    // Content Area
             Constraint::Length(3), // Footer
         ])
         .split(size);
 
-    let input_area = main_layout[0];
-    let tab_area = main_layout[1];
-    let content_area = main_layout[2];
-    let footer_area = main_layout[3];
+    let tab_area = main_layout[0];
+    let content_area = main_layout[1];
+    let footer_area = main_layout[2];
 
     app.tab_rect = Some(tab_area);
-
-    // Render Input Bar ONLY when in input mode
-    if app.input_mode {
-        let input_block = Block::default()
-            .borders(Borders::ALL)
-            .title(vec![
-                Span::styled(
-                    " 🔍 Command / URL Input ",
-                    Style::default()
-                        .fg(Color::Yellow)
-                        .add_modifier(Modifier::BOLD),
-                ),
-                Span::styled(" (Esc to Cancel) ", Style::default().fg(Color::Gray)),
-            ])
-            .border_style(Style::default().fg(accent_color));
-
-        let input_p = Paragraph::new(app.input.as_str()).block(input_block);
-        f.render_widget(input_p, input_area);
-
-        // Make the cursor visible
-        f.set_cursor(
-            input_area.x + app.cursor_position as u16 + 1,
-            input_area.y + 1,
-        );
-    }
 
     // Render Navigation Tabs
     let titles = vec![
@@ -115,6 +87,40 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
     if app.show_details {
         modals::details::render(f, app);
+    }
+
+    // Render Input Modal when in input mode
+    if app.input_mode {
+        let modal_area = centered_rect(25, 8, size);
+
+        let input_block = Block::default()
+            .borders(Borders::ALL)
+            .title(vec![
+                Span::styled(
+                    " 🔍 Command / URL Input ",
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::styled(
+                    " (Esc to Cancel, Enter to Submit) ",
+                    Style::default().fg(Color::Gray),
+                ),
+            ])
+            .border_style(Style::default().fg(accent_color));
+
+        let input_p = Paragraph::new(app.input.as_str())
+            .block(input_block)
+            .style(Style::default().bg(Color::Rgb(20, 20, 30)));
+
+        f.render_widget(Clear, modal_area);
+        f.render_widget(input_p, modal_area);
+
+        // Make the cursor visible in the modal
+        f.set_cursor_position((
+            modal_area.x + app.cursor_position as u16 + 1,
+            modal_area.y + 1,
+        ));
     }
 
     if app.show_help {
@@ -179,7 +185,7 @@ fn render_help_modal(f: &mut Frame) {
         )]),
         Line::from(vec![
             Span::styled("  Ctrl+i  ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Focus Input Bar"),
+            Span::raw(": Open Input Modal"),
         ]),
         Line::from(vec![
             Span::styled("  Enter   ", Style::default().fg(Color::Cyan)),
