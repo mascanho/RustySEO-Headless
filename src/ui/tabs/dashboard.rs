@@ -20,8 +20,8 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         Cell::from(format!(" {} ", h)).style(
             Style::default()
                 .add_modifier(Modifier::BOLD)
-                .fg(Color::Rgb(15, 15, 25))
-                .bg(Color::Rgb(200, 200, 200)),
+                .fg(accent_color)
+                .bg(Color::Rgb(30, 30, 45)),
         )
     }))
     .height(1);
