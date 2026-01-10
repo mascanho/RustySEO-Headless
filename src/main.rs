@@ -15,6 +15,7 @@ use std::{error::Error, io};
 pub mod app;
 pub mod cli;
 pub mod crawler;
+pub mod db;
 pub mod logging;
 pub mod models;
 pub mod settings;
@@ -36,6 +37,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Create the file for the settings
     settings::utils::create::create_settings_file().await;
 
+    // Init database
+    db::init_db();
+
     // Conditionally render the UI based on the args passed
     let cli = Cli::parse();
 
@@ -56,6 +60,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         // create app and run it
         let mut app = App::new();
         app.log_receiver = Some(log_rx);
+        app.bookmarks = db::load_bookmarks();
         let res = run_app(&mut terminal, &mut app);
 
         // restore terminal
@@ -160,12 +165,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 KeyCode::BackTab => app.previous_sidebar_tab(),
                                 KeyCode::Enter => {
                                     if app.sidebar_tab == 4 {
-                                        let bookmarks = vec![
-                                            "https://markwarrior.dev",
-                                            "https://rustyseo.com",
-                                            "https://algarvewonders.com",
-                                        ];
-                                        if let Some(url) = bookmarks.get(app.bookmark_index) {
+                                        if let Some(url) = app.bookmarks.get(app.bookmark_index) {
                                             app.input_url = url.to_string();
                                             app.start_crawl();
                                         }
@@ -180,6 +180,46 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             }
                             if key.code == KeyCode::Char('?') {
                                 app.toggle_help();
+                            }
+                            continue;
+                        }
+
+                        // BOOKMARK INPUT (when sidebar bookmarks tab is active)
+                        if app.sidebar_visible && app.sidebar_tab == 4 {
+                            match key.code {
+                                KeyCode::Enter => {
+                                    if !app.bookmark_input.is_empty() {
+                                        crate::db::add_bookmark(&app.bookmark_input);
+                                        app.bookmarks = crate::db::load_bookmarks();
+                                        app.bookmark_input.clear();
+                                        app.bookmark_cursor = 0;
+                                    }
+                                }
+                                KeyCode::Esc => {
+                                    app.bookmark_input.clear();
+                                    app.bookmark_cursor = 0;
+                                }
+                                KeyCode::Char(c) => {
+                                    app.bookmark_input.insert(app.bookmark_cursor, c);
+                                    app.bookmark_cursor += 1;
+                                }
+                                KeyCode::Backspace => {
+                                    if app.bookmark_cursor > 0 {
+                                        app.bookmark_cursor -= 1;
+                                        app.bookmark_input.remove(app.bookmark_cursor);
+                                    }
+                                }
+                                KeyCode::Left => {
+                                    if app.bookmark_cursor > 0 {
+                                        app.bookmark_cursor -= 1;
+                                    }
+                                }
+                                KeyCode::Right => {
+                                    if app.bookmark_cursor < app.bookmark_input.len() {
+                                        app.bookmark_cursor += 1;
+                                    }
+                                }
+                                _ => {}
                             }
                             continue;
                         }

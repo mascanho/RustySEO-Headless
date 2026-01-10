@@ -23,6 +23,9 @@ impl Default for App {
             current_state: AppState::Dashboard,
             sidebar_tab: 0,
             bookmark_index: 0,
+            bookmarks: vec![],
+            bookmark_input: String::new(),
+            bookmark_cursor: 0,
             table_data,
             table_state,
             horizontal_scroll: 0,
@@ -226,15 +229,19 @@ impl App {
     }
 
     pub fn next_bookmark(&mut self) {
-        self.bookmark_index = (self.bookmark_index + 1) % 3; // 3 bookmarks
+        if !self.bookmarks.is_empty() {
+            self.bookmark_index = (self.bookmark_index + 1) % self.bookmarks.len();
+        }
     }
 
     pub fn previous_bookmark(&mut self) {
-        self.bookmark_index = if self.bookmark_index == 0 {
-            2
-        } else {
-            self.bookmark_index - 1
-        };
+        if !self.bookmarks.is_empty() {
+            self.bookmark_index = if self.bookmark_index == 0 {
+                self.bookmarks.len() - 1
+            } else {
+                self.bookmark_index - 1
+            };
+        }
     }
 
     pub fn next_detail_tab(&mut self) {

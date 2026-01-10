@@ -176,13 +176,16 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
         // Bookmarks
         4 => {
-            let bookmarks = vec![
-                "https://markwarrior.dev",
-                "https://rustyseo.com",
-                "https://algarvewonders.com",
-            ];
+            let bookmark_chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Min(0), Constraint::Length(3)])
+                .split(sidebar_content_area);
 
-            let items: Vec<ListItem> = bookmarks
+            let list_area = bookmark_chunks[0];
+            let input_area = bookmark_chunks[1];
+
+            let items: Vec<ListItem> = app
+                .bookmarks
                 .iter()
                 .enumerate()
                 .map(|(i, url)| {
@@ -203,7 +206,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
                                 Color::Cyan
                             }),
                         ),
-                        Span::styled(*url, style),
+                        Span::styled(url.as_str(), style),
                     ]))
                 })
                 .collect();
@@ -212,7 +215,32 @@ pub fn render(f: &mut Frame, app: &mut App) {
                 " 📚 Bookmarks ",
                 Style::default().fg(Color::Yellow),
             )));
-            f.render_widget(list, sidebar_content_area);
+            f.render_widget(list, list_area);
+
+            // Input for adding new bookmark
+            let input_block = Block::default()
+                .borders(Borders::ALL)
+                .title(Span::styled(
+                    " ➕ Add Bookmark ",
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                ))
+                .border_style(Style::default().fg(accent_color));
+
+            let input_p = Paragraph::new(app.bookmark_input.as_str())
+                .block(input_block)
+                .style(Style::default().bg(Color::Rgb(20, 20, 30)));
+
+            f.render_widget(input_p, input_area);
+
+            // Set cursor in input
+            if app.sidebar_visible && app.sidebar_tab == 4 {
+                f.set_cursor_position((
+                    input_area.x + app.bookmark_cursor as u16 + 1,
+                    input_area.y + 1,
+                ));
+            }
         }
         _ => {}
     }
