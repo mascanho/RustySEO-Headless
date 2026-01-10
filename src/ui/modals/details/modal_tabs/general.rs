@@ -10,28 +10,46 @@ pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
     let accent_color = Color::Rgb(80, 140, 255);
 
     let info = vec![
+        // URL and Title Section
+        Line::from(Span::styled(
+            "PAGE INFORMATION",
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::UNDERLINED),
+        )),
+        Line::from(""),
         Line::from(vec![
             Span::styled(
-                " 🔗 URL: ",
+                "URL: ",
                 Style::default()
                     .add_modifier(Modifier::BOLD)
                     .fg(accent_color),
             ),
-            Span::styled(&row_data[1], Style::default().fg(Color::White)),
+            Span::raw(&row_data[1]),
         ]),
-        Line::from(""),
         Line::from(vec![
             Span::styled(
-                " 📝 Title: ",
+                "Title: ",
                 Style::default()
                     .add_modifier(Modifier::BOLD)
                     .fg(accent_color),
             ),
             Span::raw(&row_data[2]),
         ]),
+        Line::from(""),
+        // Headings Section
+        Line::from(Span::styled(
+            "HEADINGS",
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::UNDERLINED),
+        )),
+        Line::from(""),
         Line::from(vec![
             Span::styled(
-                " 🏷️  H1:    ",
+                "H1: ",
                 Style::default()
                     .add_modifier(Modifier::BOLD)
                     .fg(accent_color),
@@ -40,17 +58,17 @@ pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
         ]),
         Line::from(vec![
             Span::styled(
-                " 📏 H1 Len: ",
+                "H1 Length: ",
                 Style::default()
                     .add_modifier(Modifier::BOLD)
                     .fg(accent_color),
             ),
             Span::raw(&row_data[5]),
-            Span::raw(" characters"),
+            Span::raw(" chars"),
         ]),
         Line::from(vec![
             Span::styled(
-                " 🏷️  H2:    ",
+                "H2: ",
                 Style::default()
                     .add_modifier(Modifier::BOLD)
                     .fg(accent_color),
@@ -59,26 +77,38 @@ pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
         ]),
         Line::from(vec![
             Span::styled(
-                " 📏 H2 Len: ",
+                "H2 Length: ",
                 Style::default()
                     .add_modifier(Modifier::BOLD)
                     .fg(accent_color),
             ),
             Span::raw(&row_data[9]),
-            Span::raw(" characters"),
+            Span::raw(" chars"),
         ]),
         Line::from(""),
-        Line::from(vec![Span::styled(
-            " 📄 Meta Description: ",
+        // Description Section
+        Line::from(Span::styled(
+            "META DESCRIPTION",
             Style::default()
                 .add_modifier(Modifier::BOLD)
-                .fg(accent_color),
-        )]),
-        Line::from(vec![Span::raw(format!("   {}", &row_data[6]))]),
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::UNDERLINED),
+        )),
+        Line::from(""),
+        Line::from(Span::raw(&row_data[6])),
+        Line::from(""),
+        // Technical Section
+        Line::from(Span::styled(
+            "TECHNICAL DETAILS",
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::UNDERLINED),
+        )),
         Line::from(""),
         Line::from(vec![
             Span::styled(
-                " 📡 Status Code: ",
+                "Status Code: ",
                 Style::default()
                     .add_modifier(Modifier::BOLD)
                     .fg(accent_color),
@@ -87,7 +117,7 @@ pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
         ]),
         Line::from(vec![
             Span::styled(
-                " 📱 Mobile: ",
+                "Mobile Friendly: ",
                 Style::default()
                     .add_modifier(Modifier::BOLD)
                     .fg(accent_color),
@@ -96,7 +126,7 @@ pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
         ]),
         Line::from(vec![
             Span::styled(
-                " 🌐 Language: ",
+                "Language: ",
                 Style::default()
                     .add_modifier(Modifier::BOLD)
                     .fg(accent_color),
@@ -105,7 +135,7 @@ pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
         ]),
         Line::from(vec![
             Span::styled(
-                " 🔍 Indexable: ",
+                "Indexable: ",
                 Style::default()
                     .add_modifier(Modifier::BOLD)
                     .fg(accent_color),
