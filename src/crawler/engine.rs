@@ -24,6 +24,7 @@ pub struct PageData {
     pub indexability: String,
     pub anchor_links: Vec<String>,
     pub headings: Vec<(String, String)>,
+    pub headers: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -128,6 +129,12 @@ impl CrawlEngine {
             Err(_) => return Err("Failed to send request".to_string()),
         };
 
+        let headers: Vec<String> = response
+            .headers()
+            .iter()
+            .map(|(k, v)| format!("{}: {}", k, v.to_str().unwrap_or("")))
+            .collect();
+
         let status = format!(
             "{} {}",
             response.status().as_u16(),
@@ -159,6 +166,7 @@ impl CrawlEngine {
             indexability: elements.indexability,
             anchor_links: elements.anchor_links,
             headings: elements.headings,
+            headers,
         })
     }
 

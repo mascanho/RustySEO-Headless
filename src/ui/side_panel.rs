@@ -38,7 +38,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
     app.sidebar_tab_rect = Some(sidebar_tab_area);
 
     let sidebar_titles = vec![
-        " ⚙  Set ",
+        " ⚙  General ",
         "  Filter ",
         " 📊 Stat ",
         " ⚡ Act ",
@@ -77,26 +77,162 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     match app.sidebar_tab {
         0 => {
-            let items = vec![
+            // Compute crawl summary stats
+            let total_pages = app.page_data.len();
+            let mut title_stats = (0, 0, 0); // <30, 30-60, >60
+            let mut desc_stats = (0, 0, 0); // <120, 120-160, >160
+            let mut status_counts = std::collections::HashMap::new();
+            let mut mobile_yes = 0;
+            let mut mobile_no = 0;
+            let mut indexable_yes = 0;
+            let mut indexable_no = 0;
+            let mut heading_counts = std::collections::HashMap::new();
+            let mut total_headings = 0;
+
+            for page in &app.page_data {
+                // Titles
+                if page.title_len < 30 {
+                    title_stats.0 += 1;
+                } else if page.title_len <= 60 {
+                    title_stats.1 += 1;
+                } else {
+                    title_stats.2 += 1;
+                }
+
+                // Descriptions
+                if page.description_len < 120 {
+                    desc_stats.0 += 1;
+                } else if page.description_len <= 160 {
+                    desc_stats.1 += 1;
+                } else {
+                    desc_stats.2 += 1;
+                }
+
+                // Status
+                *status_counts.entry(page.status.clone()).or_insert(0) += 1;
+
+                // Mobile
+                if page.mobile {
+                    mobile_yes += 1;
+                } else {
+                    mobile_no += 1;
+                }
+
+                // Indexable
+                if page.indexability.to_lowercase().contains("noindex") {
+                    indexable_no += 1;
+                } else {
+                    indexable_yes += 1;
+                }
+
+                // Headings
+                for (tag, _) in &page.headings {
+                    *heading_counts.entry(tag.clone()).or_insert(0) += 1;
+                    total_headings += 1;
+                }
+            }
+
+            let mut items = vec![
+                ListItem::new(""),
                 ListItem::new(Line::from(vec![
-                    Span::styled(" 🧵 Threads: ", Style::default().fg(accent_color)),
-                    Span::raw("4"),
+                    Span::styled("Total Pages: ", Style::default().fg(accent_color)),
+                    Span::raw(total_pages.to_string()),
+                ])),
+                ListItem::new(""),
+                ListItem::new(Line::from(Span::styled(
+                    "PAGE TITLES",
+                    Style::default()
+                        .add_modifier(Modifier::UNDERLINED)
+                        .fg(Color::Cyan),
+                ))),
+                ListItem::new(Line::from(vec![
+                    Span::styled("  < 30 chars: ", Style::default().fg(accent_color)),
+                    Span::raw(title_stats.0.to_string()),
                 ])),
                 ListItem::new(Line::from(vec![
-                    Span::styled(" ⏱  Timeout: ", Style::default().fg(accent_color)),
-                    Span::raw("30s"),
+                    Span::styled("  30-60 chars: ", Style::default().fg(accent_color)),
+                    Span::raw(title_stats.1.to_string()),
                 ])),
                 ListItem::new(Line::from(vec![
-                    Span::styled(" 🤖 UserAgent: ", Style::default().fg(accent_color)),
-                    Span::raw("AtalaiaBot"),
+                    Span::styled("  > 60 chars: ", Style::default().fg(accent_color)),
+                    Span::raw(title_stats.2.to_string()),
+                ])),
+                ListItem::new(""),
+                ListItem::new(Line::from(Span::styled(
+                    "META DESCRIPTIONS",
+                    Style::default()
+                        .add_modifier(Modifier::UNDERLINED)
+                        .fg(Color::Cyan),
+                ))),
+                ListItem::new(Line::from(vec![
+                    Span::styled("  < 120 chars: ", Style::default().fg(accent_color)),
+                    Span::raw(desc_stats.0.to_string()),
                 ])),
                 ListItem::new(Line::from(vec![
-                    Span::styled(" ↕  Depth:   ", Style::default().fg(accent_color)),
-                    Span::raw("5"),
+                    Span::styled("  120-160 chars: ", Style::default().fg(accent_color)),
+                    Span::raw(desc_stats.1.to_string()),
                 ])),
+                ListItem::new(Line::from(vec![
+                    Span::styled("  > 160 chars: ", Style::default().fg(accent_color)),
+                    Span::raw(desc_stats.2.to_string()),
+                ])),
+                ListItem::new(""),
+                ListItem::new(Line::from(Span::styled(
+                    "STATUS CODES",
+                    Style::default()
+                        .add_modifier(Modifier::UNDERLINED)
+                        .fg(Color::Cyan),
+                ))),
             ];
+
+            for (status, count) in status_counts.iter() {
+                items.push(ListItem::new(Line::from(vec![
+                    Span::styled(format!("  {}: ", status), Style::default().fg(accent_color)),
+                    Span::raw(count.to_string()),
+                ])));
+            }
+
+            items.extend(vec![
+                ListItem::new(""),
+                ListItem::new(Line::from(Span::styled(
+                    "TECHNICAL",
+                    Style::default()
+                        .add_modifier(Modifier::UNDERLINED)
+                        .fg(Color::Cyan),
+                ))),
+                ListItem::new(Line::from(vec![
+                    Span::styled("  Mobile Friendly: ", Style::default().fg(accent_color)),
+                    Span::raw(format!("Yes: {}, No: {}", mobile_yes, mobile_no)),
+                ])),
+                ListItem::new(Line::from(vec![
+                    Span::styled("  Indexable: ", Style::default().fg(accent_color)),
+                    Span::raw(format!("Yes: {}, No: {}", indexable_yes, indexable_no)),
+                ])),
+                ListItem::new(""),
+                ListItem::new(Line::from(Span::styled(
+                    "HEADINGS",
+                    Style::default()
+                        .add_modifier(Modifier::UNDERLINED)
+                        .fg(Color::Cyan),
+                ))),
+                ListItem::new(Line::from(vec![
+                    Span::styled("  Total Headings: ", Style::default().fg(accent_color)),
+                    Span::raw(total_headings.to_string()),
+                ])),
+            ]);
+
+            for (tag, count) in heading_counts.iter() {
+                items.push(ListItem::new(Line::from(vec![
+                    Span::styled(
+                        format!("  {}: ", tag.to_uppercase()),
+                        Style::default().fg(accent_color),
+                    ),
+                    Span::raw(count.to_string()),
+                ])));
+            }
+
             let list = List::new(items).block(content_block.title(Span::styled(
-                " Crawler Configuration ",
+                " Crawl Summary ",
                 Style::default().fg(Color::Yellow),
             )));
             f.render_widget(list, sidebar_content_area);

@@ -88,7 +88,12 @@ pub fn render(f: &mut Frame, app: &mut App) {
         4 => modal_tabs::outlinks::render(f, chunks[1], content_block),
         5 => modal_tabs::images::render(f, chunks[1], content_block),
         6 => modal_tabs::schema::render(f, chunks[1], content_block),
-        7 => modal_tabs::headers::render(f, chunks[1], content_block),
+        7 => modal_tabs::headers::render(
+            f,
+            &app.page_data[selected_idx].headers,
+            chunks[1],
+            content_block,
+        ),
         8 => modal_tabs::headings::render(
             f,
             &app.page_data[selected_idx].headings,

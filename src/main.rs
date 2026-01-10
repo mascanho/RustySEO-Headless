@@ -249,8 +249,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             },
 
                             // Advanced Vim jumps
-                            KeyCode::Char('g') => {
-                                // Jump to top (gg)
+                            KeyCode::Char('t') => {
+                                // Jump to top
                                 match app.current_state {
                                     AppState::Dashboard => app.table_state.select(Some(0)),
                                     AppState::Logs => app.logs_state.select(Some(0)),
@@ -281,7 +281,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             }
 
                             // Quick jumps
-                            KeyCode::Char('s') => app.set_sidebar_tab(0),
+                            KeyCode::Char('g') => app.set_sidebar_tab(0),
                             KeyCode::Char('f') => app.set_sidebar_tab(1),
                             KeyCode::Char('i') => app.set_sidebar_tab(2),
                             KeyCode::Char('a') => app.set_sidebar_tab(3),
