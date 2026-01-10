@@ -39,6 +39,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
                 .borders(Borders::ALL)
                 .title(Span::styled(format!(" Page Details: ID {} ", row_data[0]), Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)))
                 .border_style(Style::default().fg(border_color))
+                .bg(Color::Rgb(15, 15, 25))
         )
         .select(app.detail_tab)
         .style(Style::default().fg(Color::DarkGray))

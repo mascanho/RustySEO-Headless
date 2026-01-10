@@ -1,7 +1,7 @@
 use ratatui::{
     Frame,
     layout::Rect,
-    style::{Color, Style},
+    style::{Color, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem},
 };
@@ -42,6 +42,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
     let list = List::new(log_items)
         .block(block)
+        .style(Style::default().bg(Color::Rgb(15, 15, 25)))
         .highlight_style(
             Style::default()
                 .fg(Color::Black)

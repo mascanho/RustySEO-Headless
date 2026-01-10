@@ -89,130 +89,132 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 app.reset_cursor();
                                 app.start_crawl();
                             }
-                            KeyCode::Esc => {
-                                app.input_mode = false;
-                            }
-                            KeyCode::Char(c) => {
-                                app.enter_char(c);
-                            }
-                            KeyCode::Backspace => {
-                                app.delete_char();
-                            }
+                            KeyCode::Esc => app.input_mode = false,
+                            KeyCode::Char(c) => app.enter_char(c),
+                            KeyCode::Backspace => app.delete_char(),
                             KeyCode::Left => {
-                                if app.current_state == AppState::Dashboard && !app.input_mode {
-                                    app.scroll_left();
-                                } else {
-                                    app.move_cursor_left();
-                                }
+                                if app.current_state == AppState::Dashboard { app.scroll_left() } else { app.move_cursor_left() }
                             }
                             KeyCode::Right => {
-                                if app.current_state == AppState::Dashboard && !app.input_mode {
-                                    app.scroll_right(50);
-                                } else {
-                                    app.move_cursor_right();
-                                }
+                                if app.current_state == AppState::Dashboard { app.scroll_right(50) } else { app.move_cursor_right() }
                             }
                             _ => {}
                         }
                     } else {
+                        // MODAL PRIORITY 1: Help
+                        if app.show_help {
+                            match key.code {
+                                KeyCode::Char('q') | KeyCode::Esc | KeyCode::Char('?') => app.show_help = false,
+                                _ => {}
+                            }
+                            continue;
+                        }
+
+                        // MODAL PRIORITY 2: Details Modal
+                        if app.show_details {
+                            match key.code {
+                                KeyCode::Char('q') | KeyCode::Esc => app.show_details = false,
+                                KeyCode::Char('h') | KeyCode::Left => app.previous_detail_tab(),
+                                KeyCode::Char('l') | KeyCode::Right => app.next_detail_tab(),
+                                KeyCode::Tab => app.next_detail_tab(),
+                                KeyCode::BackTab => app.previous_detail_tab(),
+                                _ => {}
+                            }
+                            continue;
+                        }
+
+                        // MODAL PRIORITY 3: Sidebar
+                        if app.sidebar_visible {
+                            match key.code {
+                                KeyCode::Esc | KeyCode::Char('h') | KeyCode::Left => app.sidebar_visible = false,
+                                KeyCode::Char('k') | KeyCode::Up => app.previous_sidebar_tab(),
+                                KeyCode::Char('j') | KeyCode::Down => app.next_sidebar_tab(),
+                                KeyCode::Char('l') | KeyCode::Right => app.next_state(),
+                                KeyCode::Tab => app.next_sidebar_tab(),
+                                KeyCode::BackTab => app.previous_sidebar_tab(),
+                                _ => {}
+                            }
+                            // Sidebar usually steals most navigation if visible
+                            // We allow 'q' and '?' to work still
+                            if key.code == KeyCode::Char('q') { return Ok(()); }
+                            if key.code == KeyCode::Char('?') { app.toggle_help(); }
+                            continue;
+                        }
+
+                        // GLOBAL NAVIGATION (when no modals are open)
                         match key.code {
                             KeyCode::Char('q') => return Ok(()),
-                            KeyCode::Esc => {
-                                if app.show_help {
-                                    app.show_help = false;
-                                } else if app.show_details {
-                                    app.show_details = false;
-                                } else {
-                                    app.reset();
-                                }
-                            }
                             KeyCode::Char('?') => app.toggle_help(),
-                            KeyCode::Enter => {
-                                if app.current_state == AppState::Dashboard {
-                                    app.show_details = !app.show_details;
-                                }
-                            }
-                            // Trigger Input Mode with Ctrl+I
-                            // Note: Some terminals send KeyCode::Tab for Ctrl+I
-                            KeyCode::Char('i') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                                app.input_mode = true;
-                            }
+                            KeyCode::Esc => app.reset(),
+                            KeyCode::Char('i') if key.modifiers.contains(KeyModifiers::CONTROL) => app.input_mode = true,
+                            
+                            // Tab/BackTab always cycle main states if no modal
+                            KeyCode::Tab => app.next_state(),
+                            KeyCode::BackTab => app.previous_state(),
+
                             // Vim Navigation
-                            KeyCode::Char('h') => {
-                                if app.sidebar_visible {
-                                    app.sidebar_visible = false;
-                                } else {
-                                    app.previous_state();
-                                }
-                            }
-                            KeyCode::Char('l') => {
+                            KeyCode::Char('h') | KeyCode::Left => app.previous_state(),
+                            KeyCode::Char('l') | KeyCode::Right => {
                                 if !app.sidebar_visible {
                                     app.sidebar_visible = true;
                                 } else {
                                     app.next_state();
                                 }
                             }
-                            KeyCode::Char('k') => {
-                                if app.sidebar_visible {
-                                    app.sidebar_tab = if app.sidebar_tab == 0 {
-                                        3
-                                    } else {
-                                        app.sidebar_tab - 1
-                                    };
+                            KeyCode::Char('k') | KeyCode::Up => {
+                                match app.current_state {
+                                    AppState::Dashboard => app.previous_row(),
+                                    AppState::Logs => app.previous_log(),
+                                    _ => {}
                                 }
                             }
-                            KeyCode::Char('j') => {
-                                if app.sidebar_visible {
-                                    app.sidebar_tab = (app.sidebar_tab + 1) % 4;
-                                } else if app.current_state == AppState::Logs {
-                                    app.next_log();
+                            KeyCode::Char('j') | KeyCode::Down => {
+                                match app.current_state {
+                                    AppState::Dashboard => app.next_row(),
+                                    AppState::Logs => app.next_log(),
+                                    _ => {}
                                 }
                             }
-                            // Arrow keys for dashboard navigation
-                            KeyCode::Up => {
+                            
+                            // Advanced Vim jumps
+                            KeyCode::Char('g') => {
+                                // Jump to top (gg)
+                                match app.current_state {
+                                    AppState::Dashboard => app.table_state.select(Some(0)),
+                                    AppState::Logs => app.logs_state.select(Some(0)),
+                                    _ => {}
+                                }
+                            }
+                            KeyCode::Char('G') => {
+                                // Jump to bottom
+                                match app.current_state {
+                                    AppState::Dashboard => {
+                                        if !app.table_data.is_empty() {
+                                            app.table_state.select(Some(app.table_data.len() - 1));
+                                        }
+                                    }
+                                    AppState::Logs => {
+                                        if !app.logs_data.is_empty() {
+                                            app.logs_state.select(Some(app.logs_data.len() - 1));
+                                        }
+                                    }
+                                    _ => {}
+                                }
+                            }
+
+                            KeyCode::Enter => {
                                 if app.current_state == AppState::Dashboard {
-                                    app.previous_row();
-                                } else if app.current_state == AppState::Logs {
-                                    app.previous_log();
+                                    app.show_details = true;
                                 }
                             }
-                            KeyCode::Down => {
-                                if app.current_state == AppState::Dashboard {
-                                    app.next_row();
-                                } else if app.current_state == AppState::Logs {
-                                    app.next_log();
-                                }
-                            }
-                            // Quick jumps to sidebar tools
+
+                            // Quick jumps
                             KeyCode::Char('s') => app.set_sidebar_tab(0),
                             KeyCode::Char('f') => app.set_sidebar_tab(1),
-                            KeyCode::Char('i') => app.set_sidebar_tab(2), // 'i' for info/stats
+                            KeyCode::Char('i') => app.set_sidebar_tab(2),
                             KeyCode::Char('a') => app.set_sidebar_tab(3),
-                            // Main tab selection / Sidebar cycling / Detail cycling
-                            KeyCode::Tab => {
-                                if key.modifiers.contains(KeyModifiers::CONTROL) {
-                                    app.input_mode = true;
-                                } else if app.show_help {
-                                    // help doesn't have tabs yet
-                                } else if app.show_details {
-                                    app.next_detail_tab();
-                                } else if app.sidebar_visible {
-                                    app.next_sidebar_tab();
-                                } else {
-                                    app.next_state();
-                                }
-                            }
-                            KeyCode::BackTab => {
-                                if app.show_help {
-                                    // help doesn't have tabs yet
-                                } else if app.show_details {
-                                    app.previous_detail_tab();
-                                } else if app.sidebar_visible {
-                                    app.previous_sidebar_tab();
-                                } else {
-                                    app.previous_state();
-                                }
-                            }
+
+                            // Number jumps
                             KeyCode::Char('1') => app.current_state = AppState::Crawl,
                             KeyCode::Char('2') => app.current_state = AppState::Logs,
                             KeyCode::Char('3') => app.current_state = AppState::Connectors,
@@ -222,6 +224,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             _ => {}
                         }
                     }
+
                 }
                 Event::Mouse(mouse) => {
                     if matches!(mouse.kind, MouseEventKind::Down(_)) {

@@ -18,6 +18,10 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
     // Define main colors
     let bg_color = Color::Rgb(15, 15, 25);
+    
+    // Render full background first to ensure consistency
+    f.render_widget(Block::default().bg(bg_color), size);
+
     let accent_color = Color::Rgb(80, 140, 255);
     let border_color = Color::Rgb(40, 45, 60);
 

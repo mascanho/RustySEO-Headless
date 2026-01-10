@@ -1,7 +1,7 @@
 use ratatui::{
     Frame,
     layout::{Constraint, Rect},
-    style::{Color, Modifier, Style},
+    style::{Color, Modifier, Style, Stylize},
     text::Span,
     widgets::{Block, Borders, Cell, Row, Table},
 };
@@ -117,6 +117,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 .border_style(Style::default().fg(border_color))
         )
         .column_spacing(2)
+        .style(Style::default().bg(Color::Rgb(15, 15, 25)))
         .highlight_symbol(Span::styled(" ➔ ", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)));
 
     f.render_stateful_widget(table, area, &mut app.table_state);
