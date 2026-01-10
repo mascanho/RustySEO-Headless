@@ -24,7 +24,7 @@ pub struct PageData {
     pub language: String,
     pub indexability: String,
     pub anchor_links: Vec<String>,
-    pub headings: Vec<String>,
+    pub headings: Vec<(String, String)>,
 }
 
 #[derive(Debug, Clone)]

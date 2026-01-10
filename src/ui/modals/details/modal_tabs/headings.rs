@@ -6,7 +6,7 @@ use ratatui::{
     widgets::{Block, List, ListItem},
 };
 
-pub fn render(f: &mut Frame, headings: &[String], area: Rect, block: Block) {
+pub fn render(f: &mut Frame, headings: &[(String, String)], area: Rect, block: Block) {
     let accent_color = Color::Rgb(80, 140, 255);
 
     let items = if headings.is_empty() {
@@ -17,13 +17,16 @@ pub fn render(f: &mut Frame, headings: &[String], area: Rect, block: Block) {
     } else {
         headings
             .iter()
-            .enumerate()
-            .filter_map(|(i, heading)| {
-                let heading_text = heading.trim();
+            .filter_map(|(tag, text)| {
+                let heading_text = text.trim();
                 if heading_text.is_empty() {
                     None
                 } else {
-                    Some(ListItem::new(format!("{}. {}", i + 1, heading_text)))
+                    Some(ListItem::new(format!(
+                        "{}: {}",
+                        tag.to_uppercase(),
+                        heading_text
+                    )))
                 }
             })
             .collect::<Vec<_>>()
