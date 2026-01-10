@@ -185,7 +185,10 @@ pub fn render(f: &mut Frame, app: &mut App) {
                 ))),
             ];
 
-            for (status, count) in status_counts.iter() {
+            let mut status_keys: Vec<_> = status_counts.keys().collect();
+            status_keys.sort();
+            for status in status_keys {
+                let count = status_counts.get(status).unwrap();
                 items.push(ListItem::new(Line::from(vec![
                     Span::styled(format!("  {}: ", status), Style::default().fg(accent_color)),
                     Span::raw(count.to_string()),
@@ -221,7 +224,10 @@ pub fn render(f: &mut Frame, app: &mut App) {
                 ])),
             ]);
 
-            for (tag, count) in heading_counts.iter() {
+            let mut heading_keys: Vec<_> = heading_counts.keys().collect();
+            heading_keys.sort();
+            for tag in heading_keys {
+                let count = heading_counts.get(tag).unwrap();
                 items.push(ListItem::new(Line::from(vec![
                     Span::styled(
                         format!("  {}: ", tag.to_uppercase()),
@@ -230,6 +236,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
                     Span::raw(count.to_string()),
                 ])));
             }
+
 
             let list = List::new(items).block(content_block.title(Span::styled(
                 " Crawl Summary ",
