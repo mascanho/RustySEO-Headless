@@ -1,56 +1,76 @@
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Color, Modifier, Style},
+    style::{Color, Modifier, Style, Stylize},
+    text::{Line, Span},
     widgets::{Block, Borders, Gauge, Paragraph},
 };
 
 use crate::models::App;
 
 pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
+    let accent_color = Color::Rgb(80, 140, 255);
+    let border_color = Color::Rgb(40, 45, 60);
+
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Percentage(10), // Progress Bar
-            Constraint::Min(0),         // App Info / Status
+            Constraint::Length(30), // Progress Bar
+            Constraint::Min(0),      // App Info / Status
         ])
         .split(area);
 
     // Progress Bar
+    let label = format!("{:.0}%", app.crawl_progress * 100.0);
     let gauge = Gauge::default()
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title(" Crawl Progress "),
+                .title(Span::styled(" ⚙️  Crawl Progress ", Style::default().fg(Color::Yellow)))
+                .border_style(Style::default().fg(border_color))
+                .bg(Color::Rgb(15, 15, 25))
         )
         .gauge_style(
             Style::default()
-                .fg(Color::Blue)
-                .bg(Color::Black)
+                .fg(accent_color)
+                .bg(Color::Rgb(30, 30, 40))
                 .add_modifier(Modifier::BOLD),
         )
+        .use_unicode(true)
+        .label(label)
         .percent((app.crawl_progress * 100.0) as u16);
     f.render_widget(gauge, chunks[0]);
 
     // Status / System Info
     let status_prefix = if app.is_crawling {
-        format!(" [CRAWLING: {}] ", app.input_url)
+        format!(" 🔄 CRAWLING: {} ", app.input_url)
     } else if app.crawl_progress >= 1.0 {
-        format!(" [FINISHED: {}] ", app.input_url)
+        format!(" ✅ FINISHED: {} ", app.input_url)
     } else {
-        " [STATUS: IDLE] ".to_string()
+        " 💤 STATUS: IDLE ".to_string()
     };
 
-    let status_text = format!(
-        "{} | URLs: {} | Logs: {} | Help: '?' ",
-        status_prefix,
-        app.table_data.len(),
-        app.logs_data.len()
-    );
-    let p = Paragraph::new(status_text).block(
-        Block::default()
-            .borders(Borders::ALL)
-            .title(" System Status "),
-    );
+    let status_text = vec![
+        Line::from(vec![
+            Span::styled(status_prefix, Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+            Span::styled(" | ", Style::default().fg(border_color)),
+            Span::styled(format!(" 🔗 URLs: {} ", app.table_data.len()), Style::default().fg(Color::Green)),
+            Span::styled(" | ", Style::default().fg(border_color)),
+            Span::styled(format!(" 📜 Logs: {} ", app.logs_data.len()), Style::default().fg(Color::Yellow)),
+            Span::styled(" | ", Style::default().fg(border_color)),
+            Span::styled(" ⌨️  Help: '?' ", Style::default().fg(Color::Gray)),
+        ])
+    ];
+
+    let p = Paragraph::new(status_text)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(Span::styled(" 🖥️  System Status ", Style::default().fg(Color::Yellow)))
+                .border_style(Style::default().fg(border_color))
+        )
+        .style(Style::default().bg(Color::Rgb(15, 15, 25)));
+    
     f.render_widget(p, chunks[1]);
 }
+

@@ -2,35 +2,41 @@ use ratatui::{
     Frame,
     layout::Rect,
     style::{Color, Style},
-    text::Line,
+    text::{Line, Span},
     widgets::{Block, Borders, List, ListItem},
 };
 
 use crate::models::App;
 
 pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
+    let accent_color = Color::Rgb(80, 140, 255);
+    let border_color = Color::Rgb(40, 45, 60);
+
     let block = Block::default()
-        .title(" System Logs ")
+        .title(Span::styled(" 📄 System Logs ", Style::default().fg(Color::Yellow).add_modifier(ratatui::style::Modifier::BOLD)))
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Blue));
+        .border_style(Style::default().fg(border_color));
 
     let log_items: Vec<ListItem> = app
         .logs_data
         .iter()
         .map(|log| {
-            let color = if log.contains("ERROR") {
-                Color::Red
+            let (icon, color) = if log.contains("ERROR") {
+                (" ✘ ", Color::Red)
             } else if log.contains("DEBUG") {
-                Color::DarkGray
+                (" ⚙ ", Color::DarkGray)
             } else if log.contains("SYSTEM") {
-                Color::LightBlue
+                (" 🖥 ", Color::Cyan)
+            } else if log.contains("FOUND") {
+                (" 🔍 ", Color::Green)
             } else {
-                Color::Blue
+                (" ℹ ", Color::Rgb(100, 150, 255))
             };
-            ListItem::new(Line::from(ratatui::text::Span::styled(
-                log,
-                Style::default().fg(color),
-            )))
+            
+            ListItem::new(Line::from(vec![
+                Span::styled(icon, Style::default().fg(color)),
+                Span::styled(log, Style::default().fg(color)),
+            ]))
         })
         .collect();
 
@@ -38,10 +44,12 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         .block(block)
         .highlight_style(
             Style::default()
-                .fg(Color::LightBlue)
+                .fg(Color::Black)
+                .bg(accent_color)
                 .add_modifier(ratatui::style::Modifier::BOLD),
         )
-        .highlight_symbol(">> ");
+        .highlight_symbol(" ➔ ");
 
     f.render_stateful_widget(list, area, &mut app.logs_state);
 }
+
