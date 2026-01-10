@@ -163,7 +163,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                             app.sidebar_visible = false;
                                         }
                                     }
-                                    KeyCode::Char(c) => app.enter_bookmark_char(c),
+                                    KeyCode::Char(c) => {
+                                        if c == 'D' && app.bookmark_input.is_empty() {
+                                            app.remove_selected_bookmark();
+                                        } else {
+                                            app.enter_bookmark_char(c);
+                                        }
+                                    }
                                     KeyCode::Backspace => app.delete_bookmark_char(),
                                     KeyCode::Left => app.move_bookmark_cursor_left(),
                                     KeyCode::Right => app.move_bookmark_cursor_right(),
@@ -188,6 +194,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                             // Handle Control Pad actions if needed
                                         }
                                     }
+                                    KeyCode::Char('+') => app.set_sidebar_tab(4),
                                     _ => {}
                                 }
                             }
@@ -274,7 +281,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             KeyCode::Char('f') => app.set_sidebar_tab(1),
                             KeyCode::Char('i') => app.set_sidebar_tab(2),
                             KeyCode::Char('a') => app.set_sidebar_tab(3),
-                            KeyCode::Char('b') => app.set_sidebar_tab(4),
+                            KeyCode::Char('b') | KeyCode::Char('+') => app.set_sidebar_tab(4),
 
                             // Number jumps
                             KeyCode::Char('1') => app.current_state = AppState::Crawl,

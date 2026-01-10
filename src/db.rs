@@ -25,3 +25,14 @@ pub fn add_bookmark(url: &str) {
         }
     }
 }
+
+pub fn remove_bookmark(url: &str) {
+    let mut bookmarks = load_bookmarks();
+    if let Some(pos) = bookmarks.iter().position(|r| r == url) {
+        bookmarks.remove(pos);
+        if let Ok(json) = serde_json::to_string(&bookmarks) {
+            let _ = fs::write("bookmarks.json", json);
+        }
+    }
+}
+

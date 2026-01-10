@@ -244,6 +244,20 @@ impl App {
         }
     }
 
+    pub fn remove_selected_bookmark(&mut self) {
+        if !self.bookmarks.is_empty() && self.bookmark_index < self.bookmarks.len() {
+            let url = self.bookmarks[self.bookmark_index].clone();
+            crate::db::remove_bookmark(&url);
+            self.bookmarks = crate::db::load_bookmarks();
+            if self.bookmark_index >= self.bookmarks.len() && !self.bookmarks.is_empty() {
+                self.bookmark_index = self.bookmarks.len() - 1;
+            } else if self.bookmarks.is_empty() {
+                self.bookmark_index = 0;
+            }
+        }
+    }
+
+
     pub fn next_detail_tab(&mut self) {
         self.detail_tab = (self.detail_tab + 1) % 8;
     }

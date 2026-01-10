@@ -176,10 +176,17 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
         // Bookmarks
         4 => {
+            let main_block = content_block.title(Span::styled(
+                " 📚 Bookmarks ",
+                Style::default().fg(Color::Yellow),
+            ));
+            let inner_area = main_block.inner(sidebar_content_area);
+            f.render_widget(main_block, sidebar_content_area);
+
             let bookmark_chunks = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints([Constraint::Min(0), Constraint::Length(3)])
-                .split(sidebar_content_area);
+                .split(inner_area);
 
             let list_area = bookmark_chunks[0];
             let input_area = bookmark_chunks[1];
@@ -211,22 +218,19 @@ pub fn render(f: &mut Frame, app: &mut App) {
                 })
                 .collect();
 
-            let list = List::new(items).block(content_block.title(Span::styled(
-                " 📚 Bookmarks ",
-                Style::default().fg(Color::Yellow),
-            )));
+            let list = List::new(items);
             f.render_widget(list, list_area);
 
             // Input for adding new bookmark
             let input_block = Block::default()
-                .borders(Borders::ALL)
+                .borders(Borders::TOP)
+                .border_style(Style::default().fg(border_color))
                 .title(Span::styled(
-                    " ➕ Add Bookmark ",
+                    " ➕ Add Bookmark / D - Delete Selected ",
                     Style::default()
                         .fg(Color::Yellow)
                         .add_modifier(Modifier::BOLD),
-                ))
-                .border_style(Style::default().fg(accent_color));
+                ));
 
             let input_p = Paragraph::new(app.bookmark_input.as_str())
                 .block(input_block)
@@ -237,7 +241,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
             // Set cursor in input
             if app.sidebar_visible && app.sidebar_tab == 4 {
                 f.set_cursor_position((
-                    input_area.x + app.bookmark_cursor as u16 + 1,
+                    input_area.x + app.bookmark_cursor as u16,
                     input_area.y + 1,
                 ));
             }
