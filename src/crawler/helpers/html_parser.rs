@@ -10,6 +10,7 @@ pub struct PageElements {
     pub language: String,
     pub indexability: String,
     pub anchor_links: Vec<String>,
+    pub headings: Vec<String>,
 }
 
 pub fn extract_page_elements(document: &Html) -> PageElements {
@@ -67,6 +68,12 @@ pub fn extract_page_elements(document: &Html) -> PageElements {
         .map(|e| e.value().attr("href").unwrap().to_string())
         .collect();
 
+    let heading_selector = Selector::parse("h1,h2,h3,h4,h5,h6").unwrap();
+    let mut headings = Vec::new();
+    for element in document.select(&heading_selector) {
+        headings.push(element.text().collect::<String>());
+    }
+
     PageElements {
         title,
         h1,
@@ -76,5 +83,6 @@ pub fn extract_page_elements(document: &Html) -> PageElements {
         language,
         indexability,
         anchor_links,
+        headings,
     }
 }

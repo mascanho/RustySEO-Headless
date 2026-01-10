@@ -29,6 +29,7 @@ pub struct App {
     pub bookmark_input: String,
     pub bookmark_cursor: usize,
     pub table_data: Vec<Vec<String>>,
+    pub page_data: Vec<crate::crawler::PageData>,
     pub table_state: ratatui::widgets::TableState,
     pub horizontal_scroll: usize,
     pub logs_data: Vec<String>,

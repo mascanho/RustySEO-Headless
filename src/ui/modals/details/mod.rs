@@ -51,6 +51,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         " 🖼️  Images ",
         " 📋 Schema ",
         " 📨 Headers ",
+        " 📝 Headings ",
     ];
     let tabs = Tabs::new(titles)
         .block(
@@ -87,6 +88,12 @@ pub fn render(f: &mut Frame, app: &mut App) {
         5 => modal_tabs::images::render(f, chunks[1], content_block),
         6 => modal_tabs::schema::render(f, chunks[1], content_block),
         7 => modal_tabs::headers::render(f, chunks[1], content_block),
+        8 => modal_tabs::headings::render(
+            f,
+            &app.page_data[selected_idx].headings,
+            chunks[1],
+            content_block,
+        ),
         _ => {}
     }
 }

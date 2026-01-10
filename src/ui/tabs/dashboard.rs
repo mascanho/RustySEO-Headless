@@ -19,6 +19,8 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         "Len",
         "H1",
         "Len",
+        "Desc",
+        "Len",
         "H2",
         "Len",
         "Status",
@@ -57,20 +59,22 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             &data[0],  // ID
             &data[1],  // URL
             &data[2],  // Title
-            &data[3],  // Len
+            &data[3],  // Title Len
             &data[4],  // H1
             &data[5],  // H1 Len
-            &data[6],  // H2
-            &data[7],  // H2 Len
-            &data[8],  // Status
-            &data[9],  // Mobile
-            &data[10], // Language
-            &data[11], // Indexability
+            &data[6],  // Desc
+            &data[7],  // Desc Len
+            &data[8],  // H2
+            &data[9],  // H2 Len
+            &data[10], // Status
+            &data[11], // Mobile
+            &data[12], // Language
+            &data[13], // Indexability
         ];
 
         let cells = displayed_data.iter().enumerate().map(|(j, c)| {
-            let mut content = if j == 1 || j == 2 || j == 4 || j == 6 {
-                // URL, Title, H1, H2
+            let mut content = if j == 1 || j == 2 || j == 4 || j == 6 || j == 8 {
+                // URL, Title, H1, Desc, H2
                 let content = c.as_str();
                 if content.len() > 50 {
                     let start = app.horizontal_scroll.min(content.len().saturating_sub(50));
@@ -89,7 +93,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
             let mut cell_style = Style::default();
 
-            if j == 8 {
+            if j == 10 {
                 // Status column
                 match content.as_str() {
                     c if c.contains("200") => {
@@ -134,11 +138,20 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 }
             }
 
-            let content = if j == 3 || j == 5 || j == 7 || j == 8 {
+            if j == 11 {
+                // Mobile column
+                content = if content == "true" {
+                    "Yes".to_string()
+                } else {
+                    "No".to_string()
+                };
+            }
+
+            let content = if j == 3 || j == 5 || j == 7 || j == 9 || j == 10 {
                 let w = match j {
-                    3 => 5,
-                    5 | 7 => 7,
-                    8 => 8,
+                    3 | 7 => 5,
+                    5 | 9 => 7,
+                    10 => 8,
                     _ => unreachable!(),
                 };
                 let l = content.len();
@@ -168,9 +181,11 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         Constraint::Length(4),  // ID
         Constraint::Min(35),    // URL
         Constraint::Length(20), // Title
-        Constraint::Length(5),  // Len
+        Constraint::Length(5),  // Title Len
         Constraint::Length(20), // H1
         Constraint::Length(7),  // H1 Len
+        Constraint::Length(20), // Desc
+        Constraint::Length(5),  // Desc Len
         Constraint::Length(15), // H2
         Constraint::Length(7),  // H2 Len
         Constraint::Length(8),  // Status

@@ -15,6 +15,7 @@ pub enum AppState {
 impl Default for App {
     fn default() -> Self {
         let table_data = Vec::new();
+        let page_data = Vec::new();
         let table_state = ratatui::widgets::TableState::default();
 
         Self {
@@ -27,6 +28,7 @@ impl Default for App {
             bookmark_input: String::new(),
             bookmark_cursor: 0,
             table_data,
+            page_data,
             table_state,
             horizontal_scroll: 0,
             logs_data: vec!["System Initialized - Ready for Crawl".to_string()],
@@ -64,7 +66,8 @@ impl App {
             loop {
                 match rx.try_recv() {
                     Ok(data) => {
-                        // ID, URL, Title, Title Len, H1, H1 Len, H2, H2 Len, Status, Mobile
+                        self.page_data.push(data.clone());
+                        // ID, URL, Title, Title Len, H1, H1 Len, Desc, Desc Len, H2, H2 Len, Status, Mobile, Lang, Index, Anchor
                         let row = vec![
                             data.id.to_string(),
                             data.url.clone(),
@@ -72,6 +75,8 @@ impl App {
                             data.title_len.to_string(),
                             data.h1.clone(),
                             data.h1_len.to_string(),
+                            data.description.clone(),
+                            data.description_len.to_string(),
                             data.h2.clone(),
                             data.h2_len.to_string(),
                             data.status.clone(),
@@ -259,12 +264,12 @@ impl App {
     }
 
     pub fn next_detail_tab(&mut self) {
-        self.detail_tab = (self.detail_tab + 1) % 8;
+        self.detail_tab = (self.detail_tab + 1) % 9;
     }
 
     pub fn previous_detail_tab(&mut self) {
         self.detail_tab = if self.detail_tab == 0 {
-            7
+            8
         } else {
             self.detail_tab - 1
         };
@@ -339,6 +344,7 @@ impl App {
             return;
         }
 
+        self.page_data.clear();
         self.table_data.clear();
         self.crawl_progress = 0.0;
         self.is_crawling = true;

@@ -24,6 +24,7 @@ pub struct PageData {
     pub language: String,
     pub indexability: String,
     pub anchor_links: Vec<String>,
+    pub headings: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -158,6 +159,7 @@ impl CrawlEngine {
             language: elements.language,
             indexability: elements.indexability,
             anchor_links: elements.anchor_links,
+            headings: elements.headings,
         })
     }
 

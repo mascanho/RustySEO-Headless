@@ -2,6 +2,7 @@ pub mod analysis;
 pub mod checklist;
 pub mod general;
 pub mod headers;
+pub mod headings;
 pub mod images;
 pub mod inlinks;
 pub mod outlinks;
