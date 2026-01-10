@@ -99,7 +99,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                         }
                     }
                     c if c.contains("404") => {
-                        content = format!("❌ {}", c);
+                        content = format!("404");
                         if !is_selected {
                             cell_style = cell_style.fg(Color::Red);
                         }
@@ -111,13 +111,13 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                         }
                     }
                     c if c.contains("500") => {
-                        content = format!("{}", c);
+                        content = format!("500");
                         if !is_selected {
                             cell_style = cell_style.fg(Color::Yellow);
                         }
                     }
                     c if c.contains("403") => {
-                        content = format!("⛔ {}", c);
+                        content = format!("403");
                         if !is_selected {
                             cell_style = cell_style.fg(Color::Magenta);
                         }
@@ -160,18 +160,18 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     });
 
     let widths = [
-        Constraint::Length(4),
-        Constraint::Min(35),
-        Constraint::Length(20),
-        Constraint::Length(5),
-        Constraint::Length(20),
-        Constraint::Length(7),
-        Constraint::Length(15),
-        Constraint::Length(7),
-        Constraint::Min(15),
-        Constraint::Length(8),
-        Constraint::Length(6),
-        Constraint::Min(8),
+        Constraint::Length(4),  // ID
+        Constraint::Min(35),    // URL
+        Constraint::Length(20), // Title
+        Constraint::Length(5),  // Len
+        Constraint::Length(20), // H1
+        Constraint::Length(7),  // H1 Len
+        Constraint::Length(15), // H2
+        Constraint::Length(7),  // H2 Len
+        Constraint::Length(8),  // Status
+        Constraint::Length(8),  // Mobile
+        Constraint::Length(6),  // Lang
+        Constraint::Min(8),     // Indexable
     ];
 
     let scroll_indicator = if app.horizontal_scroll > 0 {
