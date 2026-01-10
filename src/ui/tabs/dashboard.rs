@@ -93,7 +93,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 // Status column
                 match content.as_str() {
                     c if c.contains("200") => {
-                        content = format!("✅ {}", c);
+                        content = format!("200");
                         if !is_selected {
                             cell_style = cell_style.fg(Color::Green);
                         }
@@ -105,13 +105,13 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                         }
                     }
                     c if c.contains("301") || c.contains("302") => {
-                        content = format!("➡️  {}", c);
+                        content = format!("{}", c);
                         if !is_selected {
                             cell_style = cell_style.fg(Color::Blue);
                         }
                     }
                     c if c.contains("500") => {
-                        content = format!("⚠️ {}", c);
+                        content = format!("{}", c);
                         if !is_selected {
                             cell_style = cell_style.fg(Color::Yellow);
                         }
