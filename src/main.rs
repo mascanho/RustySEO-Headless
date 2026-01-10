@@ -15,6 +15,7 @@ use std::{error::Error, io};
 pub mod app;
 pub mod cli;
 pub mod crawler;
+pub mod logging;
 pub mod models;
 pub mod settings;
 pub mod ui;
@@ -29,8 +30,8 @@ use crate::{
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    // Logging
-    tracing_subscriber::fmt::fmt().without_time().init();
+    // Logging initialization moved to after TUI setup to capture logs in app
+    let log_rx = logging::init();
 
     // Create the file for the settings
     settings::utils::create::create_settings_file().await;
@@ -54,6 +55,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
         // create app and run it
         let mut app = App::new();
+        app.log_receiver = Some(log_rx);
         let res = run_app(&mut terminal, &mut app);
 
         // restore terminal
@@ -93,10 +95,18 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             KeyCode::Char(c) => app.enter_char(c),
                             KeyCode::Backspace => app.delete_char(),
                             KeyCode::Left => {
-                                if app.current_state == AppState::Dashboard { app.scroll_left() } else { app.move_cursor_left() }
+                                if app.current_state == AppState::Dashboard {
+                                    app.scroll_left()
+                                } else {
+                                    app.move_cursor_left()
+                                }
                             }
                             KeyCode::Right => {
-                                if app.current_state == AppState::Dashboard { app.scroll_right(50) } else { app.move_cursor_right() }
+                                if app.current_state == AppState::Dashboard {
+                                    app.scroll_right(50)
+                                } else {
+                                    app.move_cursor_right()
+                                }
                             }
                             _ => {}
                         }
@@ -104,7 +114,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                         // MODAL PRIORITY 1: Help
                         if app.show_help {
                             match key.code {
-                                KeyCode::Char('q') | KeyCode::Esc | KeyCode::Char('?') => app.show_help = false,
+                                KeyCode::Char('q') | KeyCode::Esc | KeyCode::Char('?') => {
+                                    app.show_help = false
+                                }
                                 _ => {}
                             }
                             continue;
@@ -126,7 +138,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                         // MODAL PRIORITY 3: Sidebar
                         if app.sidebar_visible {
                             match key.code {
-                                KeyCode::Esc | KeyCode::Char('h') | KeyCode::Left => app.sidebar_visible = false,
+                                KeyCode::Esc | KeyCode::Char('h') | KeyCode::Left => {
+                                    app.sidebar_visible = false
+                                }
                                 KeyCode::Char('k') | KeyCode::Up => app.previous_sidebar_tab(),
                                 KeyCode::Char('j') | KeyCode::Down => app.next_sidebar_tab(),
                                 KeyCode::Char('l') | KeyCode::Right => app.next_state(),
@@ -136,8 +150,12 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             }
                             // Sidebar usually steals most navigation if visible
                             // We allow 'q' and '?' to work still
-                            if key.code == KeyCode::Char('q') { return Ok(()); }
-                            if key.code == KeyCode::Char('?') { app.toggle_help(); }
+                            if key.code == KeyCode::Char('q') {
+                                return Ok(());
+                            }
+                            if key.code == KeyCode::Char('?') {
+                                app.toggle_help();
+                            }
                             continue;
                         }
 
@@ -146,8 +164,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             KeyCode::Char('q') => return Ok(()),
                             KeyCode::Char('?') => app.toggle_help(),
                             KeyCode::Esc => app.reset(),
-                            KeyCode::Char('i') if key.modifiers.contains(KeyModifiers::CONTROL) => app.input_mode = true,
-                            
+                            KeyCode::Char('i') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                                app.input_mode = true
+                            }
+
                             // Tab/BackTab always cycle main states if no modal
                             KeyCode::Tab => app.next_state(),
                             KeyCode::BackTab => app.previous_state(),
@@ -161,21 +181,17 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     app.next_state();
                                 }
                             }
-                            KeyCode::Char('k') | KeyCode::Up => {
-                                match app.current_state {
-                                    AppState::Dashboard => app.previous_row(),
-                                    AppState::Logs => app.previous_log(),
-                                    _ => {}
-                                }
-                            }
-                            KeyCode::Char('j') | KeyCode::Down => {
-                                match app.current_state {
-                                    AppState::Dashboard => app.next_row(),
-                                    AppState::Logs => app.next_log(),
-                                    _ => {}
-                                }
-                            }
-                            
+                            KeyCode::Char('k') | KeyCode::Up => match app.current_state {
+                                AppState::Dashboard => app.previous_row(),
+                                AppState::Logs => app.previous_log(),
+                                _ => {}
+                            },
+                            KeyCode::Char('j') | KeyCode::Down => match app.current_state {
+                                AppState::Dashboard => app.next_row(),
+                                AppState::Logs => app.next_log(),
+                                _ => {}
+                            },
+
                             // Advanced Vim jumps
                             KeyCode::Char('g') => {
                                 // Jump to top (gg)
@@ -224,7 +240,6 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             _ => {}
                         }
                     }
-
                 }
                 Event::Mouse(mouse) => {
                     if matches!(mouse.kind, MouseEventKind::Down(_)) {

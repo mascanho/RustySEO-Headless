@@ -5,7 +5,7 @@ use scraper::{Html, Selector};
 use std::collections::HashSet;
 use url::Url;
 
-use crate::crawler::helpers::user_agents::user_agents;
+use crate::crawler::helpers::{html_parser::extract_page_elements, user_agents::user_agents};
 
 #[derive(Debug, Clone)]
 pub struct PageData {
@@ -20,6 +20,9 @@ pub struct PageData {
     pub description: String,
     pub description_len: usize,
     pub status: String,
+    pub mobile: bool,
+    pub language: String,
+    pub indexability: String,
 }
 
 #[derive(Debug, Clone)]
@@ -136,50 +139,23 @@ impl CrawlEngine {
         };
         let document = Html::parse_document(&html_content);
 
-        let title_selector = Selector::parse("title").unwrap();
-        let h1_selector = Selector::parse("h1").unwrap();
-        let h2_selector = Selector::parse("h2").unwrap();
-
-        let desc_selector = Selector::parse("meta[name='description']").unwrap();
-
-        let title = document
-            .select(&title_selector)
-            .next()
-            .map(|e| e.text().collect::<String>())
-            .unwrap_or("".into());
-
-        let h1 = document
-            .select(&h1_selector)
-            .next()
-            .map(|e| e.text().collect::<String>())
-            .unwrap_or("".into());
-
-        let description = document
-            .select(&desc_selector)
-            .next()
-            .and_then(|e| e.value().attr("content"))
-            .map(|s| s.to_string())
-            .unwrap_or("".into());
-
-        let h2 = document
-            .select(&h2_selector)
-            .next()
-            .map(|e| e.text().collect::<String>())
-            .unwrap_or("".into());
+        let elements = extract_page_elements(&document);
 
         Ok(PageData {
             id,
             url: url_str.to_string(),
-            title_len: title.len(),
-            title,
-            h1_len: h1.len(),
-            h1,
-            h2_len: h2.len(),
-            h2,
-
-            description_len: description.len(),
-            description,
+            title_len: elements.title.len(),
+            title: elements.title,
+            h1_len: elements.h1.len(),
+            h1: elements.h1,
+            h2_len: elements.h2.len(),
+            h2: elements.h2,
+            description_len: elements.description.len(),
+            description: elements.description,
             status,
+            mobile: elements.mobile,
+            language: elements.language,
+            indexability: elements.indexability,
         })
     }
 

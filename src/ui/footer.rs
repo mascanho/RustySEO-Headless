@@ -16,7 +16,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         .direction(Direction::Horizontal)
         .constraints([
             Constraint::Length(30), // Progress Bar
-            Constraint::Min(0),      // App Info / Status
+            Constraint::Min(0),     // App Info / Status
         ])
         .split(area);
 
@@ -26,9 +26,12 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title(Span::styled(" ⚙️  Crawl Progress ", Style::default().fg(Color::Yellow)))
+                .title(Span::styled(
+                    " ⚙️  Crawl Progress ",
+                    Style::default().fg(Color::Yellow),
+                ))
                 .border_style(Style::default().fg(border_color))
-                .bg(Color::Rgb(15, 15, 25))
+                .bg(Color::Rgb(15, 15, 25)),
         )
         .gauge_style(
             Style::default()
@@ -50,27 +53,38 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         " 💤 STATUS: IDLE ".to_string()
     };
 
-    let status_text = vec![
-        Line::from(vec![
-            Span::styled(status_prefix, Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
-            Span::styled(" | ", Style::default().fg(border_color)),
-            Span::styled(format!(" 🔗 URLs: {} ", app.table_data.len()), Style::default().fg(Color::Green)),
-            Span::styled(" | ", Style::default().fg(border_color)),
-            Span::styled(format!(" 📜 Logs: {} ", app.logs_data.len()), Style::default().fg(Color::Yellow)),
-            Span::styled(" | ", Style::default().fg(border_color)),
-            Span::styled(" ⌨️  Help: '?' ", Style::default().fg(Color::Gray)),
-        ])
-    ];
+    let status_text = vec![Line::from(vec![
+        Span::styled(
+            status_prefix,
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(" | ", Style::default().fg(border_color)),
+        Span::styled(
+            format!(" 🔗 URLs: {} ", app.table_data.len()),
+            Style::default().fg(Color::Green),
+        ),
+        Span::styled(" | ", Style::default().fg(border_color)),
+        Span::styled(
+            format!(" 📜 Logs: {} ", app.logs_data.len()),
+            Style::default().fg(Color::Yellow),
+        ),
+        Span::styled(" | ", Style::default().fg(border_color)),
+        Span::styled(" ⌨️  Help: '?' ", Style::default().fg(Color::Gray)),
+    ])];
 
     let p = Paragraph::new(status_text)
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title(Span::styled(" 🖥️  System Status ", Style::default().fg(Color::Yellow)))
-                .border_style(Style::default().fg(border_color))
+                .title(Span::styled(
+                    " 🖥️  System Status ",
+                    Style::default().fg(Color::Yellow),
+                ))
+                .border_style(Style::default().fg(border_color)),
         )
         .style(Style::default().bg(Color::Rgb(15, 15, 25)));
-    
+
     f.render_widget(p, chunks[1]);
 }
-

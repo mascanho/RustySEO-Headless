@@ -47,6 +47,7 @@ impl Default for App {
             crawl_receiver: None,
             is_crawling: false,
             settings: Some(AppSettings::default()),
+            log_receiver: None,
         }
     }
 }
@@ -59,7 +60,7 @@ impl App {
             loop {
                 match rx.try_recv() {
                     Ok(data) => {
-                        // ID, URL, Title, Title Len, H1, H1 Len, Meta Desc, Meta Len, Status
+                        // ID, URL, Title, Title Len, H1, H1 Len, H2, H2 Len, Status, Mobile
                         let row = vec![
                             data.id.to_string(),
                             data.url.clone(),
@@ -67,9 +68,12 @@ impl App {
                             data.title_len.to_string(),
                             data.h1.clone(),
                             data.h1_len.to_string(),
-                            data.description.clone(),
-                            data.description_len.to_string(),
+                            data.h2.clone(),
+                            data.h2_len.to_string(),
                             data.status.clone(),
+                            data.mobile.to_string(),
+                            data.language.to_string(),
+                            data.indexability.to_string(),
                         ];
                         self.table_data.push(row);
                         self.logs_data.insert(0, format!("Crawled: {}", data.url));
@@ -106,6 +110,16 @@ impl App {
             self.crawl_progress += 0.005;
             if self.crawl_progress > 1.0 {
                 self.crawl_progress = 0.0;
+            }
+        }
+
+        // Process logs from tracing
+        if let Some(ref rx) = self.log_receiver {
+            while let Ok(log) = rx.try_recv() {
+                self.logs_data.insert(0, log);
+                if self.logs_data.len() > 100 {
+                    self.logs_data.pop();
+                }
             }
         }
     }
@@ -181,7 +195,7 @@ impl App {
     }
 
     pub fn set_sidebar_tab(&mut self, index: usize) {
-        if index < 4 {
+        if index < 5 {
             self.sidebar_tab = index;
             self.sidebar_visible = true;
         }
@@ -199,7 +213,7 @@ impl App {
     }
 
     pub fn next_sidebar_tab(&mut self) {
-        self.sidebar_tab = (self.sidebar_tab + 1) % 4;
+        self.sidebar_tab = (self.sidebar_tab + 1) % 5;
     }
 
     pub fn previous_sidebar_tab(&mut self) {

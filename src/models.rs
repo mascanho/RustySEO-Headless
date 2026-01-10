@@ -45,4 +45,5 @@ pub struct App {
     pub crawl_receiver: Option<Receiver<PageData>>,
     pub is_crawling: bool,
     pub settings: Option<AppSettings>,
+    pub log_receiver: Option<Receiver<String>>,
 }

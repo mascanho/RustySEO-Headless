@@ -18,7 +18,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
     // Define main colors
     let bg_color = Color::Rgb(15, 15, 25);
-    
+
     // Render full background first to ensure consistency
     f.render_widget(Block::default().bg(bg_color), size);
 
@@ -49,7 +49,12 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         let input_block = Block::default()
             .borders(Borders::ALL)
             .title(vec![
-                Span::styled(" 🔍 Command / URL Input ", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+                Span::styled(
+                    " 🔍 Command / URL Input ",
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                ),
                 Span::styled(" (Esc to Cancel) ", Style::default().fg(Color::Gray)),
             ])
             .border_style(Style::default().fg(accent_color));
@@ -78,7 +83,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
             Block::default()
                 .borders(Borders::ALL)
                 .title(" 🚀 ATALAIA SEO ")
-                .border_style(Style::default().fg(border_color))
+                .border_style(Style::default().fg(border_color)),
         )
         .select(app.get_state_index())
         .style(Style::default().fg(Color::DarkGray))
@@ -120,11 +125,16 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 fn render_help_modal(f: &mut Frame) {
     let area = f.size();
     let help_area = centered_rect(60, 60, area);
-    
+
     let accent_color = Color::Rgb(80, 140, 255);
-    
+
     let block = Block::default()
-        .title(Span::styled(" ⌨️  Help / Shortcuts ", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)))
+        .title(Span::styled(
+            " ⌨️  Help / Shortcuts ",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ))
         .borders(Borders::ALL)
         .border_style(
             Style::default()
@@ -140,11 +150,26 @@ fn render_help_modal(f: &mut Frame) {
                 .add_modifier(Modifier::BOLD)
                 .fg(accent_color),
         )]),
-        Line::from(vec![Span::styled("  h / l   ", Style::default().fg(Color::Cyan)), Span::raw(": Prev/Next Tab / Toggle Sidebar")]),
-        Line::from(vec![Span::styled("  k / j   ", Style::default().fg(Color::Cyan)), Span::raw(": Prev/Next Sidebar Item")]),
-        Line::from(vec![Span::styled("  ↑ / ↓   ", Style::default().fg(Color::Cyan)), Span::raw(": Vertical Scroll (Dashboard/Logs)")]),
-        Line::from(vec![Span::styled("  ← / →   ", Style::default().fg(Color::Cyan)), Span::raw(": Horizontal Scroll (Dashboard)")]),
-        Line::from(vec![Span::styled("  Tab     ", Style::default().fg(Color::Cyan)), Span::raw(": Cycle Active Window")]),
+        Line::from(vec![
+            Span::styled("  h / l   ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Prev/Next Tab / Toggle Sidebar"),
+        ]),
+        Line::from(vec![
+            Span::styled("  k / j   ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Prev/Next Sidebar Item"),
+        ]),
+        Line::from(vec![
+            Span::styled("  ↑ / ↓   ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Vertical Scroll (Dashboard/Logs)"),
+        ]),
+        Line::from(vec![
+            Span::styled("  ← / →   ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Horizontal Scroll (Dashboard)"),
+        ]),
+        Line::from(vec![
+            Span::styled("  Tab     ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Cycle Active Window"),
+        ]),
         Line::from(""),
         Line::from(vec![Span::styled(
             "Shortcuts",
@@ -152,11 +177,26 @@ fn render_help_modal(f: &mut Frame) {
                 .add_modifier(Modifier::BOLD)
                 .fg(accent_color),
         )]),
-        Line::from(vec![Span::styled("  Ctrl+i  ", Style::default().fg(Color::Cyan)), Span::raw(": Focus Input Bar")]),
-        Line::from(vec![Span::styled("  Enter   ", Style::default().fg(Color::Cyan)), Span::raw(": Show Row Details / Submit Input")]),
-        Line::from(vec![Span::styled("  ?       ", Style::default().fg(Color::Cyan)), Span::raw(": Toggle Help")]),
-        Line::from(vec![Span::styled("  Esc     ", Style::default().fg(Color::Cyan)), Span::raw(": Close Modals / Reset View")]),
-        Line::from(vec![Span::styled("  q       ", Style::default().fg(Color::Red)), Span::raw(": Quit")]),
+        Line::from(vec![
+            Span::styled("  Ctrl+i  ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Focus Input Bar"),
+        ]),
+        Line::from(vec![
+            Span::styled("  Enter   ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Show Row Details / Submit Input"),
+        ]),
+        Line::from(vec![
+            Span::styled("  ?       ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Toggle Help"),
+        ]),
+        Line::from(vec![
+            Span::styled("  Esc     ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Close Modals / Reset View"),
+        ]),
+        Line::from(vec![
+            Span::styled("  q       ", Style::default().fg(Color::Red)),
+            Span::raw(": Quit"),
+        ]),
         Line::from(""),
         Line::from(vec![Span::styled(
             "Quick Tools",
@@ -165,10 +205,14 @@ fn render_help_modal(f: &mut Frame) {
                 .fg(accent_color),
         )]),
         Line::from(vec![
-            Span::styled("  s", Style::default().fg(Color::Cyan)), Span::raw(": Settings | "),
-            Span::styled("f", Style::default().fg(Color::Cyan)), Span::raw(": Filters  | "),
-            Span::styled("i", Style::default().fg(Color::Cyan)), Span::raw(": Stats    | "),
-            Span::styled("a", Style::default().fg(Color::Cyan)), Span::raw(": Actions"),
+            Span::styled("  s", Style::default().fg(Color::Cyan)),
+            Span::raw(": Settings | "),
+            Span::styled("f", Style::default().fg(Color::Cyan)),
+            Span::raw(": Filters  | "),
+            Span::styled("i", Style::default().fg(Color::Cyan)),
+            Span::raw(": Stats    | "),
+            Span::styled("a", Style::default().fg(Color::Cyan)),
+            Span::raw(": Actions"),
         ]),
     ];
 
@@ -197,4 +241,3 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
         ])
         .split(popup_layout[1])[1]
 }
-

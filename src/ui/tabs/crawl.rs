@@ -13,7 +13,12 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     let border_color = Color::Rgb(40, 45, 60);
 
     let block = Block::default()
-        .title(Span::styled(" 🕸️  Crawl Control Center ", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)))
+        .title(Span::styled(
+            " 🕸️  Crawl Control Center ",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ))
         .borders(Borders::ALL)
         .border_style(Style::default().fg(border_color));
 
@@ -30,13 +35,33 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         ]),
         Line::from(""),
         Line::from(vec![
-            Span::styled("  [S] Settings  ", Style::default().fg(Color::Black).bg(Color::Rgb(100, 100, 150))),
+            Span::styled(
+                "  [S] Settings  ",
+                Style::default()
+                    .fg(Color::Black)
+                    .bg(Color::Rgb(100, 100, 150)),
+            ),
             Span::raw("  "),
-            Span::styled("  [F] Filters   ", Style::default().fg(Color::Black).bg(Color::Rgb(100, 150, 100))),
+            Span::styled(
+                "  [F] Filters   ",
+                Style::default()
+                    .fg(Color::Black)
+                    .bg(Color::Rgb(100, 150, 100)),
+            ),
             Span::raw("  "),
-            Span::styled("  [I] Stats     ", Style::default().fg(Color::Black).bg(Color::Rgb(150, 100, 100))),
+            Span::styled(
+                "  [I] Stats     ",
+                Style::default()
+                    .fg(Color::Black)
+                    .bg(Color::Rgb(150, 100, 100)),
+            ),
             Span::raw("  "),
-            Span::styled("  [A] Actions   ", Style::default().fg(Color::Black).bg(Color::Rgb(150, 150, 100))),
+            Span::styled(
+                "  [A] Actions   ",
+                Style::default()
+                    .fg(Color::Black)
+                    .bg(Color::Rgb(150, 150, 100)),
+            ),
         ]),
         Line::from(""),
     ];
@@ -73,7 +98,9 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             Span::styled(&app.input_url, Style::default().fg(Color::White)),
         ]));
         content.push(Line::from(""));
-        content.push(Line::from("  All discovered pages have been audited successfully."));
+        content.push(Line::from(
+            "  All discovered pages have been audited successfully.",
+        ));
         content.push(Line::from(vec![
             Span::raw("  Head to the "),
             Span::styled("'Dashboard'", Style::default().fg(Color::Yellow)),
@@ -90,7 +117,9 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             Span::styled(" 🔍 Ready to audit. ", Style::default().fg(Color::Cyan)),
             Span::raw("Enter a URL to begin the crawl:"),
         ]));
-        content.push(Line::from("  ________________________________________________"));
+        content.push(Line::from(
+            "  ________________________________________________",
+        ));
         content.push(Line::from(""));
         content.push(Line::from(vec![
             Span::styled("  (Press ", Style::default().fg(Color::Gray)),
@@ -117,7 +146,6 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         .block(block)
         .wrap(Wrap { trim: false })
         .style(Style::default().bg(Color::Rgb(15, 15, 25)));
-    
+
     f.render_widget(p, area);
 }
-

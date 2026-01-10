@@ -13,7 +13,12 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     let border_color = Color::Rgb(40, 45, 60);
 
     let block = Block::default()
-        .title(Span::styled(" 🔌 API Connectors ", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)))
+        .title(Span::styled(
+            " 🔌 API Connectors ",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ))
         .borders(Borders::ALL)
         .border_style(Style::default().fg(border_color));
 
@@ -26,7 +31,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             } else {
                 ("🔴", " OFF-LINE", Color::Red)
             };
-            
+
             ListItem::new(Line::from(vec![
                 Span::styled(format!(" {} ", icon), Style::default()),
                 Span::styled(format!(" {:<20} ", name), Style::default().fg(Color::White)),
@@ -44,7 +49,6 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     let list = List::new(connector_items)
         .block(block)
         .style(Style::default().bg(Color::Rgb(15, 15, 25)));
-    
+
     f.render_widget(list, area);
 }
-

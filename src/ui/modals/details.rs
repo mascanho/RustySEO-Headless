@@ -37,9 +37,14 @@ pub fn render(f: &mut Frame, app: &mut App) {
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title(Span::styled(format!(" Page Details: ID {} ", row_data[0]), Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)))
+                .title(Span::styled(
+                    format!(" Page Details: ID {} ", row_data[0]),
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                ))
                 .border_style(Style::default().fg(border_color))
-                .bg(Color::Rgb(15, 15, 25))
+                .bg(Color::Rgb(15, 15, 25)),
         )
         .select(app.detail_tab)
         .style(Style::default().fg(Color::DarkGray))
@@ -69,41 +74,81 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
 fn render_general(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
     let accent_color = Color::Rgb(80, 140, 255);
-    
+
     let info = vec![
         Line::from(vec![
-            Span::styled(" 🔗 URL: ", Style::default().add_modifier(Modifier::BOLD).fg(accent_color)),
+            Span::styled(
+                " 🔗 URL: ",
+                Style::default()
+                    .add_modifier(Modifier::BOLD)
+                    .fg(accent_color),
+            ),
             Span::styled(&row_data[1], Style::default().fg(Color::White)),
         ]),
         Line::from(""),
         Line::from(vec![
-            Span::styled(" 📝 Title: ", Style::default().add_modifier(Modifier::BOLD).fg(accent_color)),
+            Span::styled(
+                " 📝 Title: ",
+                Style::default()
+                    .add_modifier(Modifier::BOLD)
+                    .fg(accent_color),
+            ),
             Span::raw(&row_data[2]),
         ]),
         Line::from(vec![
-            Span::styled(" 🏷️  H1:    ", Style::default().add_modifier(Modifier::BOLD).fg(accent_color)),
+            Span::styled(
+                " 🏷️  H1:    ",
+                Style::default()
+                    .add_modifier(Modifier::BOLD)
+                    .fg(accent_color),
+            ),
             Span::raw(&row_data[4]),
         ]),
         Line::from(""),
-        Line::from(vec![Span::styled(" 📄 Meta Description: ", Style::default().add_modifier(Modifier::BOLD).fg(accent_color))]),
+        Line::from(vec![Span::styled(
+            " 📄 Meta Description: ",
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(accent_color),
+        )]),
         Line::from(vec![Span::raw(format!("   {}", &row_data[6]))]),
         Line::from(""),
         Line::from(vec![
-            Span::styled(" 📡 Status Code: ", Style::default().add_modifier(Modifier::BOLD).fg(accent_color)),
-            Span::styled(&row_data[8], if row_data[8].contains("200") { Style::default().fg(Color::Green) } else { Style::default().fg(Color::Red) }),
+            Span::styled(
+                " 📡 Status Code: ",
+                Style::default()
+                    .add_modifier(Modifier::BOLD)
+                    .fg(accent_color),
+            ),
+            Span::styled(
+                &row_data[8],
+                if row_data[8].contains("200") {
+                    Style::default().fg(Color::Green)
+                } else {
+                    Style::default().fg(Color::Red)
+                },
+            ),
         ]),
     ];
     let p = Paragraph::new(info)
-        .block(block.title(Span::styled(" General Information ", Style::default().fg(Color::Yellow))))
+        .block(block.title(Span::styled(
+            " General Information ",
+            Style::default().fg(Color::Yellow),
+        )))
         .wrap(Wrap { trim: true });
     f.render_widget(p, area);
 }
 
 fn render_analysis(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
     let accent_color = Color::Rgb(80, 140, 255);
-    
+
     let analysis = vec![
-        Line::from(vec![Span::styled(" 🔍 Content Metrics ", Style::default().add_modifier(Modifier::BOLD).fg(accent_color))]),
+        Line::from(vec![Span::styled(
+            " 🔍 Content Metrics ",
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(accent_color),
+        )]),
         Line::from(""),
         Line::from(vec![
             Span::styled("  📏 Title Length:  ", Style::default().fg(Color::Cyan)),
@@ -133,46 +178,94 @@ fn render_analysis(f: &mut Frame, row_data: &[String], area: Rect, block: Block)
         ]),
     ];
     let p = Paragraph::new(analysis)
-        .block(block.title(Span::styled(" SEO Deep Dive ", Style::default().fg(Color::Yellow))))
+        .block(block.title(Span::styled(
+            " SEO Deep Dive ",
+            Style::default().fg(Color::Yellow),
+        )))
         .wrap(Wrap { trim: true });
     f.render_widget(p, area);
 }
 
 fn render_checklist(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
     let accent_color = Color::Rgb(80, 140, 255);
-    
+
     let checklist = vec![
-        Line::from(vec![Span::styled(" ⚔️  SEO Health Check ", Style::default().add_modifier(Modifier::BOLD).fg(accent_color))]),
+        Line::from(vec![Span::styled(
+            " ⚔️  SEO Health Check ",
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(accent_color),
+        )]),
         Line::from(""),
         Line::from(if row_data[2].len() > 60 {
-            vec![Span::styled("  ✘ ", Style::default().fg(Color::Red)), Span::raw("Title too long (over 60 chars)")]
+            vec![
+                Span::styled("  ✘ ", Style::default().fg(Color::Red)),
+                Span::raw("Title too long (over 60 chars)"),
+            ]
         } else {
-            vec![Span::styled("  ✔ ", Style::default().fg(Color::Green)), Span::raw("Title length is optimal")]
+            vec![
+                Span::styled("  ✔ ", Style::default().fg(Color::Green)),
+                Span::raw("Title length is optimal"),
+            ]
         }),
         Line::from(if row_data[6].len() > 160 {
-            vec![Span::styled("  ✘ ", Style::default().fg(Color::Red)), Span::raw("Meta description exceeds 160 chars")]
+            vec![
+                Span::styled("  ✘ ", Style::default().fg(Color::Red)),
+                Span::raw("Meta description exceeds 160 chars"),
+            ]
         } else {
-            vec![Span::styled("  ✔ ", Style::default().fg(Color::Green)), Span::raw("Meta description length is good")]
+            vec![
+                Span::styled("  ✔ ", Style::default().fg(Color::Green)),
+                Span::raw("Meta description length is good"),
+            ]
         }),
         Line::from(if row_data[4].is_empty() {
-            vec![Span::styled("  ✘ ", Style::default().fg(Color::Red)), Span::raw("Missing H1 heading")]
+            vec![
+                Span::styled("  ✘ ", Style::default().fg(Color::Red)),
+                Span::raw("Missing H1 heading"),
+            ]
         } else {
-            vec![Span::styled("  ✔ ", Style::default().fg(Color::Green)), Span::raw("H1 heading present and valid")]
+            vec![
+                Span::styled("  ✔ ", Style::default().fg(Color::Green)),
+                Span::raw("H1 heading present and valid"),
+            ]
         }),
         Line::from(if row_data[8].contains("200") {
-            vec![Span::styled("  ✔ ", Style::default().fg(Color::Green)), Span::raw("HTTP Status OK (200)")]
+            vec![
+                Span::styled("  ✔ ", Style::default().fg(Color::Green)),
+                Span::raw("HTTP Status OK (200)"),
+            ]
         } else {
-            vec![Span::styled("  ✘ ", Style::default().fg(Color::Red)), Span::raw("Critical HTTP Status Issue")]
+            vec![
+                Span::styled("  ✘ ", Style::default().fg(Color::Red)),
+                Span::raw("Critical HTTP Status Issue"),
+            ]
         }),
         Line::from(""),
-        Line::from(vec![Span::styled(" 💡 Recommendations ", Style::default().add_modifier(Modifier::BOLD).fg(Color::Yellow))]),
-        Line::from(vec![Span::styled("  • ", Style::default().fg(accent_color)), Span::raw("Ensure keyword density is balanced (1.5% - 2.0%).")]),
-        Line::from(vec![Span::styled("  • ", Style::default().fg(accent_color)), Span::raw("Optimize internal linking for high-value pages.")]),
-        Line::from(vec![Span::styled("  • ", Style::default().fg(accent_color)), Span::raw("Add ALT tags to images for better accessibility.")]),
+        Line::from(vec![Span::styled(
+            " 💡 Recommendations ",
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(Color::Yellow),
+        )]),
+        Line::from(vec![
+            Span::styled("  • ", Style::default().fg(accent_color)),
+            Span::raw("Ensure keyword density is balanced (1.5% - 2.0%)."),
+        ]),
+        Line::from(vec![
+            Span::styled("  • ", Style::default().fg(accent_color)),
+            Span::raw("Optimize internal linking for high-value pages."),
+        ]),
+        Line::from(vec![
+            Span::styled("  • ", Style::default().fg(accent_color)),
+            Span::raw("Add ALT tags to images for better accessibility."),
+        ]),
     ];
     let p = Paragraph::new(checklist)
-        .block(block.title(Span::styled(" Automated SEO Audit Checklist ", Style::default().fg(Color::Yellow))))
+        .block(block.title(Span::styled(
+            " Automated SEO Audit Checklist ",
+            Style::default().fg(Color::Yellow),
+        )))
         .wrap(Wrap { trim: true });
     f.render_widget(p, area);
 }
-

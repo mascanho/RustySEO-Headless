@@ -13,7 +13,12 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     let border_color = Color::Rgb(40, 45, 60);
 
     let block = Block::default()
-        .title(Span::styled(" 📄 System Logs ", Style::default().fg(Color::Yellow).add_modifier(ratatui::style::Modifier::BOLD)))
+        .title(Span::styled(
+            " 📄 System Logs ",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(ratatui::style::Modifier::BOLD),
+        ))
         .borders(Borders::ALL)
         .border_style(Style::default().fg(border_color));
 
@@ -32,7 +37,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             } else {
                 (" ℹ ", Color::Rgb(100, 150, 255))
             };
-            
+
             ListItem::new(Line::from(vec![
                 Span::styled(icon, Style::default().fg(color)),
                 Span::styled(log, Style::default().fg(color)),
@@ -53,4 +58,3 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
     f.render_stateful_widget(list, area, &mut app.logs_state);
 }
-
