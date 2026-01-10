@@ -141,11 +141,36 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 KeyCode::Esc | KeyCode::Char('h') | KeyCode::Left => {
                                     app.sidebar_visible = false
                                 }
-                                KeyCode::Char('k') | KeyCode::Up => app.previous_sidebar_tab(),
-                                KeyCode::Char('j') | KeyCode::Down => app.next_sidebar_tab(),
+                                KeyCode::Char('k') | KeyCode::Up => {
+                                    if app.sidebar_tab == 4 {
+                                        app.previous_bookmark();
+                                    } else {
+                                        app.previous_sidebar_tab();
+                                    }
+                                }
+                                KeyCode::Char('j') | KeyCode::Down => {
+                                    if app.sidebar_tab == 4 {
+                                        app.next_bookmark();
+                                    } else {
+                                        app.next_sidebar_tab();
+                                    }
+                                }
                                 KeyCode::Char('l') | KeyCode::Right => app.next_state(),
                                 KeyCode::Tab => app.next_sidebar_tab(),
                                 KeyCode::BackTab => app.previous_sidebar_tab(),
+                                KeyCode::Enter => {
+                                    if app.sidebar_tab == 4 {
+                                        let bookmarks = vec![
+                                            "https://markwarrior.dev",
+                                            "https://rustyseo.com",
+                                            "https://algarvewonders.com",
+                                        ];
+                                        if let Some(url) = bookmarks.get(app.bookmark_index) {
+                                            app.input_url = url.to_string();
+                                            app.start_crawl();
+                                        }
+                                    }
+                                }
                                 _ => {}
                             }
                             // Sidebar usually steals most navigation if visible

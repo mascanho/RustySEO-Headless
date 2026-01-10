@@ -176,26 +176,40 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
         // Bookmarks
         4 => {
-            let items = vec![
-                ListItem::new(Line::from(vec![
-                    Span::styled(" ▶ ", Style::default().fg(Color::Green)),
-                    Span::styled("START CRAWL", Style::default().add_modifier(Modifier::BOLD)),
-                ])),
-                ListItem::new(Line::from(vec![
-                    Span::styled(" ⏸ ", Style::default().fg(Color::Yellow)),
-                    Span::raw("PAUSE"),
-                ])),
-                ListItem::new(Line::from(vec![
-                    Span::styled(" ⏹ ", Style::default().fg(Color::Red)),
-                    Span::raw("STOP"),
-                ])),
-                ListItem::new(Line::from(vec![
-                    Span::styled(" 💾 ", Style::default().fg(Color::Cyan)),
-                    Span::raw("EXPORT DATA"),
-                ])),
+            let bookmarks = vec![
+                "https://markwarrior.dev",
+                "https://rustyseo.com",
+                "https://algarvewonders.com",
             ];
+
+            let items: Vec<ListItem> = bookmarks
+                .iter()
+                .enumerate()
+                .map(|(i, url)| {
+                    let is_selected = i == app.bookmark_index;
+                    let mut style = Style::default();
+                    if is_selected {
+                        style = style
+                            .fg(accent_color)
+                            .add_modifier(Modifier::BOLD)
+                            .add_modifier(Modifier::REVERSED);
+                    }
+                    ListItem::new(Line::from(vec![
+                        Span::styled(
+                            " 🌐 ",
+                            Style::default().fg(if is_selected {
+                                accent_color
+                            } else {
+                                Color::Cyan
+                            }),
+                        ),
+                        Span::styled(*url, style),
+                    ]))
+                })
+                .collect();
+
             let list = List::new(items).block(content_block.title(Span::styled(
-                " Saved Crawls",
+                " 📚 Bookmarks ",
                 Style::default().fg(Color::Yellow),
             )));
             f.render_widget(list, sidebar_content_area);

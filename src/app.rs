@@ -22,6 +22,7 @@ impl Default for App {
             task_panel_visible: false,
             current_state: AppState::Crawl,
             sidebar_tab: 0,
+            bookmark_index: 0,
             table_data,
             table_state,
             horizontal_scroll: 0,
@@ -218,9 +219,21 @@ impl App {
 
     pub fn previous_sidebar_tab(&mut self) {
         self.sidebar_tab = if self.sidebar_tab == 0 {
-            3
+            4
         } else {
             self.sidebar_tab - 1
+        };
+    }
+
+    pub fn next_bookmark(&mut self) {
+        self.bookmark_index = (self.bookmark_index + 1) % 3; // 3 bookmarks
+    }
+
+    pub fn previous_bookmark(&mut self) {
+        self.bookmark_index = if self.bookmark_index == 0 {
+            2
+        } else {
+            self.bookmark_index - 1
         };
     }
 

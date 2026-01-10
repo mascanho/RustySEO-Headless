@@ -24,6 +24,7 @@ pub struct App {
     pub task_panel_visible: bool,
     pub current_state: AppState,
     pub sidebar_tab: usize,
+    pub bookmark_index: usize,
     pub table_data: Vec<Vec<String>>,
     pub table_state: ratatui::widgets::TableState,
     pub horizontal_scroll: usize,
