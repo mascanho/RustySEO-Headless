@@ -9,6 +9,7 @@ pub struct PageElements {
     pub mobile: bool,
     pub language: String,
     pub indexability: String,
+    pub anchor_links: Vec<String>,
 }
 
 pub fn extract_page_elements(document: &Html) -> PageElements {
@@ -61,6 +62,11 @@ pub fn extract_page_elements(document: &Html) -> PageElements {
         .map(|s| s.to_string())
         .unwrap_or("".into());
 
+    let anchor_links = document
+        .select(&Selector::parse("a[href]").unwrap())
+        .map(|e| e.value().attr("href").unwrap().to_string())
+        .collect();
+
     PageElements {
         title,
         h1,
@@ -69,5 +75,6 @@ pub fn extract_page_elements(document: &Html) -> PageElements {
         mobile,
         language,
         indexability,
+        anchor_links,
     }
 }

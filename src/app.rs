@@ -78,6 +78,7 @@ impl App {
                             data.mobile.to_string(),
                             data.language.to_string(),
                             data.indexability.to_string(),
+                            data.anchor_links.join(", "),
                         ];
                         self.table_data.push(row);
                         self.logs_data.insert(0, format!("Crawled: {}", data.url));

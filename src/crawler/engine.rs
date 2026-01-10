@@ -23,6 +23,7 @@ pub struct PageData {
     pub mobile: bool,
     pub language: String,
     pub indexability: String,
+    pub anchor_links: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -156,6 +157,7 @@ impl CrawlEngine {
             mobile: elements.mobile,
             language: elements.language,
             indexability: elements.indexability,
+            anchor_links: elements.anchor_links,
         })
     }
 
