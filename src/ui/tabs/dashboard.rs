@@ -134,8 +134,13 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 }
             }
 
-            let content = if j == 3 || j == 5 || j == 7 {
-                let w = if j == 3 { 5 } else { 7 };
+            let content = if j == 3 || j == 5 || j == 7 || j == 8 {
+                let w = match j {
+                    3 => 5,
+                    5 | 7 => 7,
+                    8 => 8,
+                    _ => unreachable!(),
+                };
                 let l = content.len();
                 if l < w {
                     let left_pad = (w - l) / 2;

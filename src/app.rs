@@ -257,7 +257,6 @@ impl App {
         }
     }
 
-
     pub fn next_detail_tab(&mut self) {
         self.detail_tab = (self.detail_tab + 1) % 8;
     }

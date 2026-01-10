@@ -150,7 +150,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                             app.bookmarks = crate::db::load_bookmarks();
                                             app.bookmark_input.clear();
                                             app.bookmark_cursor = 0;
-                                        } else if let Some(url) = app.bookmarks.get(app.bookmark_index) {
+                                        } else if let Some(url) =
+                                            app.bookmarks.get(app.bookmark_index)
+                                        {
                                             app.input_url = url.to_string();
                                             app.start_crawl();
                                         }
