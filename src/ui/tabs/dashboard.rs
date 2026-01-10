@@ -18,9 +18,9 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         "Title",
         "Len",
         "H1",
-        "H1 Len",
+        "Len",
         "H2",
-        "H2 Len",
+        "Len",
         "Status",
         "Mobile",
         "Lang",
@@ -134,6 +134,25 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 }
             }
 
+            let content = if j == 3 || j == 5 || j == 7 {
+                let w = if j == 3 { 5 } else { 7 };
+                let l = content.len();
+                if l < w {
+                    let left_pad = (w - l) / 2;
+                    let right_pad = w - l - left_pad;
+                    format!(
+                        "{}{}{}",
+                        " ".repeat(left_pad),
+                        content,
+                        " ".repeat(right_pad)
+                    )
+                } else {
+                    content
+                }
+            } else {
+                content
+            };
+
             Cell::from(content).style(cell_style)
         });
 
@@ -174,7 +193,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 ))
                 .border_style(Style::default().fg(border_color)),
         )
-        .column_spacing(2)
+        .column_spacing(1)
         .style(Style::default().bg(Color::Rgb(15, 15, 25)))
         .highlight_symbol(Span::styled(
             " ➔ ",
