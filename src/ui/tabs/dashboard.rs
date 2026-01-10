@@ -76,9 +76,9 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             let mut content = if j == 1 || j == 2 || j == 4 || j == 6 || j == 8 {
                 // URL, Title, H1, Desc, H2
                 let content = c.as_str();
-                if content.len() > 50 {
+                if content.len() > 100 {
                     let start = app.horizontal_scroll.min(content.len().saturating_sub(50));
-                    let end = (start + 50).min(content.len());
+                    let end = (start + 100).min(content.len());
                     if start > 0 {
                         format!("…{}", &content[start..end])
                     } else {
@@ -179,7 +179,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
     let widths = [
         Constraint::Length(4),  // ID
-        Constraint::Min(35),    // URL
+        Constraint::Min(55),    // URL
         Constraint::Length(20), // Title
         Constraint::Length(5),  // Title Len
         Constraint::Length(20), // H1
