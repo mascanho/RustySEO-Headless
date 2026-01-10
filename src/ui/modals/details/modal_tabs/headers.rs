@@ -1,14 +1,12 @@
 use ratatui::{
     Frame,
     layout::Rect,
-    style::{Color, Modifier, Style},
+    style::{Color, Style},
     text::Span,
     widgets::{Block, List, ListItem},
 };
 
 pub fn render(f: &mut Frame, headers: &[String], area: Rect, block: Block) {
-    let accent_color = Color::Rgb(80, 140, 255);
-
     let items = if headers.is_empty() {
         vec![ListItem::new(Span::raw("No headers captured."))]
     } else {
@@ -23,13 +21,7 @@ pub fn render(f: &mut Frame, headers: &[String], area: Rect, block: Block) {
             " HTTP Response Headers ",
             Style::default().fg(Color::Yellow),
         )))
-        .style(Style::default().fg(Color::White))
-        .highlight_symbol(" ➔ ")
-        .highlight_style(
-            Style::default()
-                .add_modifier(Modifier::BOLD)
-                .fg(accent_color),
-        );
+        .style(Style::default().fg(Color::White));
 
     f.render_widget(list, area);
 }

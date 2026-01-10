@@ -90,13 +90,13 @@ pub fn render(f: &mut Frame, app: &mut App) {
         6 => modal_tabs::schema::render(f, chunks[1], content_block),
         7 => modal_tabs::headers::render(
             f,
-            &app.page_data[selected_idx].headers,
+            &app.page_data[selected_idx].headers.clone(),
             chunks[1],
             content_block,
         ),
         8 => modal_tabs::headings::render(
             f,
-            &app.page_data[selected_idx].headings,
+            &app.page_data[selected_idx].headings.clone(),
             chunks[1],
             content_block,
         ),

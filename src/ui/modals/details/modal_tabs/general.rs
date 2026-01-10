@@ -3,23 +3,23 @@ use ratatui::{
     layout::Rect,
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Paragraph, Wrap},
+    widgets::{Block, List, ListItem},
 };
 
 pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
     let accent_color = Color::Rgb(80, 140, 255);
 
-    let info = vec![
-        // URL and Title Section
-        Line::from(Span::styled(
+    let items = vec![
+        // PAGE INFORMATION Section
+        ListItem::new(Line::from(Span::styled(
             "PAGE INFORMATION",
             Style::default()
                 .add_modifier(Modifier::BOLD)
                 .fg(Color::Cyan)
                 .add_modifier(Modifier::UNDERLINED),
-        )),
-        Line::from(""),
-        Line::from(vec![
+        ))),
+        ListItem::new(""),
+        ListItem::new(Line::from(vec![
             Span::styled(
                 "URL: ",
                 Style::default()
@@ -27,8 +27,8 @@ pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
                     .fg(accent_color),
             ),
             Span::raw(&row_data[1]),
-        ]),
-        Line::from(vec![
+        ])),
+        ListItem::new(Line::from(vec![
             Span::styled(
                 "Title: ",
                 Style::default()
@@ -36,18 +36,18 @@ pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
                     .fg(accent_color),
             ),
             Span::raw(&row_data[2]),
-        ]),
-        Line::from(""),
-        // Headings Section
-        Line::from(Span::styled(
+        ])),
+        ListItem::new(""),
+        // HEADINGS Section
+        ListItem::new(Line::from(Span::styled(
             "HEADINGS",
             Style::default()
                 .add_modifier(Modifier::BOLD)
                 .fg(Color::Cyan)
                 .add_modifier(Modifier::UNDERLINED),
-        )),
-        Line::from(""),
-        Line::from(vec![
+        ))),
+        ListItem::new(""),
+        ListItem::new(Line::from(vec![
             Span::styled(
                 "H1: ",
                 Style::default()
@@ -55,8 +55,8 @@ pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
                     .fg(accent_color),
             ),
             Span::raw(&row_data[4]),
-        ]),
-        Line::from(vec![
+        ])),
+        ListItem::new(Line::from(vec![
             Span::styled(
                 "H1 Length: ",
                 Style::default()
@@ -65,8 +65,8 @@ pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
             ),
             Span::raw(&row_data[5]),
             Span::raw(" chars"),
-        ]),
-        Line::from(vec![
+        ])),
+        ListItem::new(Line::from(vec![
             Span::styled(
                 "H2: ",
                 Style::default()
@@ -74,8 +74,8 @@ pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
                     .fg(accent_color),
             ),
             Span::raw(&row_data[8]),
-        ]),
-        Line::from(vec![
+        ])),
+        ListItem::new(Line::from(vec![
             Span::styled(
                 "H2 Length: ",
                 Style::default()
@@ -84,29 +84,29 @@ pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
             ),
             Span::raw(&row_data[9]),
             Span::raw(" chars"),
-        ]),
-        Line::from(""),
-        // Description Section
-        Line::from(Span::styled(
+        ])),
+        ListItem::new(""),
+        // DESCRIPTION Section
+        ListItem::new(Line::from(Span::styled(
             "META DESCRIPTION",
             Style::default()
                 .add_modifier(Modifier::BOLD)
                 .fg(Color::Cyan)
                 .add_modifier(Modifier::UNDERLINED),
-        )),
-        Line::from(""),
-        Line::from(Span::raw(&row_data[6])),
-        Line::from(""),
-        // Technical Section
-        Line::from(Span::styled(
+        ))),
+        ListItem::new(""),
+        ListItem::new(Span::raw(&row_data[6])),
+        ListItem::new(""),
+        // TECHNICAL Section
+        ListItem::new(Line::from(Span::styled(
             "TECHNICAL DETAILS",
             Style::default()
                 .add_modifier(Modifier::BOLD)
                 .fg(Color::Cyan)
                 .add_modifier(Modifier::UNDERLINED),
-        )),
-        Line::from(""),
-        Line::from(vec![
+        ))),
+        ListItem::new(""),
+        ListItem::new(Line::from(vec![
             Span::styled(
                 "Status Code: ",
                 Style::default()
@@ -114,8 +114,8 @@ pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
                     .fg(accent_color),
             ),
             Span::raw(&row_data[10]),
-        ]),
-        Line::from(vec![
+        ])),
+        ListItem::new(Line::from(vec![
             Span::styled(
                 "Mobile Friendly: ",
                 Style::default()
@@ -123,8 +123,8 @@ pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
                     .fg(accent_color),
             ),
             Span::raw(if row_data[11] == "true" { "Yes" } else { "No" }),
-        ]),
-        Line::from(vec![
+        ])),
+        ListItem::new(Line::from(vec![
             Span::styled(
                 "Language: ",
                 Style::default()
@@ -132,8 +132,8 @@ pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
                     .fg(accent_color),
             ),
             Span::raw(&row_data[12]),
-        ]),
-        Line::from(vec![
+        ])),
+        ListItem::new(Line::from(vec![
             Span::styled(
                 "Indexable: ",
                 Style::default()
@@ -141,13 +141,15 @@ pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
                     .fg(accent_color),
             ),
             Span::raw(&row_data[13]),
-        ]),
+        ])),
     ];
-    let p = Paragraph::new(info)
+
+    let list = List::new(items)
         .block(block.title(Span::styled(
             " General Information ",
             Style::default().fg(Color::Yellow),
         )))
-        .wrap(Wrap { trim: true });
-    f.render_widget(p, area);
+        .style(Style::default().fg(Color::White));
+
+    f.render_widget(list, area);
 }
