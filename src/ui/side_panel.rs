@@ -44,6 +44,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
                 .borders(Borders::ALL)
                 .title(Span::styled(" 🛠️  Tools ", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)))
                 .border_style(Style::default().fg(border_color))
+                .bg(Color::Rgb(15, 15, 25))
         )
         .select(app.sidebar_tab)
         .style(Style::default().fg(Color::DarkGray))
@@ -61,7 +62,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
     let content_block = Block::default()
         .borders(Borders::ALL)
         .border_style(Style::default().fg(border_color))
-        .bg(Color::Rgb(20, 20, 30));
+        .bg(Color::Rgb(15, 15, 25));
 
     match app.sidebar_tab {
         0 => {
