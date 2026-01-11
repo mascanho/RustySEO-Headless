@@ -84,7 +84,8 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 ))
                 .border_style(Style::default().fg(border_color)),
         )
-        .style(Style::default().bg(Color::Rgb(15, 15, 25)));
+        .style(Style::default().bg(Color::Rgb(15, 15, 25)))
+        .alignment(ratatui::layout::Alignment::Right);
 
     f.render_widget(p, chunks[1]);
 }

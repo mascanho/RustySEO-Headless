@@ -368,10 +368,10 @@ fn render_help_modal(f: &mut Frame) {
         Line::from(vec![
             Span::styled("  s", Style::default().fg(Color::Cyan)),
             Span::raw(": Settings | "),
+            Span::styled("g", Style::default().fg(Color::Cyan)),
+            Span::raw(": Summary  | "),
             Span::styled("f", Style::default().fg(Color::Cyan)),
             Span::raw(": Filters  | "),
-            Span::styled("i", Style::default().fg(Color::Cyan)),
-            Span::raw(": Stats    | "),
             Span::styled("a", Style::default().fg(Color::Cyan)),
             Span::raw(": Actions  | "),
             Span::styled("b", Style::default().fg(Color::Cyan)),

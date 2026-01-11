@@ -21,12 +21,18 @@ pub async fn create_settings_file() -> ProjectDirs {
             eprintln!("Failed to create settings.toml: {}", err);
             std::process::exit(1);
         });
-        // Optionally, write default contents to the file
-        file.write_all(b"# RustySEO settings\n")
-            .unwrap_or_else(|err| {
-                eprintln!("Failed to write to settings.toml: {}", err);
-                std::process::exit(1);
-            });
+        
+        // Write default settings to TOML
+        let default_settings = crate::models::AppSettings::default();
+        let toml_string = toml::to_string_pretty(&default_settings).unwrap_or_else(|err| {
+            eprintln!("Failed to serialize default settings: {}", err);
+            std::process::exit(1);
+        });
+
+        file.write_all(toml_string.as_bytes()).unwrap_or_else(|err| {
+            eprintln!("Failed to write to settings.toml: {}", err);
+            std::process::exit(1);
+        });
     }
 
     project_dirs

@@ -39,9 +39,9 @@ pub fn render(f: &mut Frame, app: &mut App) {
     app.sidebar_tab_rect = Some(sidebar_tab_area);
 
     let sidebar_titles = vec![
-        " ⚙  General ",
+        " ⚙ Settings ",
+        " 📊 Summary ",
         "  Filter ",
-        " 📊 Stat ",
         " ⚡ Act ",
         "📚 Bookmarks",
     ];
@@ -78,7 +78,80 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     match app.sidebar_tab {
         0 => {
-            // Compute crawl summary stats
+            // Settings Tab
+            let mut items = Vec::new();
+            if let Some(settings) = &app.settings {
+                // Crawler Section
+                items.push(ListItem::new(Line::from(vec![
+                    Span::styled(" 🕷️  CRAWLER ENGINE ", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+                ])));
+                items.push(ListItem::new(Line::from(vec![
+                    Span::styled("   Max Pages:      ", Style::default().fg(accent_color)),
+                    Span::styled(settings.crawler.max_pages.to_string(), Style::default().fg(Color::White)),
+                ])));
+                items.push(ListItem::new(Line::from(vec![
+                    Span::styled("   Concurrency:    ", Style::default().fg(accent_color)),
+                    Span::styled(settings.crawler.concurrency.to_string(), Style::default().fg(Color::White)),
+                ])));
+                items.push(ListItem::new(Line::from(vec![
+                    Span::styled("   Stay on Domain: ", Style::default().fg(accent_color)),
+                    Span::styled(settings.crawler.stay_on_domain.to_string(), Style::default().fg(if settings.crawler.stay_on_domain { Color::Green } else { Color::Red })),
+                ])));
+                items.push(ListItem::new(Line::from(vec![
+                    Span::styled("   User Agent:     ", Style::default().fg(accent_color)),
+                    Span::styled(settings.crawler.user_agent.clone(), Style::default().fg(Color::DarkGray)),
+                ])));
+                
+                items.push(ListItem::new(""));
+                
+                // UI Section
+                items.push(ListItem::new(Line::from(vec![
+                    Span::styled(" 🎨 UI / AESTHETICS ", Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD)),
+                ])));
+                items.push(ListItem::new(Line::from(vec![
+                    Span::styled("   Theme:          ", Style::default().fg(accent_color)),
+                    Span::styled(settings.ui.theme.clone(), Style::default().fg(Color::Cyan)),
+                ])));
+                items.push(ListItem::new(Line::from(vec![
+                    Span::styled("   Refresh Rate:   ", Style::default().fg(accent_color)),
+                    Span::styled(format!("{}ms", settings.ui.refresh_rate_ms), Style::default().fg(Color::White)),
+                ])));
+                
+                items.push(ListItem::new(""));
+                
+                // System Section
+                items.push(ListItem::new(Line::from(vec![
+                    Span::styled(" 🖥️  SYSTEM / DATA ", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+                ])));
+                items.push(ListItem::new(Line::from(vec![
+                    Span::styled("   Database:       ", Style::default().fg(accent_color)),
+                    Span::styled(settings.system.database_path.clone(), Style::default().fg(Color::DarkGray)),
+                ])));
+                items.push(ListItem::new(Line::from(vec![
+                    Span::styled("   Export Format:  ", Style::default().fg(accent_color)),
+                    Span::styled(settings.system.export_format.clone().to_uppercase(), Style::default().fg(Color::Green)),
+                ])));
+                
+                items.push(ListItem::new(""));
+                items.push(ListItem::new(Line::from(vec![
+                    Span::styled(" 📂 Config Path: ", Style::default().fg(Color::DarkGray)),
+                ])));
+                let path = crate::models::AppSettings::path();
+                items.push(ListItem::new(Line::from(vec![
+                    Span::styled(format!("   {}", path.display()), Style::default().fg(Color::DarkGray).add_modifier(Modifier::ITALIC)),
+                ])));
+            } else {
+                items.push(ListItem::new(" No settings loaded. "));
+            }
+
+            let list = List::new(items).block(content_block.title(Span::styled(
+                " App Configuration ",
+                Style::default().fg(Color::Yellow),
+            )));
+            f.render_widget(list, sidebar_content_area);
+        }
+        1 => {
+            // Compute crawl summary stats (Previously arm 0)
             let total_pages = app.page_data.len();
             let mut title_stats = (0, 0, 0); // <30, 30-60, >60
             let mut desc_stats = (0, 0, 0); // <120, 120-160, >160
@@ -156,8 +229,17 @@ pub fn render(f: &mut Frame, app: &mut App) {
                 ])),
                 ListItem::new(Line::from(vec![
                     Span::styled("  > 60 chars: ", Style::default().fg(accent_color)),
-                    Span::raw(title_stats.2.to_string()),
+                    Span::raw(total_headings.to_string()), // Simplified display
                 ])),
+            ];
+            
+            // Re-adding titles stats correctly
+            items[6] = ListItem::new(Line::from(vec![
+                Span::styled("  > 60 chars: ", Style::default().fg(accent_color)),
+                Span::raw(title_stats.2.to_string()),
+            ]));
+
+            items.extend(vec![
                 ListItem::new(""),
                 ListItem::new(Line::from(Span::styled(
                     "META DESCRIPTIONS",
@@ -184,7 +266,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
                         .add_modifier(Modifier::UNDERLINED)
                         .fg(Color::Cyan),
                 ))),
-            ];
+            ]);
 
             let mut status_keys: Vec<_> = status_counts.keys().collect();
             status_keys.sort();
@@ -212,31 +294,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
                     Span::styled("  Indexable: ", Style::default().fg(accent_color)),
                     Span::raw(format!("Yes: {}, No: {}", indexable_yes, indexable_no)),
                 ])),
-                ListItem::new(""),
-                ListItem::new(Line::from(Span::styled(
-                    "HEADINGS",
-                    Style::default()
-                        .add_modifier(Modifier::UNDERLINED)
-                        .fg(Color::Cyan),
-                ))),
-                ListItem::new(Line::from(vec![
-                    Span::styled("  Total Headings: ", Style::default().fg(accent_color)),
-                    Span::raw(total_headings.to_string()),
-                ])),
             ]);
-
-            let mut heading_keys: Vec<_> = heading_counts.keys().collect();
-            heading_keys.sort();
-            for tag in heading_keys {
-                let count = heading_counts.get(tag).unwrap();
-                items.push(ListItem::new(Line::from(vec![
-                    Span::styled(
-                        format!("  {}: ", tag.to_uppercase()),
-                        Style::default().fg(accent_color),
-                    ),
-                    Span::raw(count.to_string()),
-                ])));
-            }
 
             let list = List::new(items).block(content_block.title(Span::styled(
                 " Crawl Summary ",
@@ -244,7 +302,8 @@ pub fn render(f: &mut Frame, app: &mut App) {
             )));
             f.render_widget(list, sidebar_content_area);
         }
-        1 => {
+        2 => {
+            // Filters (Previously arm 1)
             let items = vec![
                 ListItem::new(Line::from(vec![
                     Span::styled(" [x] ", Style::default().fg(Color::Green)),
@@ -269,29 +328,8 @@ pub fn render(f: &mut Frame, app: &mut App) {
             )));
             f.render_widget(list, sidebar_content_area);
         }
-        2 => {
-            let text = vec![
-                Line::from(vec![
-                    Span::styled(" Progress: ", Style::default().fg(accent_color)),
-                    Span::styled("45%", Style::default().fg(Color::Yellow)),
-                ]),
-                Line::from(vec![
-                    Span::styled(" Audited:  ", Style::default().fg(accent_color)),
-                    Span::styled("120 ", Style::default().fg(Color::White)),
-                    Span::raw("URLs"),
-                ]),
-                Line::from(vec![
-                    Span::styled(" Issues:   ", Style::default().fg(accent_color)),
-                    Span::styled("2 ", Style::default().fg(Color::Red)),
-                ]),
-            ];
-            let p = Paragraph::new(text).block(content_block.title(Span::styled(
-                " Session Stats ",
-                Style::default().fg(Color::Yellow),
-            )));
-            f.render_widget(p, sidebar_content_area);
-        }
         3 => {
+            // Actions (Previously arm 3)
             let items = vec![
                 ListItem::new(Line::from(vec![
                     Span::styled(" ▶ ", Style::default().fg(Color::Green)),

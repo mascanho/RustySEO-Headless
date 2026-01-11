@@ -2,20 +2,80 @@ use crate::{app::AppState, crawler::PageData, settings};
 
 use std::sync::mpsc::{self, Receiver};
 
-#[derive(Debug, Clone)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppSettings {
+    pub crawler: CrawlerConfig,
+    pub ui: UiConfig,
+    pub system: SystemConfig,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CrawlerConfig {
     pub max_pages: usize,
+    pub concurrency: usize,
+    pub user_agent: String,
+    pub stay_on_domain: bool,
+    pub follow_redirects: bool,
+    pub timeout_seconds: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UiConfig {
+    pub theme: String,
+    pub show_logs_on_start: bool,
+    pub sidebar_width_percentage: u16,
+    pub refresh_rate_ms: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SystemConfig {
+    pub database_path: String,
+    pub log_level: String,
+    pub export_format: String,
 }
 
 impl Default for AppSettings {
     fn default() -> Self {
-        Self { max_pages: 50 }
+        Self {
+            crawler: CrawlerConfig {
+                max_pages: 50,
+                concurrency: 10,
+                user_agent: "RustySEO/0.1.0".to_string(),
+                stay_on_domain: true,
+                follow_redirects: true,
+                timeout_seconds: 15,
+            },
+            ui: UiConfig {
+                theme: "Oceanic".to_string(),
+                show_logs_on_start: false,
+                sidebar_width_percentage: 33,
+                refresh_rate_ms: 100,
+            },
+            system: SystemConfig {
+                database_path: "./rustyseo.db".to_string(),
+                log_level: "info".to_string(),
+                export_format: "csv".to_string(),
+            },
+        }
     }
 }
 
 impl AppSettings {
-    pub async fn new() -> Self {
-        Self { max_pages: 50 }
+    pub fn path() -> std::path::PathBuf {
+        let project_dirs = directories::ProjectDirs::from("", "", "rustyseo").unwrap();
+        project_dirs.data_dir().join("cli-settings.toml")
+    }
+
+    pub fn load() -> Self {
+        let path = Self::path();
+        if path.exists() {
+            let content = std::fs::read_to_string(path).unwrap_or_default();
+            toml::from_str(&content).unwrap_or_default()
+        } else {
+            Self::default()
+        }
     }
 }
 

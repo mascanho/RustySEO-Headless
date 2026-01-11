@@ -59,6 +59,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
         // create app and run it
         let mut app = App::new();
+        let settings = crate::models::AppSettings::load();
+        app.settings = Some(settings);
         app.log_receiver = Some(log_rx);
         app.bookmarks = db::load_bookmarks();
         let res = run_app(&mut terminal, &mut app);
@@ -383,9 +385,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             }
 
                             // Quick jumps
-                            KeyCode::Char('g') => app.set_sidebar_tab(0),
-                            KeyCode::Char('f') => app.set_sidebar_tab(1),
-                            KeyCode::Char('i') => app.set_sidebar_tab(2),
+                            KeyCode::Char('s') => app.set_sidebar_tab(0),
+                            KeyCode::Char('g') => app.set_sidebar_tab(1),
+                            KeyCode::Char('f') => app.set_sidebar_tab(2),
                             KeyCode::Char('a') => app.set_sidebar_tab(3),
                             KeyCode::Char('b') | KeyCode::Char('+') => app.set_sidebar_tab(4),
                             KeyCode::Char('L') => app.toggle_logs(),

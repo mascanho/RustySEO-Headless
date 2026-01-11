@@ -111,7 +111,7 @@ impl App {
             self.log(format!("Crawled: {}", data.url));
 
             // Update overall progress
-            let limit = self.settings.as_ref().map(|s| s.max_pages).unwrap_or(50) as f64;
+            let limit = self.settings.as_ref().map(|s| s.crawler.max_pages).unwrap_or(50) as f64;
             self.crawl_progress = (self.table_data.len() as f64 / limit).min(1.0);
         }
 
@@ -394,12 +394,13 @@ impl App {
         let (tx, rx) = mpsc::channel();
         self.crawl_receiver = Some(rx);
         let target_url = self.input_url.clone();
-        let max_pages = self.settings.as_ref().map(|s| s.max_pages).unwrap_or(500);
+        let max_pages = self.settings.as_ref().map(|s| s.crawler.max_pages).unwrap_or(500);
+        let concurrency = self.settings.as_ref().map(|s| s.crawler.concurrency).unwrap_or(10);
 
         tokio::task::spawn(async move {
             let engine = crate::crawler::CrawlEngine::new().await
                 .with_max_pages(max_pages)
-                .with_concurrency(10);
+                .with_concurrency(concurrency);
             
             let (tokio_tx, mut tokio_rx) = tokio::sync::mpsc::channel(100);
             let engine_clone = engine.clone();
