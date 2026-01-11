@@ -9,7 +9,7 @@ pub struct PageElements {
     pub mobile: bool,
     pub language: String,
     pub indexability: String,
-    pub anchor_links: Vec<String>,
+    pub anchor_links: Vec<(String, String)>,
     pub headings: Vec<(String, String)>,
 }
 
@@ -63,9 +63,13 @@ pub fn extract_page_elements(document: &Html) -> PageElements {
         .map(|s| s.to_string())
         .unwrap_or("".into());
 
-    let anchor_links = document
+    let anchor_links: Vec<(String, String)> = document
         .select(&Selector::parse("a[href]").unwrap())
-        .map(|e| e.value().attr("href").unwrap().to_string())
+        .map(|e| {
+            let href = e.value().attr("href").unwrap().to_string();
+            let text = e.text().collect::<String>();
+            (href, text)
+        })
         .collect();
 
     let heading_selector = Selector::parse("h1,h2,h3,h4,h5,h6").unwrap();
