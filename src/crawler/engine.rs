@@ -22,7 +22,7 @@ pub struct PageData {
     pub mobile: bool,
     pub language: String,
     pub indexability: String,
-    pub anchor_links: Vec<(String, String)>,
+    pub anchor_links: Vec<String>,
     pub headings: Vec<(String, String)>,
     pub headers: Vec<String>,
 }

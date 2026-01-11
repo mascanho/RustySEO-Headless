@@ -97,7 +97,7 @@ impl App {
                 data.mobile.to_string(),
                 data.language.to_string(),
                 data.indexability.to_string(),
-                data.anchor_links.len().to_string(),
+                data.anchor_links.join(", "),
             ];
             self.table_data.push(row);
             self.log(format!("Crawled: {}", data.url));
