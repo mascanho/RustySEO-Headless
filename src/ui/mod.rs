@@ -11,6 +11,7 @@ use crate::{app::AppState, models::App};
 pub mod footer;
 pub mod modals;
 pub mod side_panel;
+pub mod sidebar;
 pub mod tabs;
 
 pub fn ui(f: &mut Frame, app: &mut App) {

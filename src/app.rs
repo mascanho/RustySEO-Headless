@@ -251,6 +251,20 @@ impl App {
         }
     }
 
+    pub fn open_settings_file(&mut self) {
+        let path = crate::models::AppSettings::path();
+        #[cfg(target_os = "macos")]
+        let cmd = "open";
+        #[cfg(not(target_os = "macos"))]
+        let cmd = "xdg-open";
+
+        let _ = std::process::Command::new(cmd)
+            .arg(path)
+            .spawn();
+        
+        self.log("Opening settings file...".to_string());
+    }
+
     pub fn reset(&mut self) {
         self.sidebar_visible = false;
         self.task_panel_visible = false;
