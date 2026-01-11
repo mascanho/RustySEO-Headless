@@ -92,18 +92,18 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
             for page in &app.page_data {
                 // Titles
-                if page.title_len < 30 {
+                if page.elements.title.len() < 30 {
                     title_stats.0 += 1;
-                } else if page.title_len <= 60 {
+                } else if page.elements.title.len() <= 60 {
                     title_stats.1 += 1;
                 } else {
                     title_stats.2 += 1;
                 }
 
                 // Descriptions
-                if page.description_len < 120 {
+                if page.elements.description.len() < 120 {
                     desc_stats.0 += 1;
-                } else if page.description_len <= 160 {
+                } else if page.elements.description.len() <= 160 {
                     desc_stats.1 += 1;
                 } else {
                     desc_stats.2 += 1;
@@ -113,21 +113,26 @@ pub fn render(f: &mut Frame, app: &mut App) {
                 *status_counts.entry(page.status.clone()).or_insert(0) += 1;
 
                 // Mobile
-                if page.mobile {
+                if page.elements.mobile {
                     mobile_yes += 1;
                 } else {
                     mobile_no += 1;
                 }
 
                 // Indexable
-                if page.indexability.to_lowercase().contains("noindex") {
+                if page
+                    .elements
+                    .indexability
+                    .to_lowercase()
+                    .contains("noindex")
+                {
                     indexable_no += 1;
                 } else {
                     indexable_yes += 1;
                 }
 
                 // Headings
-                for (tag, _) in &page.headings {
+                for (tag, _) in &page.elements.headings {
                     *heading_counts.entry(tag.clone()).or_insert(0) += 1;
                     total_headings += 1;
                 }
