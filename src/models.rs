@@ -41,6 +41,8 @@ pub struct App {
     pub keyword_rects: Vec<(String, ratatui::layout::Rect)>,
     pub show_help: bool,
     pub show_details: bool,
+    pub show_dashboard_menu: bool,
+    pub dashboard_menu_selection: usize,
     pub crawl_progress: f64,
     pub input: String,
     pub input_mode: bool,

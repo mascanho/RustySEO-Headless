@@ -1,6 +1,7 @@
 use std::sync::mpsc;
 
 use crate::models::{App, AppSettings};
+use crate::ui::modals::dashboard_menu;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum AppState {
@@ -44,6 +45,8 @@ impl Default for App {
             keyword_rects: vec![],
             show_help: false,
             show_details: false,
+            show_dashboard_menu: false,
+            dashboard_menu_selection: 0,
             crawl_progress: 0.0,
             input: String::new(),
             input_mode: false,
@@ -418,6 +421,24 @@ impl App {
     pub fn scroll_logs_right(&mut self, max_scroll: usize) {
         if self.logs_horizontal_scroll < max_scroll {
             self.logs_horizontal_scroll = self.logs_horizontal_scroll.saturating_add(1);
+        }
+    }
+
+    pub fn next_dashboard_menu_item(&mut self) {
+        if self.dashboard_menu_selection < 6 {
+            self.dashboard_menu_selection += 1;
+        }
+    }
+
+    pub fn previous_dashboard_menu_item(&mut self) {
+        if self.dashboard_menu_selection > 0 {
+            self.dashboard_menu_selection = self.dashboard_menu_selection.saturating_sub(1);
+        }
+    }
+
+    pub fn execute_dashboard_menu_action(&mut self) {
+        if self.show_dashboard_menu {
+            dashboard_menu::handle_action(self, self.dashboard_menu_selection);
         }
     }
 }

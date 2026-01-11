@@ -142,6 +142,24 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             continue;
                         }
 
+                        // MODAL PRIORITY 2.5: Dashboard Menu
+                        if app.show_dashboard_menu {
+                            match key.code {
+                                KeyCode::Char('q') | KeyCode::Esc => {
+                                    app.show_dashboard_menu = false
+                                }
+                                KeyCode::Char('k') | KeyCode::Up => {
+                                    app.previous_dashboard_menu_item()
+                                }
+                                KeyCode::Char('j') | KeyCode::Down => {
+                                    app.next_dashboard_menu_item()
+                                }
+                                KeyCode::Enter => app.execute_dashboard_menu_action(),
+                                _ => {}
+                            }
+                            continue;
+                        }
+
                         // MODAL PRIORITY 3: Sidebar
                         if app.sidebar_visible {
                             if app.sidebar_tab == 4 {
@@ -277,6 +295,12 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             KeyCode::Enter => {
                                 if app.current_state == AppState::Dashboard {
                                     app.show_details = true;
+                                }
+                            }
+
+                            KeyCode::Char('m') => {
+                                if app.current_state == AppState::Dashboard {
+                                    app.show_dashboard_menu = true;
                                 }
                             }
 

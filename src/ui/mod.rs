@@ -89,6 +89,10 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         modals::details::render(f, app);
     }
 
+    if app.show_dashboard_menu {
+        modals::dashboard_menu::render(f, app);
+    }
+
     // Render Input Modal when in input mode
     if app.input_mode {
         let modal_area = centered_rect(25, 8, size);
@@ -223,6 +227,10 @@ fn render_help_modal(f: &mut Frame) {
             Span::styled("  Enter   ", Style::default().fg(Color::Cyan)),
             Span::raw(": Show Row Details"),
         ]),
+        Line::from(vec![
+            Span::styled("  m       ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Open Actions Menu"),
+        ]),
         Line::from(""),
         Line::from(vec![Span::styled(
             "Input Mode",
@@ -311,6 +319,29 @@ fn render_help_modal(f: &mut Frame) {
         Line::from(vec![
             Span::styled("  Shift+Tab", Style::default().fg(Color::Cyan)),
             Span::raw(": Previous Tab"),
+        ]),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "Dashboard Actions Menu",
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(accent_color),
+        )]),
+        Line::from(vec![
+            Span::styled("  q / Esc ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Close Menu"),
+        ]),
+        Line::from(vec![
+            Span::styled("  j / ↓   ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Next Action"),
+        ]),
+        Line::from(vec![
+            Span::styled("  k / ↑   ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Previous Action"),
+        ]),
+        Line::from(vec![
+            Span::styled("  Enter   ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Execute Action"),
         ]),
         Line::from(""),
         Line::from(vec![Span::styled(
