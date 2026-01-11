@@ -44,9 +44,16 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
     // Render Navigation Tabs
     let titles = vec![
-        "Deep Crawler",
-        "Connectors",
+        "Dashboard",
         "Crawl",
+        "Connectors",
+        "Redirects",
+        "Images",
+        "CSS",
+        "Javascript",
+        "Keywords",
+        "CWV",
+        "CustomSearch",
         "Reports",
         "Chat",
     ];
@@ -71,9 +78,20 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
     // Render Tab Content
     match app.current_state {
+        AppState::Dashboard => tabs::dashboard::render(f, app, content_area),
         AppState::Crawl => tabs::crawl::render(f, app, content_area),
         AppState::Connectors => tabs::connectors::render(f, app, content_area),
-        AppState::Dashboard => tabs::dashboard::render(f, app, content_area),
+        AppState::Redirects | AppState::Images | AppState::Css | AppState::Javascript | 
+        AppState::Keywords | AppState::CoreWebVitals | AppState::CustomSearch => {
+            let block = Block::default()
+                .borders(Borders::ALL)
+                .title(format!(" {:?} ", app.current_state))
+                .border_style(Style::default().fg(border_color));
+            let content = Paragraph::new("Feature coming soon...")
+                .block(block)
+                .alignment(ratatui::layout::Alignment::Center);
+            f.render_widget(content, content_area);
+        },
         AppState::Reports => tabs::reports::render(f, app, content_area),
         AppState::Chat => tabs::chat::render(f, app, content_area),
     }
@@ -201,8 +219,8 @@ fn render_help_modal(f: &mut Frame) {
             Span::raw(": Next Tab / Toggle Sidebar"),
         ]),
         Line::from(vec![
-            Span::styled("  1-5     ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Jump to Tab (1:Dash, 2:Conn, 3:Crawl, 4:Rep, 5:Chat)"),
+            Span::styled("  1-9, 0  ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Jump to Tab (1:Dash, 2:Crawl, 3:Conn, 4-0: SEO Tools)"),
         ]),
         Line::from(vec![
             Span::styled("  L       ", Style::default().fg(Color::Cyan)),

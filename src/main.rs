@@ -398,10 +398,15 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             KeyCode::Char('L') => app.toggle_logs(),
                             // Number jumps
                             KeyCode::Char('1') => app.current_state = AppState::Dashboard,
-                            KeyCode::Char('2') => app.current_state = AppState::Connectors,
-                            KeyCode::Char('3') => app.current_state = AppState::Crawl,
-                            KeyCode::Char('4') => app.current_state = AppState::Reports,
-                            KeyCode::Char('5') => app.current_state = AppState::Chat,
+                            KeyCode::Char('2') => app.current_state = AppState::Crawl,
+                            KeyCode::Char('3') => app.current_state = AppState::Connectors,
+                            KeyCode::Char('4') => app.current_state = AppState::Redirects,
+                            KeyCode::Char('5') => app.current_state = AppState::Images,
+                            KeyCode::Char('6') => app.current_state = AppState::Css,
+                            KeyCode::Char('7') => app.current_state = AppState::Javascript,
+                            KeyCode::Char('8') => app.current_state = AppState::Keywords,
+                            KeyCode::Char('9') => app.current_state = AppState::CoreWebVitals,
+                            KeyCode::Char('0') => app.current_state = AppState::CustomSearch,
                             _ => {}
                         }
                     }
@@ -445,7 +450,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 && my >= tab_rect.y
                                 && my < tab_rect.y + tab_rect.height
                             {
-                                let num_tabs = 5;
+                                let num_tabs = 12;
                                 let tab_width = tab_rect.width / num_tabs as u16;
                                 if tab_width > 0 {
                                     let tab_index = ((mx - tab_rect.x) / tab_width)
@@ -453,10 +458,17 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                         as usize;
                                     app.current_state = match tab_index {
                                         0 => AppState::Dashboard,
-                                        1 => AppState::Connectors,
-                                        2 => AppState::Crawl,
-                                        3 => AppState::Reports,
-                                        4 => AppState::Chat,
+                                        1 => AppState::Crawl,
+                                        2 => AppState::Connectors,
+                                        3 => AppState::Redirects,
+                                        4 => AppState::Images,
+                                        5 => AppState::Css,
+                                        6 => AppState::Javascript,
+                                        7 => AppState::Keywords,
+                                        8 => AppState::CoreWebVitals,
+                                        9 => AppState::CustomSearch,
+                                        10 => AppState::Reports,
+                                        11 => AppState::Chat,
                                         _ => app.current_state,
                                     };
                                 }

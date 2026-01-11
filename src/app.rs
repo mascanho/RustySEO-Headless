@@ -5,9 +5,16 @@ use crate::ui::modals::dashboard_menu;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum AppState {
+    Dashboard,
     Crawl,
     Connectors,
-    Dashboard,
+    Redirects,
+    Images,
+    Css,
+    Javascript,
+    Keywords,
+    CoreWebVitals,
+    CustomSearch,
     Reports,
     Chat,
 }
@@ -333,9 +340,16 @@ impl App {
 
     pub fn next_state(&mut self) {
         self.current_state = match self.current_state {
-            AppState::Dashboard => AppState::Connectors,
-            AppState::Connectors => AppState::Crawl,
-            AppState::Crawl => AppState::Reports,
+            AppState::Dashboard => AppState::Crawl,
+            AppState::Crawl => AppState::Connectors,
+            AppState::Connectors => AppState::Redirects,
+            AppState::Redirects => AppState::Images,
+            AppState::Images => AppState::Css,
+            AppState::Css => AppState::Javascript,
+            AppState::Javascript => AppState::Keywords,
+            AppState::Keywords => AppState::CoreWebVitals,
+            AppState::CoreWebVitals => AppState::CustomSearch,
+            AppState::CustomSearch => AppState::Reports,
             AppState::Reports => AppState::Chat,
             AppState::Chat => AppState::Dashboard,
         }
@@ -344,9 +358,16 @@ impl App {
     pub fn previous_state(&mut self) {
         self.current_state = match self.current_state {
             AppState::Dashboard => AppState::Chat,
-            AppState::Connectors => AppState::Dashboard,
-            AppState::Crawl => AppState::Connectors,
-            AppState::Reports => AppState::Crawl,
+            AppState::Crawl => AppState::Dashboard,
+            AppState::Connectors => AppState::Crawl,
+            AppState::Redirects => AppState::Connectors,
+            AppState::Images => AppState::Redirects,
+            AppState::Css => AppState::Images,
+            AppState::Javascript => AppState::Css,
+            AppState::Keywords => AppState::Javascript,
+            AppState::CoreWebVitals => AppState::Keywords,
+            AppState::CustomSearch => AppState::CoreWebVitals,
+            AppState::Reports => AppState::CustomSearch,
             AppState::Chat => AppState::Reports,
         }
     }
@@ -354,10 +375,17 @@ impl App {
     pub fn get_state_index(&self) -> usize {
         match self.current_state {
             AppState::Dashboard => 0,
-            AppState::Connectors => 1,
-            AppState::Crawl => 2,
-            AppState::Reports => 3,
-            AppState::Chat => 4,
+            AppState::Crawl => 1,
+            AppState::Connectors => 2,
+            AppState::Redirects => 3,
+            AppState::Images => 4,
+            AppState::Css => 5,
+            AppState::Javascript => 6,
+            AppState::Keywords => 7,
+            AppState::CoreWebVitals => 8,
+            AppState::CustomSearch => 9,
+            AppState::Reports => 10,
+            AppState::Chat => 11,
         }
     }
 
