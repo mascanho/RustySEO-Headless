@@ -9,6 +9,7 @@ pub struct AppSettings {
     pub crawler: CrawlerConfig,
     pub ui: UiConfig,
     pub system: SystemConfig,
+    pub connectors: ConnectorsConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -36,6 +37,38 @@ pub struct SystemConfig {
     pub export_format: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConnectorsConfig {
+    pub pagespeed: PageSpeedConfig,
+    pub search_console: SearchConsoleConfig,
+    pub gemini: GeminiConfig,
+    pub openai: OpenAiConfig,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PageSpeedConfig {
+    pub api_key: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SearchConsoleConfig {
+    pub token: String,
+    pub project_id: String,
+    pub project_name: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GeminiConfig {
+    pub api_key: String,
+    pub model: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OpenAiConfig {
+    pub api_key: String,
+    pub model: String,
+}
+
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
@@ -57,6 +90,24 @@ impl Default for AppSettings {
                 database_path: "./rustyseo.db".to_string(),
                 log_level: "info".to_string(),
                 export_format: "csv".to_string(),
+            },
+            connectors: ConnectorsConfig {
+                pagespeed: PageSpeedConfig {
+                    api_key: "".to_string(),
+                },
+                search_console: SearchConsoleConfig {
+                    token: "".to_string(),
+                    project_id: "".to_string(),
+                    project_name: "".to_string(),
+                },
+                gemini: GeminiConfig {
+                    api_key: "".to_string(),
+                    model: "gemini-pro".to_string(),
+                },
+                openai: OpenAiConfig {
+                    api_key: "".to_string(),
+                    model: "gpt-4-turbo".to_string(),
+                },
             },
         }
     }

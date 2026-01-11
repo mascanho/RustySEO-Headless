@@ -31,13 +31,14 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block, ac
             height: main_area.height.saturating_sub(2),
         };
 
+        // Create a scrollable-like area or just a long layout if it fits
         let sections = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
                 Constraint::Length(6), // Engine
                 Constraint::Length(5), // Viewport
                 Constraint::Length(5), // System
-                Constraint::Min(0),
+                Constraint::Min(0),    // Connectors
             ])
             .split(inner_area);
 
@@ -71,6 +72,29 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block, ac
             .block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(border_color)).title(Span::styled(" ⚙ SYSTEM ", Style::default().fg(Color::Cyan))))
             .style(Style::default().fg(accent_color));
         f.render_widget(sys_table, sections[2]);
+
+        // 4. CONNECTORS SECTION
+        let connectors_rows = vec![
+            Row::new(vec![Cell::from(" PAGE SPEED ").style(Style::default().fg(Color::Yellow)), Cell::from("")]),
+            Row::new(vec![Cell::from("  ├─ API Key"), Cell::from(if settings.connectors.pagespeed.api_key.is_empty() { "MISSING" } else { "********" }).style(Style::default().fg(if settings.connectors.pagespeed.api_key.is_empty() { Color::Red } else { Color::Green }))]),
+            
+            Row::new(vec![Cell::from(" SEARCH CONSOLE ").style(Style::default().fg(Color::Yellow)), Cell::from("")]),
+            Row::new(vec![Cell::from("  ├─ Project"), Cell::from(settings.connectors.search_console.project_name.clone()).style(Style::default().fg(Color::Blue))]),
+            Row::new(vec![Cell::from("  └─ Status"), Cell::from(if settings.connectors.search_console.token.is_empty() { "UNLINKED" } else { "CONNECTED" }).style(Style::default().fg(if settings.connectors.search_console.token.is_empty() { Color::Red } else { Color::Green }))]),
+            
+            Row::new(vec![Cell::from(" GEMINI AI ").style(Style::default().fg(Color::Yellow)), Cell::from("")]),
+            Row::new(vec![Cell::from("  ├─ Model"), Cell::from(settings.connectors.gemini.model.clone()).style(Style::default().fg(Color::Cyan))]),
+            Row::new(vec![Cell::from("  └─ API Key"), Cell::from(if settings.connectors.gemini.api_key.is_empty() { "MISSING" } else { "********" }).style(Style::default().fg(if settings.connectors.gemini.api_key.is_empty() { Color::Red } else { Color::Green }))]),
+            
+            Row::new(vec![Cell::from(" OPENAI ").style(Style::default().fg(Color::Yellow)), Cell::from("")]),
+            Row::new(vec![Cell::from("  ├─ Model"), Cell::from(settings.connectors.openai.model.clone()).style(Style::default().fg(Color::Green))]),
+            Row::new(vec![Cell::from("  └─ API Key"), Cell::from(if settings.connectors.openai.api_key.is_empty() { "MISSING" } else { "********" }).style(Style::default().fg(if settings.connectors.openai.api_key.is_empty() { Color::Red } else { Color::Green }))]),
+        ];
+        
+        let connectors_table = Table::new(connectors_rows, [Constraint::Percentage(50), Constraint::Percentage(50)])
+            .block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(border_color)).title(Span::styled(" 🔌 CONNECTORS ", Style::default().fg(Color::Blue).add_modifier(Modifier::BOLD))))
+            .style(Style::default().fg(accent_color));
+        f.render_widget(connectors_table, sections[3]);
 
         // Footer with Shortcut
         let footer_text = vec![Line::from(vec![
