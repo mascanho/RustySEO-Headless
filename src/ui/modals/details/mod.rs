@@ -89,7 +89,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         0 => modal_tabs::general::render(f, row_data, chunks[1], content_block),
         1 => modal_tabs::analysis::render(f, row_data, chunks[1], content_block),
         2 => modal_tabs::checklist::render(f, row_data, chunks[1], content_block),
-        3 => modal_tabs::inlinks::render(f, chunks[1], content_block),
+        3 => modal_tabs::inlinks::render(f, row_data, chunks[1], content_block),
         4 => modal_tabs::outlinks::render(f, chunks[1], content_block),
         5 => modal_tabs::images::render(f, chunks[1], content_block),
         6 => modal_tabs::schema::render(f, chunks[1], content_block),

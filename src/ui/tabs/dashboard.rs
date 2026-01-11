@@ -58,7 +58,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
         if is_selected {
             row_style = row_style
-                .fg(Color::Black)
+                .fg(Color::White)
                 .bg(accent_color)
                 .add_modifier(Modifier::BOLD);
         }
