@@ -155,11 +155,11 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 };
             }
 
-            let content = if j == 3 || j == 5 || j == 7 || j == 9 || j == 10 {
+            let content = if j == 3 || j == 5 || j == 7 || j == 9 || j == 10 || j == 11 {
                 let w = match j {
                     3 | 7 => 5,
                     5 | 9 => 7,
-                    10 => 8,
+                    10 | 11 => 8,
                     _ => unreachable!(),
                 };
                 let l = content.len();
