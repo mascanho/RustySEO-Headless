@@ -6,7 +6,6 @@ use crate::ui::modals::dashboard_menu;
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum AppState {
     Crawl,
-    Logs,
     Connectors,
     Dashboard,
     Reports,
@@ -60,6 +59,8 @@ impl Default for App {
             is_crawling: false,
             settings: Some(AppSettings::default()),
             log_receiver: None,
+            show_logs: false,
+            logs_height: 18,
         }
     }
 }
@@ -234,6 +235,22 @@ impl App {
         self.show_help = !self.show_help;
     }
 
+    pub fn toggle_logs(&mut self) {
+        self.show_logs = !self.show_logs;
+    }
+
+    pub fn increase_logs_height(&mut self) {
+        if self.logs_height < 50 {
+            self.logs_height += 2;
+        }
+    }
+
+    pub fn decrease_logs_height(&mut self) {
+        if self.logs_height > 5 {
+            self.logs_height = self.logs_height.saturating_sub(2);
+        }
+    }
+
     pub fn reset(&mut self) {
         self.sidebar_visible = false;
         self.task_panel_visible = false;
@@ -302,8 +319,7 @@ impl App {
 
     pub fn next_state(&mut self) {
         self.current_state = match self.current_state {
-            AppState::Dashboard => AppState::Logs,
-            AppState::Logs => AppState::Connectors,
+            AppState::Dashboard => AppState::Connectors,
             AppState::Connectors => AppState::Crawl,
             AppState::Crawl => AppState::Reports,
             AppState::Reports => AppState::Chat,
@@ -314,8 +330,7 @@ impl App {
     pub fn previous_state(&mut self) {
         self.current_state = match self.current_state {
             AppState::Dashboard => AppState::Chat,
-            AppState::Logs => AppState::Dashboard,
-            AppState::Connectors => AppState::Logs,
+            AppState::Connectors => AppState::Dashboard,
             AppState::Crawl => AppState::Connectors,
             AppState::Reports => AppState::Crawl,
             AppState::Chat => AppState::Reports,
@@ -325,11 +340,10 @@ impl App {
     pub fn get_state_index(&self) -> usize {
         match self.current_state {
             AppState::Dashboard => 0,
-            AppState::Logs => 1,
-            AppState::Connectors => 2,
-            AppState::Crawl => 3,
-            AppState::Reports => 4,
-            AppState::Chat => 5,
+            AppState::Connectors => 1,
+            AppState::Crawl => 2,
+            AppState::Reports => 3,
+            AppState::Chat => 4,
         }
     }
 

@@ -44,7 +44,6 @@ pub fn ui(f: &mut Frame, app: &mut App) {
     // Render Navigation Tabs
     let titles = vec![
         "Deep Crawler",
-        "Logs",
         "Connectors",
         "Crawl",
         "Reports",
@@ -72,7 +71,6 @@ pub fn ui(f: &mut Frame, app: &mut App) {
     // Render Tab Content
     match app.current_state {
         AppState::Crawl => tabs::crawl::render(f, app, content_area),
-        AppState::Logs => tabs::logs::render(f, app, content_area),
         AppState::Connectors => tabs::connectors::render(f, app, content_area),
         AppState::Dashboard => tabs::dashboard::render(f, app, content_area),
         AppState::Reports => tabs::reports::render(f, app, content_area),
@@ -129,6 +127,14 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
     if app.show_help {
         render_help_modal(f);
+    }
+
+    if app.show_logs {
+        let area = f.area();
+        let height = app.logs_height;
+        let logs_area = Rect::new(0, area.height.saturating_sub(height), area.width, height);
+        f.render_widget(Clear, logs_area);
+        tabs::logs::render(f, app, logs_area);
     }
 }
 
@@ -194,8 +200,16 @@ fn render_help_modal(f: &mut Frame) {
             Span::raw(": Next Tab / Toggle Sidebar"),
         ]),
         Line::from(vec![
-            Span::styled("  1-6     ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Jump to Tab (1:Crawl, 2:Logs, 3:Conn, 4:Dash, 5:Rep, 6:Chat)"),
+            Span::styled("  1-5     ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Jump to Tab (1:Dash, 2:Conn, 3:Crawl, 4:Rep, 5:Chat)"),
+        ]),
+        Line::from(vec![
+            Span::styled("  L       ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Toggle Logs Console"),
+        ]),
+        Line::from(vec![
+            Span::styled("  [ / ]   ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Decrease / Increase Console Height"),
         ]),
         Line::from(""),
         Line::from(vec![Span::styled(

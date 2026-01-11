@@ -67,7 +67,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         ),
         Span::styled(" | ", Style::default().fg(border_color)),
         Span::styled(
-            format!(" 📜 Logs: {} ", app.logs_data.len()),
+            format!(" 📜 Logs(L): {} ", app.logs_data.len()),
             Style::default().fg(Color::Yellow),
         ),
         Span::styled(" | ", Style::default().fg(border_color)),

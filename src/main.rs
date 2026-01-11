@@ -211,6 +211,27 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             continue;
                         }
 
+                        // MODAL PRIORITY 2.8: Logs Console
+                        if app.show_logs {
+                            match key.code {
+                                KeyCode::Char('q') | KeyCode::Esc | KeyCode::Char('L') => {
+                                    app.show_logs = false
+                                }
+                                KeyCode::Char('k') | KeyCode::Up => app.previous_log(),
+                                KeyCode::Char('j') | KeyCode::Down => app.next_log(),
+                                KeyCode::Char('t') => app.logs_state.select(Some(0)),
+                                KeyCode::Char('G') => {
+                                    if !app.logs_data.is_empty() {
+                                        app.logs_state.select(Some(app.logs_data.len() - 1));
+                                    }
+                                }
+                                KeyCode::Char('[') => app.decrease_logs_height(),
+                                KeyCode::Char(']') => app.increase_logs_height(),
+                                _ => {}
+                            }
+                            continue;
+                        }
+
                         // MODAL PRIORITY 3: Sidebar
                         if app.sidebar_visible {
                             if app.sidebar_tab == 4 {
@@ -308,12 +329,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             // }
                             KeyCode::Char('k') | KeyCode::Up => match app.current_state {
                                 AppState::Dashboard => app.previous_row(),
-                                AppState::Logs => app.previous_log(),
                                 _ => {}
                             },
                             KeyCode::Char('j') | KeyCode::Down => match app.current_state {
                                 AppState::Dashboard => app.next_row(),
-                                AppState::Logs => app.next_log(),
                                 _ => {}
                             },
 
@@ -322,7 +341,6 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 // Jump to top
                                 match app.current_state {
                                     AppState::Dashboard => app.table_state.select(Some(0)),
-                                    AppState::Logs => app.logs_state.select(Some(0)),
                                     _ => {}
                                 }
                             }
@@ -332,11 +350,6 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     AppState::Dashboard => {
                                         if !app.table_data.is_empty() {
                                             app.table_state.select(Some(app.table_data.len() - 1));
-                                        }
-                                    }
-                                    AppState::Logs => {
-                                        if !app.logs_data.is_empty() {
-                                            app.logs_state.select(Some(app.logs_data.len() - 1));
                                         }
                                     }
                                     _ => {}
@@ -375,14 +388,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             KeyCode::Char('i') => app.set_sidebar_tab(2),
                             KeyCode::Char('a') => app.set_sidebar_tab(3),
                             KeyCode::Char('b') | KeyCode::Char('+') => app.set_sidebar_tab(4),
-                            KeyCode::Char('l') => app.current_state = AppState::Logs,
+                            KeyCode::Char('L') => app.toggle_logs(),
                             // Number jumps
-                            KeyCode::Char('1') => app.current_state = AppState::Crawl,
-                            KeyCode::Char('2') => app.current_state = AppState::Logs,
-                            KeyCode::Char('3') => app.current_state = AppState::Connectors,
-                            KeyCode::Char('4') => app.current_state = AppState::Dashboard,
-                            KeyCode::Char('5') => app.current_state = AppState::Reports,
-                            KeyCode::Char('6') => app.current_state = AppState::Chat,
+                            KeyCode::Char('1') => app.current_state = AppState::Dashboard,
+                            KeyCode::Char('2') => app.current_state = AppState::Connectors,
+                            KeyCode::Char('3') => app.current_state = AppState::Crawl,
+                            KeyCode::Char('4') => app.current_state = AppState::Reports,
+                            KeyCode::Char('5') => app.current_state = AppState::Chat,
                             _ => {}
                         }
                     }
@@ -426,7 +438,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 && my >= tab_rect.y
                                 && my < tab_rect.y + tab_rect.height
                             {
-                                let num_tabs = 6;
+                                let num_tabs = 5;
                                 let tab_width = tab_rect.width / num_tabs as u16;
                                 if tab_width > 0 {
                                     let tab_index = ((mx - tab_rect.x) / tab_width)
@@ -434,11 +446,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                         as usize;
                                     app.current_state = match tab_index {
                                         0 => AppState::Dashboard,
-                                        1 => AppState::Logs,
-                                        2 => AppState::Connectors,
-                                        3 => AppState::Crawl,
-                                        4 => AppState::Reports,
-                                        5 => AppState::Chat,
+                                        1 => AppState::Connectors,
+                                        2 => AppState::Crawl,
+                                        3 => AppState::Reports,
+                                        4 => AppState::Chat,
                                         _ => app.current_state,
                                     };
                                 }

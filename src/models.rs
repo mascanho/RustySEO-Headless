@@ -56,4 +56,6 @@ pub struct App {
     pub is_crawling: bool,
     pub settings: Option<AppSettings>,
     pub log_receiver: Option<Receiver<String>>,
+    pub show_logs: bool,
+    pub logs_height: u16,
 }

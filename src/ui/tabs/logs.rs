@@ -14,13 +14,13 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
     let block = Block::default()
         .title(Span::styled(
-            " 📄 System Logs ",
+            " 📄 SYSTEM LOGS CONSOLE ",
             Style::default()
-                .fg(Color::Yellow)
+                .fg(accent_color)
                 .add_modifier(ratatui::style::Modifier::BOLD),
         ))
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(border_color));
+        .borders(Borders::TOP)
+        .border_style(Style::default().fg(accent_color));
 
     let log_items: Vec<ListItem> = app
         .logs_data
