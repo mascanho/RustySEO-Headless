@@ -3,7 +3,7 @@ use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style, Stylize},
-    text::Span,
+    text::{Line, Span},
     widgets::{Block, Borders, Clear, Paragraph, Tabs},
 };
 
@@ -126,30 +126,36 @@ pub fn render(f: &mut Frame, app: &mut App) {
         .direction(Direction::Horizontal)
         .constraints([
             Constraint::Min(0),     // URL on left
-            Constraint::Length(10), // Status on right
+            Constraint::Length(15), // Status on right
         ])
         .split(chunks[2]);
 
-    let url_paragraph = Paragraph::new(Span::styled(
-        format!("URL: {}", url),
-        Style::default()
-            .fg(Color::Rgb(180, 120, 255))
-            .add_modifier(Modifier::ITALIC),
-    ))
-    .block(footer_top.clone())
-    .alignment(Alignment::Left);
+    let url_line = Line::from(vec![
+        Span::styled("URL: ", Style::default().fg(Color::Yellow)),
+        Span::styled(
+            url,
+            Style::default()
+                .fg(Color::Rgb(180, 120, 255))
+                .add_modifier(Modifier::ITALIC),
+        ),
+    ]);
+    let url_paragraph = Paragraph::new(url_line)
+        .block(footer_top.clone())
+        .alignment(Alignment::Left);
     f.render_widget(url_paragraph, footer_top_chunks[0]);
 
-    let status_paragraph = Paragraph::new(Span::styled(
-        format!("Status: {}", status),
-        if status.contains("2") {
-            Style::default().fg(Color::Red)
-        } else {
-            Style::default().fg(Color::Green)
-        },
-    ))
-    .block(footer_top)
-    .alignment(Alignment::Right);
+    let status_color = if status.contains("2") {
+        Color::Red
+    } else {
+        Color::Green
+    };
+    let status_line = Line::from(vec![
+        Span::styled("Status: ", Style::default().fg(Color::Yellow)),
+        Span::styled(status, Style::default().fg(status_color)),
+    ]);
+    let status_paragraph = Paragraph::new(status_line)
+        .block(footer_top)
+        .alignment(Alignment::Right);
     f.render_widget(status_paragraph, footer_top_chunks[1]);
 
     let footer_block = Block::default()
