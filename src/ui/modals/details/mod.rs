@@ -33,6 +33,8 @@ pub fn render(f: &mut Frame, app: &mut App) {
     }
     let row_data = &app.table_data[selected_idx];
 
+    println!("------- {:#?}", &row_data);
+
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([

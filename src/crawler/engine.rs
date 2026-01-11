@@ -92,6 +92,8 @@ impl CrawlEngine {
                 println!("URL: {}", result.url);
                 println!("Status: {}", result.status);
                 println!("Title: {}", result.title);
+                println!("Headers: {:#?}", result.headers);
+                println!("Headings: {:#?}", result.headings);
                 println!();
             }
         }

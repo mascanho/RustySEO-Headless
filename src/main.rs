@@ -132,7 +132,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             match key.code {
                                 KeyCode::Char('q') | KeyCode::Esc => app.show_details = false,
                                 KeyCode::Char('h') | KeyCode::Left => app.previous_detail_tab(),
-                                KeyCode::Char('l') | KeyCode::Right => app.next_detail_tab(),
+                                // KeyCode::Char('l') | KeyCode::Right => app.next_detail_tab(),
                                 KeyCode::Tab => app.next_detail_tab(),
                                 KeyCode::BackTab => app.previous_detail_tab(),
                                 KeyCode::Char('k') | KeyCode::Up => app.previous_row(),
@@ -190,7 +190,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     }
                                     KeyCode::Char('k') | KeyCode::Up => app.previous_sidebar_tab(),
                                     KeyCode::Char('j') | KeyCode::Down => app.next_sidebar_tab(),
-                                    KeyCode::Char('l') | KeyCode::Right => app.next_state(),
+                                    // KeyCode::Char('l') | KeyCode::Right => app.next_state(),
                                     KeyCode::Tab => app.next_sidebar_tab(),
                                     KeyCode::BackTab => app.previous_sidebar_tab(),
                                     KeyCode::Enter => {
@@ -229,14 +229,14 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             KeyCode::BackTab => app.previous_state(),
 
                             // Vim Navigation
-                            KeyCode::Char('h') | KeyCode::Left => app.previous_state(),
-                            KeyCode::Char('l') | KeyCode::Right => {
-                                if !app.sidebar_visible {
-                                    app.sidebar_visible = true;
-                                } else {
-                                    app.next_state();
-                                }
-                            }
+                            // KeyCode::Char('h') | KeyCode::Left => app.previous_state(),
+                            // KeyCode::Char('l') | KeyCode::Right => {
+                            //     if !app.sidebar_visible {
+                            //         app.sidebar_visible = true;
+                            //     } else {
+                            //         app.next_state();
+                            //     }
+                            // }
                             KeyCode::Char('k') | KeyCode::Up => match app.current_state {
                                 AppState::Dashboard => app.previous_row(),
                                 AppState::Logs => app.previous_log(),
@@ -286,7 +286,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             KeyCode::Char('i') => app.set_sidebar_tab(2),
                             KeyCode::Char('a') => app.set_sidebar_tab(3),
                             KeyCode::Char('b') | KeyCode::Char('+') => app.set_sidebar_tab(4),
-
+                            KeyCode::Char('l') => app.current_state = AppState::Logs,
                             // Number jumps
                             KeyCode::Char('1') => app.current_state = AppState::Crawl,
                             KeyCode::Char('2') => app.current_state = AppState::Logs,
