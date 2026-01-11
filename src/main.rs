@@ -131,12 +131,33 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                         if app.show_details {
                             match key.code {
                                 KeyCode::Char('q') | KeyCode::Esc => app.show_details = false,
-                                KeyCode::Char('h') | KeyCode::Left => app.previous_detail_tab(),
+                                KeyCode::Char('h') => app.previous_detail_tab(),
                                 // KeyCode::Char('l') | KeyCode::Right => app.next_detail_tab(),
                                 KeyCode::Tab => app.next_detail_tab(),
                                 KeyCode::BackTab => app.previous_detail_tab(),
+                                KeyCode::Left => {
+                                    if app.detail_tab == 3 {
+                                        if app.detail_horizontal_scroll > 0 {
+                                            app.detail_horizontal_scroll =
+                                                app.detail_horizontal_scroll.saturating_sub(10);
+                                        }
+                                    } else {
+                                        app.previous_detail_tab();
+                                    }
+                                }
+                                KeyCode::Right => {
+                                    if app.detail_tab == 3 {
+                                        app.detail_horizontal_scroll += 10;
+                                    }
+                                }
                                 KeyCode::Char('k') | KeyCode::Up => {
-                                    if [1, 2, 6, 7, 8].contains(&app.detail_tab) {
+                                    if app.detail_tab == 3 {
+                                        let selected =
+                                            app.detail_table_state.selected().unwrap_or(0);
+                                        if selected > 0 {
+                                            app.detail_table_state.select(Some(selected - 1));
+                                        }
+                                    } else if [1, 2, 6, 7, 8].contains(&app.detail_tab) {
                                         if app.detail_scroll > 0 {
                                             app.detail_scroll = app.detail_scroll.saturating_sub(1);
                                         }
@@ -145,7 +166,11 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     }
                                 }
                                 KeyCode::Char('j') | KeyCode::Down => {
-                                    if [1, 2, 6, 7, 8].contains(&app.detail_tab) {
+                                    if app.detail_tab == 3 {
+                                        let selected =
+                                            app.detail_table_state.selected().unwrap_or(0);
+                                        app.detail_table_state.select(Some(selected + 1));
+                                    } else if [1, 2, 6, 7, 8].contains(&app.detail_tab) {
                                         app.detail_scroll += 1;
                                     } else {
                                         app.next_row();

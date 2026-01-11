@@ -91,6 +91,8 @@ pub fn render(f: &mut Frame, app: &mut App) {
         3 => modal_tabs::inlinks::render(
             f,
             &app.page_data[selected_idx].anchor_links,
+            app.detail_horizontal_scroll,
+            &mut app.detail_table_state,
             chunks[1],
             content_block,
         ),

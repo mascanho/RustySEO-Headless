@@ -53,6 +53,8 @@ impl Default for App {
             cursor_position: 0,
             detail_tab: 0,
             detail_scroll: 0,
+            detail_horizontal_scroll: 0,
+            detail_table_state: ratatui::widgets::TableState::default(),
             input_url: String::new(),
             crawl_receiver: None,
             is_crawling: false,
@@ -277,6 +279,9 @@ impl App {
 
     pub fn next_detail_tab(&mut self) {
         self.detail_tab = (self.detail_tab + 1) % 9;
+        self.detail_scroll = 0;
+        self.detail_horizontal_scroll = 0;
+        self.detail_table_state.select(Some(0));
     }
 
     pub fn previous_detail_tab(&mut self) {
@@ -285,6 +290,9 @@ impl App {
         } else {
             self.detail_tab - 1
         };
+        self.detail_scroll = 0;
+        self.detail_horizontal_scroll = 0;
+        self.detail_table_state.select(Some(0));
     }
 
     pub fn next_state(&mut self) {

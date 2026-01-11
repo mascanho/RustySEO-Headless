@@ -49,6 +49,8 @@ pub struct App {
     pub cursor_position: usize,
     pub detail_tab: usize,
     pub detail_scroll: u16,
+    pub detail_horizontal_scroll: usize,
+    pub detail_table_state: ratatui::widgets::TableState,
     pub input_url: String,
     pub crawl_receiver: Option<Receiver<PageData>>,
     pub is_crawling: bool,
