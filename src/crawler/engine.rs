@@ -10,9 +10,21 @@ use crate::crawler::helpers::{html_parser::extract_page_elements, user_agents::u
 pub struct PageData {
     pub id: usize,
     pub url: String,
+    pub title: String,
+    pub title_len: usize,
+    pub h1: String,
+    pub h1_len: usize,
+    pub h2: String,
+    pub h2_len: usize,
+    pub description: String,
+    pub description_len: usize,
     pub status: String,
+    pub mobile: bool,
+    pub language: String,
+    pub indexability: String,
+    pub anchor_links: Vec<(String, String)>,
+    pub headings: Vec<(String, String)>,
     pub headers: Vec<String>,
-    pub elements: crate::crawler::helpers::html_parser::PageElements,
 }
 
 #[derive(Debug, Clone)]
@@ -76,7 +88,13 @@ impl CrawlEngine {
         if headless {
             // print results
             for result in &results {
-                println!("Schema: {:#?}", &result.elements.schema);
+                println!("Page ID: {}", result.id);
+                println!("URL: {}", result.url);
+                println!("Status: {}", result.status);
+                println!("Title: {}", result.title);
+                println!("Headers: {:#?}", result.headers);
+                println!("Headings: {:#?}", result.headings);
+                println!();
             }
         }
 
@@ -136,9 +154,21 @@ impl CrawlEngine {
         Ok(PageData {
             id,
             url: url_str.to_string(),
+            title_len: elements.title.len(),
+            title: elements.title,
+            h1_len: elements.h1.len(),
+            h1: elements.h1,
+            h2_len: elements.h2.len(),
+            h2: elements.h2,
+            description_len: elements.description.len(),
+            description: elements.description,
             status,
+            mobile: elements.mobile,
+            language: elements.language,
+            indexability: elements.indexability,
+            anchor_links: elements.anchor_links,
+            headings: elements.headings,
             headers,
-            elements,
         })
     }
 
