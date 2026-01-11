@@ -6,7 +6,6 @@ use ratatui::{
     widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph},
 };
 
-
 use crate::models::App;
 use crate::ui::centered_rect;
 
@@ -149,10 +148,7 @@ fn copy_to_clipboard(text: String) {
         {
             use std::io::Write;
             use std::process::{Command, Stdio};
-            match Command::new("pbcopy")
-                .stdin(Stdio::piped())
-                .spawn()
-            {
+            match Command::new("pbcopy").stdin(Stdio::piped()).spawn() {
                 Ok(mut child) => {
                     if let Some(mut stdin) = child.stdin.take() {
                         if stdin.write_all(text.as_bytes()).is_ok() {
@@ -216,10 +212,7 @@ fn copy_to_clipboard(text: String) {
         {
             use std::io::Write;
             use std::process::{Command, Stdio};
-            match Command::new("clip")
-                .stdin(Stdio::piped())
-                .spawn()
-            {
+            match Command::new("clip").stdin(Stdio::piped()).spawn() {
                 Ok(mut child) => {
                     if let Some(mut stdin) = child.stdin.take() {
                         if stdin.write_all(text.as_bytes()).is_ok() {

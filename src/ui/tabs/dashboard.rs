@@ -222,13 +222,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 .border_style(Style::default().fg(border_color)),
         )
         .column_spacing(1)
-        .style(Style::default().bg(Color::Rgb(15, 15, 25)))
-        .highlight_symbol(Span::styled(
-            " ➔ ",
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD),
-        ));
+        .style(Style::default().bg(Color::Rgb(15, 15, 25)));
 
     f.render_stateful_widget(table, chunks[0], &mut app.table_state);
     let footer_block = Block::default()

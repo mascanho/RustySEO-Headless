@@ -104,7 +104,13 @@ macro_rules! tui_dbg {
     ($val:expr $(,)?) => {
         match $val {
             tmp => {
-                tracing::info!("[{}:{}] {} = {:?}", file!(), line!(), stringify!($val), &tmp);
+                tracing::info!(
+                    "[{}:{}] {} = {:?}",
+                    file!(),
+                    line!(),
+                    stringify!($val),
+                    &tmp
+                );
                 tmp
             }
         }

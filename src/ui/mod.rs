@@ -16,7 +16,6 @@ pub mod tabs;
 pub fn ui(f: &mut Frame, app: &mut App) {
     let size = f.area();
 
-
     // Define main colors
     let bg_color = Color::Rgb(15, 15, 25);
 
