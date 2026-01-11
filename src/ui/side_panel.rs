@@ -237,7 +237,6 @@ pub fn render(f: &mut Frame, app: &mut App) {
                 ])));
             }
 
-
             let list = List::new(items).block(content_block.title(Span::styled(
                 " Crawl Summary ",
                 Style::default().fg(Color::Yellow),
