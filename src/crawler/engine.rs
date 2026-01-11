@@ -4,28 +4,10 @@ use scraper::{Html, Selector};
 use std::collections::HashSet;
 use url::Url;
 
-use crate::crawler::helpers::{html_parser::extract_page_elements, user_agents::user_agents};
-
-#[derive(Debug, Clone)]
-pub struct PageData {
-    pub id: usize,
-    pub url: String,
-    pub title: String,
-    pub title_len: usize,
-    pub h1: String,
-    pub h1_len: usize,
-    pub h2: String,
-    pub h2_len: usize,
-    pub description: String,
-    pub description_len: usize,
-    pub status: String,
-    pub mobile: bool,
-    pub language: String,
-    pub indexability: String,
-    pub anchor_links: Vec<(String, String)>,
-    pub headings: Vec<(String, String)>,
-    pub headers: Vec<String>,
-}
+use crate::crawler::helpers::{
+    html_parser::{PageData, extract_page_elements},
+    user_agents::user_agents,
+};
 
 #[derive(Debug, Clone)]
 pub struct CrawlEngine {
@@ -149,27 +131,13 @@ impl CrawlEngine {
         };
         let document = Html::parse_document(&html_content);
 
-        let elements = extract_page_elements(&document);
+        let mut page_data = extract_page_elements(&document);
+        page_data.id = id;
+        page_data.url = url_str.to_string();
+        page_data.status = status;
+        page_data.headers = headers;
 
-        Ok(PageData {
-            id,
-            url: url_str.to_string(),
-            title_len: elements.title.len(),
-            title: elements.title,
-            h1_len: elements.h1.len(),
-            h1: elements.h1,
-            h2_len: elements.h2.len(),
-            h2: elements.h2,
-            description_len: elements.description.len(),
-            description: elements.description,
-            status,
-            mobile: elements.mobile,
-            language: elements.language,
-            indexability: elements.indexability,
-            anchor_links: elements.anchor_links,
-            headings: elements.headings,
-            headers,
-        })
+        Ok(page_data)
     }
 
     fn extract_links(&self, html: &str, base_url: &Url) -> Vec<String> {

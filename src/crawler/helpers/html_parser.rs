@@ -1,19 +1,27 @@
 use scraper::{Html, Selector};
 
 #[derive(Debug, Clone)]
-pub struct PageElements {
+pub struct PageData {
+    pub id: usize,
+    pub url: String,
     pub title: String,
+    pub title_len: usize,
     pub h1: String,
-    pub description: String,
+    pub h1_len: usize,
     pub h2: String,
+    pub h2_len: usize,
+    pub description: String,
+    pub description_len: usize,
+    pub status: String,
     pub mobile: bool,
     pub language: String,
     pub indexability: String,
     pub anchor_links: Vec<(String, String)>,
     pub headings: Vec<(String, String)>,
+    pub headers: Vec<String>,
 }
 
-pub fn extract_page_elements(document: &Html) -> PageElements {
+pub fn extract_page_elements(document: &Html) -> PageData {
     let title_selector = Selector::parse("title").unwrap();
     let h1_selector = Selector::parse("h1").unwrap();
     let h2_selector = Selector::parse("h2").unwrap();
@@ -80,15 +88,23 @@ pub fn extract_page_elements(document: &Html) -> PageElements {
         headings.push((tag, text));
     }
 
-    PageElements {
-        title,
-        h1,
-        description,
-        h2,
+    PageData {
+        id: 0,
+        url: "".to_string(),
+        title: title.clone(),
+        title_len: title.len(),
+        h1: h1.clone(),
+        h1_len: h1.len(),
+        h2: h2.clone(),
+        h2_len: h2.len(),
+        description: description.clone(),
+        description_len: description.len(),
+        status: "".to_string(),
         mobile,
         language,
         indexability,
         anchor_links,
         headings,
+        headers: vec![],
     }
 }
