@@ -19,6 +19,7 @@ pub struct PageData {
     pub anchor_links: Vec<(String, String)>,
     pub headings: Vec<(String, String)>,
     pub headers: Vec<String>,
+    pub schema: Vec<String>,
 }
 
 pub fn extract_page_elements(document: &Html) -> PageData {
@@ -88,6 +89,12 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         headings.push((tag, text));
     }
 
+    let schema_selector = Selector::parse("script[type='application/ld+json']").unwrap();
+    let schema: Vec<String> = document
+        .select(&schema_selector)
+        .map(|e| e.text().collect::<String>())
+        .collect();
+
     PageData {
         id: 0,
         url: "".to_string(),
@@ -106,5 +113,6 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         anchor_links,
         headings,
         headers: vec![],
+        schema,
     }
 }

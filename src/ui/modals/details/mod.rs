@@ -97,7 +97,12 @@ pub fn render(f: &mut Frame, app: &mut App) {
         ),
         4 => modal_tabs::outlinks::render(f, chunks[1], content_block),
         5 => modal_tabs::images::render(f, chunks[1], content_block),
-        6 => modal_tabs::schema::render(f, chunks[1], content_block),
+        6 => modal_tabs::schema::render(
+            f,
+            &app.page_data[selected_idx].schema.clone(),
+            chunks[1],
+            content_block,
+        ),
         7 => modal_tabs::headers::render(
             f,
             &app.page_data[selected_idx].headers.clone(),
@@ -144,10 +149,19 @@ pub fn render(f: &mut Frame, app: &mut App) {
         .alignment(Alignment::Left);
     f.render_widget(url_paragraph, footer_top_chunks[0]);
 
-    let status_color = if status.contains("2") {
-        Color::Red
-    } else {
-        Color::Green
+    let status_code = status
+        .split_whitespace()
+        .next()
+        .unwrap_or("0")
+        .parse::<u16>()
+        .unwrap_or(0);
+    let status_color = match status_code / 100 {
+        1 => Color::Blue,
+        2 => Color::Green,
+        3 => Color::Yellow,
+        4 => Color::Red,
+        5 => Color::Rgb(255, 0, 255), // Magenta
+        _ => Color::Gray,
     };
     let status_line = Line::from(vec![
         Span::styled("Status: ", Style::default().fg(Color::Yellow)),

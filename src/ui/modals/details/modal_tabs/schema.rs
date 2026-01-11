@@ -5,87 +5,60 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Paragraph, Wrap},
 };
+use serde_json;
 
-pub fn render(f: &mut Frame, area: Rect, block: Block) {
+pub fn render(f: &mut Frame, schema: &[String], area: Rect, block: Block) {
     let accent_color = Color::Rgb(80, 140, 255);
 
-    let content = vec![
+    let mut content = vec![
         Line::from(vec![Span::styled(
-            " 📋 Structured Data Analysis ",
+            " 📋 Schema Markup ",
             Style::default()
                 .add_modifier(Modifier::BOLD)
                 .fg(accent_color),
         )]),
         Line::from(""),
-        Line::from(vec![
-            Span::styled(
-                "  📊 Schema Types Found: ",
-                Style::default().fg(Color::Cyan),
-            ),
-            Span::styled("3", Style::default().fg(Color::Yellow)),
-        ]),
-        Line::from(vec![
-            Span::styled("  ✅ Valid Schemas: ", Style::default().fg(Color::Green)),
-            Span::raw("3/3"),
-        ]),
-        Line::from(vec![
-            Span::styled("  📝 JSON-LD Format: ", Style::default().fg(Color::Cyan)),
-            Span::styled("Yes", Style::default().fg(Color::Green)),
-        ]),
-        Line::from(""),
-        Line::from(vec![Span::styled(
-            "  🔍 Detected Schema Types: ",
-            Style::default()
-                .fg(Color::White)
-                .add_modifier(Modifier::BOLD),
-        )]),
-        Line::from(vec![
-            Span::styled("    • ", Style::default().fg(accent_color)),
-            Span::raw("Organization"),
-        ]),
-        Line::from(vec![
-            Span::styled("    • ", Style::default().fg(accent_color)),
-            Span::raw("WebSite"),
-        ]),
-        Line::from(vec![
-            Span::styled("    • ", Style::default().fg(accent_color)),
-            Span::raw("Article"),
-        ]),
-        Line::from(""),
-        Line::from(vec![Span::styled(
-            "  🎯 Schema Validation: ",
-            Style::default()
-                .fg(Color::White)
-                .add_modifier(Modifier::BOLD),
-        )]),
-        Line::from(vec![
-            Span::styled("    ✅ Organization: ", Style::default().fg(Color::Green)),
-            Span::raw("Complete and valid"),
-        ]),
-        Line::from(vec![
-            Span::styled("    ✅ WebSite: ", Style::default().fg(Color::Green)),
-            Span::raw("Breadcrumb navigation enabled"),
-        ]),
-        Line::from(vec![
-            Span::styled("    ⚠️  Article: ", Style::default().fg(Color::Yellow)),
-            Span::raw("Missing publication date"),
-        ]),
-        Line::from(""),
-        Line::from(vec![Span::styled(
-            "  🚀 Rich Results Potential: ",
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD),
-        )]),
-        Line::from(vec![
-            Span::styled("    • ", Style::default().fg(accent_color)),
-            Span::raw("Knowledge Panel eligibility"),
-        ]),
-        Line::from(vec![
-            Span::styled("    • ", Style::default().fg(accent_color)),
-            Span::raw("Enhanced search appearance"),
-        ]),
     ];
+
+    if schema.is_empty() {
+        content.push(Line::from(vec![Span::styled(
+            "No schema markup found on this page.",
+            Style::default().fg(Color::Gray),
+        )]));
+    } else {
+        content.push(Line::from(vec![Span::styled(
+            format!("Found {} schema(s):", schema.len()),
+            Style::default().fg(Color::Cyan),
+        )]));
+        content.push(Line::from(""));
+
+        for (i, s) in schema.iter().enumerate() {
+            content.push(Line::from(vec![Span::styled(
+                format!("Schema {}:", i + 1),
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            )]));
+            // Try to pretty print JSON
+            let lines: Vec<String> = match serde_json::from_str::<serde_json::Value>(s) {
+                Ok(json) => {
+                    let pretty = serde_json::to_string_pretty(&json).unwrap_or(s.clone());
+                    pretty.lines().map(|l| l.to_string()).collect()
+                }
+                Err(_) => {
+                    // If not valid JSON, show raw
+                    s.lines().map(|l| l.to_string()).collect()
+                }
+            };
+            for line in lines {
+                content.push(Line::from(vec![
+                    Span::raw("  "),
+                    Span::styled(line, Style::default().fg(Color::Rgb(180, 120, 255))),
+                ]));
+            }
+            content.push(Line::from(""));
+        }
+    }
 
     let p = Paragraph::new(content)
         .block(block.title(Span::styled(
