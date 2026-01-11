@@ -3,7 +3,7 @@ use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style, Stylize},
-    text::Span,
+    text::{Line, Span},
     widgets::{Block, Borders, Clear, Paragraph, Tabs},
 };
 
@@ -91,7 +91,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         2 => modal_tabs::checklist::render(f, row_data, chunks[1], content_block),
         3 => modal_tabs::inlinks::render(
             f,
-            &app.page_data[selected_idx].anchor_links,
+            &app.page_data[selected_idx].elements.anchor_links,
             chunks[1],
             content_block,
         ),
@@ -106,7 +106,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         ),
         8 => modal_tabs::headings::render(
             f,
-            &app.page_data[selected_idx].headings.clone(),
+            &app.page_data[selected_idx].elements.headings.clone(),
             chunks[1],
             content_block,
         ),
@@ -115,9 +115,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     // Render Footers
 
-    let footer_top = Block::default()
-        .bg(Color::Rgb(15, 15, 25))
-        .border_style(Style::default().fg(border_color));
+    let footer_top = Block::default().bg(Color::Rgb(15, 15, 25));
 
     let url = &row_data[1];
     let status = &row_data[10];
@@ -125,29 +123,53 @@ pub fn render(f: &mut Frame, app: &mut App) {
     let footer_top_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Min(0),     // URL on left
-            Constraint::Length(10), // Status on right
+            Constraint::Min(0),  // URL on left
+            Constraint::Min(21), // Status on right
         ])
         .split(chunks[2]);
 
-    let url_paragraph = Paragraph::new(Span::styled(
-        format!("URL: {}", url),
-        Style::default()
-            .fg(Color::Rgb(180, 120, 255))
-            .add_modifier(Modifier::ITALIC),
-    ))
+    let url_paragraph = Paragraph::new(Line::from(vec![
+        Span::styled(
+            "Page: ",
+            Style::default()
+                .fg(Color::Rgb(255, 200, 80))
+                .add_modifier(Modifier::ITALIC),
+        ),
+        Span::styled(
+            url,
+            Style::default()
+                .fg(Color::Rgb(180, 120, 255))
+                .add_modifier(Modifier::ITALIC),
+        ),
+    ]))
     .block(footer_top.clone())
     .alignment(Alignment::Left);
     f.render_widget(url_paragraph, footer_top_chunks[0]);
 
-    let status_paragraph = Paragraph::new(Span::styled(
-        format!("Status: {}", status),
-        if status.contains("2") {
-            Style::default().fg(Color::Red)
-        } else {
-            Style::default().fg(Color::Green)
-        },
-    ))
+    let status_color = match status.as_str() {
+        s if s.contains("200") => Color::Green,
+        s if s.contains("404") => Color::Red,
+        s if s.contains("301") || s.contains("302") => Color::Blue,
+        s if s.contains("500") => Color::Yellow,
+        s if s.contains("403") => Color::Magenta,
+        s if s.contains("503") => Color::LightRed,
+        _ => Color::Rgb(180, 120, 255),
+    };
+
+    let status_paragraph = Paragraph::new(Line::from(vec![
+        Span::styled(
+            "Status: ",
+            Style::default()
+                .fg(Color::Rgb(255, 200, 80))
+                .add_modifier(Modifier::ITALIC),
+        ),
+        Span::styled(
+            status,
+            Style::default()
+                .fg(status_color)
+                .add_modifier(Modifier::BOLD),
+        ),
+    ]))
     .block(footer_top)
     .alignment(Alignment::Right);
     f.render_widget(status_paragraph, footer_top_chunks[1]);
