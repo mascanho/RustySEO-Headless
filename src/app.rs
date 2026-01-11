@@ -84,9 +84,13 @@ impl App {
 
         // 2. Process collected results
         for data in results {
-            self.page_data.push(data.clone());
+            let current_id = self.page_data.len() + 1;
+            let mut page_data = data.clone();
+            page_data.id = current_id;
+            self.page_data.push(page_data);
+            
             let row = vec![
-                data.id.to_string(),
+                current_id.to_string(),
                 data.url.clone(),
                 data.title.clone(),
                 data.title_len.to_string(),
@@ -105,8 +109,9 @@ impl App {
             self.table_data.push(row);
             self.log(format!("Crawled: {}", data.url));
 
-            // Smoothly update overall progress based on some limit (e.g. 50 pages)
-            self.crawl_progress = (self.table_data.len() as f64 / 50.0).min(1.0);
+            // Update overall progress
+            let limit = self.settings.as_ref().map(|s| s.max_pages).unwrap_or(50) as f64;
+            self.crawl_progress = (self.table_data.len() as f64 / limit).min(1.0);
         }
 
         if crawl_finished {
@@ -375,14 +380,24 @@ impl App {
         let (tx, rx) = mpsc::channel();
         self.crawl_receiver = Some(rx);
         let target_url = self.input_url.clone();
+        let max_pages = self.settings.as_ref().map(|s| s.max_pages).unwrap_or(500);
 
         tokio::task::spawn(async move {
-            let mut engine = crate::crawler::CrawlEngine::new().await;
-            let results = engine.crawl(&target_url, false).await;
-            for data in results {
+            let engine = crate::crawler::CrawlEngine::new().await
+                .with_max_pages(max_pages)
+                .with_concurrency(10);
+            
+            let (tokio_tx, mut tokio_rx) = tokio::sync::mpsc::channel(100);
+            let engine_clone = engine.clone();
+            let target_url_clone = target_url.clone();
+            
+            tokio::spawn(async move {
+                engine_clone.crawl_concurrently(&target_url_clone, tokio_tx).await;
+            });
+
+            while let Some(data) = tokio_rx.recv().await {
+                // Bridge tokio channel to std mpsc channel for the TUI loop
                 let _ = tx.send(data);
-                // Slight delay to make TUI look "real-time" and not overwhelm
-                tokio::time::sleep(std::time::Duration::from_millis(50)).await;
             }
         });
     }

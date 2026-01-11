@@ -45,7 +45,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     if !cli.url.is_empty() {
         // Handle the actions here
-        let mut crawler = CrawlEngine::new().await;
+        let crawler = CrawlEngine::new().await;
         crawler.crawl(&cli.url, true).await;
         return Ok(());
     } else {
