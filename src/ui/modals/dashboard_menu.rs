@@ -1,16 +1,18 @@
 use ratatui::{
     Frame,
-    layout::{Alignment, Constraint, Direction, Layout, Margin, Rect},
+    layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style, Stylize},
     text::Span,
     widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph},
 };
 
+
 use crate::models::App;
 use crate::ui::centered_rect;
 
 pub fn render(f: &mut Frame, app: &mut App) {
-    let area = f.size();
+    let area = f.area();
+
     let menu_area = centered_rect(25, 35, area);
 
     let accent_color = Color::Rgb(80, 140, 255);
@@ -97,17 +99,8 @@ pub fn handle_action(app: &mut App, action_index: usize) {
 
     match action_index {
         0 => {
-            // Copy URL
-            match copy_to_clipboard(&url) {
-                Ok(_) => {
-                    app.logs_data
-                        .insert(0, format!("✅ URL copied to clipboard: {}", url));
-                }
-                Err(e) => {
-                    app.logs_data
-                        .insert(0, format!("❌ Failed to copy URL to clipboard: {}", e));
-                }
-            }
+            // Copy URL - now non-blocking
+            copy_to_clipboard(url);
         }
         1 => {
             // Open URL in Browser
@@ -150,109 +143,108 @@ pub fn handle_action(app: &mut App, action_index: usize) {
     app.show_dashboard_menu = false;
 }
 
-fn copy_to_clipboard(text: &str) -> Result<(), String> {
-    // Platform-specific clipboard copying with proper error handling
-    #[cfg(target_os = "macos")]
-    {
-        use std::process::Command;
-        match Command::new("pbcopy")
-            .stdin(std::process::Stdio::piped())
-            .spawn()
+fn copy_to_clipboard(text: String) {
+    std::thread::spawn(move || {
+        #[cfg(target_os = "macos")]
         {
-            Ok(mut child) => {
-                use std::io::Write;
-                if let Some(mut stdin) = child.stdin.take() {
-                    if stdin.write_all(text.as_bytes()).is_ok() {
-                        return child
-                            .wait()
-                            .map_err(|e| format!("Failed to wait for pbcopy: {}", e))
-                            .and_then(|status| {
-                                if status.success() {
-                                    Ok(())
-                                } else {
-                                    Err(format!("pbcopy exited with status: {}", status))
+            use std::io::Write;
+            use std::process::{Command, Stdio};
+            match Command::new("pbcopy")
+                .stdin(Stdio::piped())
+                .spawn()
+            {
+                Ok(mut child) => {
+                    if let Some(mut stdin) = child.stdin.take() {
+                        if stdin.write_all(text.as_bytes()).is_ok() {
+                            drop(stdin); // Send EOF
+                            match child.wait() {
+                                Ok(status) if status.success() => {
+                                    tracing::info!("✅ URL copied to clipboard: {}", text);
                                 }
-                            });
+                                Ok(status) => {
+                                    tracing::error!("❌ pbcopy exited with status: {}", status);
+                                }
+                                Err(e) => {
+                                    tracing::error!("❌ Failed to wait for pbcopy: {}", e);
+                                }
+                            }
+                            return;
+                        }
                     }
+                    let _ = child.kill();
+                    tracing::error!("❌ Failed to write to pbcopy stdin");
                 }
-                let _ = child.kill();
-                Err("Failed to write to pbcopy stdin".to_string())
+                Err(e) => tracing::error!("❌ Failed to spawn pbcopy: {}", e),
             }
-            Err(e) => Err(format!("Failed to spawn pbcopy: {}", e)),
         }
-    }
 
-    #[cfg(target_os = "linux")]
-    {
-        use std::process::Command;
-        match Command::new("xclip")
-            .args(&["-selection", "clipboard"])
-            .stdin(std::process::Stdio::piped())
-            .spawn()
+        #[cfg(target_os = "linux")]
         {
-            Ok(mut child) => {
-                use std::io::Write;
-                if let Some(mut stdin) = child.stdin.take() {
-                    if stdin.write_all(text.as_bytes()).is_ok() {
-                        return child
-                            .wait()
-                            .map_err(|e| format!("Failed to wait for xclip: {}", e))
-                            .and_then(|status| {
-                                if status.success() {
-                                    Ok(())
-                                } else {
-                                    Err(format!("xclip exited with status: {}", status))
+            use std::io::Write;
+            use std::process::{Command, Stdio};
+            match Command::new("xclip")
+                .args(&["-selection", "clipboard"])
+                .stdin(Stdio::piped())
+                .spawn()
+            {
+                Ok(mut child) => {
+                    if let Some(mut stdin) = child.stdin.take() {
+                        if stdin.write_all(text.as_bytes()).is_ok() {
+                            drop(stdin);
+                            match child.wait() {
+                                Ok(status) if status.success() => {
+                                    tracing::info!("✅ URL copied to clipboard: {}", text);
                                 }
-                            });
-                    }
-                }
-                let _ = child.kill();
-                Err("Failed to write to xclip stdin".to_string())
-            }
-            Err(e) => Err(format!("Failed to spawn xclip: {}", e)),
-        }
-    }
-
-    #[cfg(target_os = "windows")]
-    {
-        use std::process::Command;
-        match Command::new("cmd")
-            .args(&["/C", "echo", &text.replace("\"", "\"\"")]) // Escape quotes for Windows
-            .stdout(std::process::Stdio::piped())
-            .spawn()
-            .and_then(|echo| echo.wait())
-            .and_then(|_| {
-                Command::new("clip")
-                    .stdin(std::process::Stdio::piped())
-                    .spawn()
-            }) {
-            Ok(mut child) => {
-                use std::io::Write;
-                if let Some(mut stdin) = child.stdin.take() {
-                    if stdin.write_all(text.as_bytes()).is_ok() {
-                        return child
-                            .wait()
-                            .map_err(|e| format!("Failed to wait for clip: {}", e))
-                            .and_then(|status| {
-                                if status.success() {
-                                    Ok(())
-                                } else {
-                                    Err(format!("clip exited with status: {}", status))
+                                Ok(status) => {
+                                    tracing::error!("❌ xclip exited with status: {}", status);
                                 }
-                            });
+                                Err(e) => {
+                                    tracing::error!("❌ Failed to wait for xclip: {}", e);
+                                }
+                            }
+                            return;
+                        }
                     }
+                    let _ = child.kill();
+                    tracing::error!("❌ Failed to write to xclip stdin");
                 }
-                let _ = child.kill();
-                Err("Failed to write to clip stdin".to_string())
+                Err(e) => tracing::error!("❌ Failed to spawn xclip: {}", e),
             }
-            Err(e) => Err(format!("Failed to spawn clipboard commands: {}", e)),
         }
-    }
 
-    #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
-    {
-        Err("Clipboard copying not supported on this platform".to_string())
-    }
+        #[cfg(target_os = "windows")]
+        {
+            use std::io::Write;
+            use std::process::{Command, Stdio};
+            match Command::new("clip")
+                .stdin(Stdio::piped())
+                .spawn()
+            {
+                Ok(mut child) => {
+                    if let Some(mut stdin) = child.stdin.take() {
+                        if stdin.write_all(text.as_bytes()).is_ok() {
+                            drop(stdin);
+                            match child.wait() {
+                                Ok(status) if status.success() => {
+                                    tracing::info!("✅ URL copied to clipboard: {}", text);
+                                }
+                                Ok(status) => {
+                                    tracing::error!("❌ clip exited with status: {}", status);
+                                }
+                                Err(e) => {
+                                    tracing::error!("❌ Failed to wait for clip: {}", e);
+                                }
+                            }
+                            return;
+                        }
+                    }
+                    let _ = child.kill();
+                    tracing::error!("❌ Failed to write to clip stdin");
+                }
+                Err(e) => tracing::error!("❌ Failed to spawn clip: {}", e),
+            }
+        }
+    });
 }
 
 fn open_in_browser(url: &str) {
@@ -272,30 +264,6 @@ fn open_in_browser(url: &str) {
     #[cfg(target_os = "windows")]
     {
         use std::process::Command;
-        match Command::new("clip")
-            .stdin(std::process::Stdio::piped())
-            .spawn()
-        {
-            Ok(mut child) => {
-                use std::io::Write;
-                if let Some(mut stdin) = child.stdin.take() {
-                    if stdin.write_all(text.as_bytes()).is_ok() {
-                        return child
-                            .wait()
-                            .map_err(|e| format!("Failed to wait for clip: {}", e))
-                            .and_then(|status| {
-                                if status.success() {
-                                    Ok(())
-                                } else {
-                                    Err(format!("clip exited with status: {}", status))
-                                }
-                            });
-                    }
-                }
-                let _ = child.kill();
-                Err("Failed to write to clip stdin".to_string())
-            }
-            Err(e) => Err(format!("Failed to spawn clip: {}", e)),
-        }
+        let _ = Command::new("cmd").args(&["/C", "start", url]).spawn();
     }
 }

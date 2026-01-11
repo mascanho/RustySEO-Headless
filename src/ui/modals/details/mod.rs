@@ -10,7 +10,8 @@ use ratatui::{
 mod modal_tabs;
 
 pub fn render(f: &mut Frame, app: &mut App) {
-    let area = f.size();
+    let area = f.area();
+
     let detail_area = centered_rect(60, 70, area);
 
     let accent_color = Color::Rgb(80, 140, 255);

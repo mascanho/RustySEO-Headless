@@ -14,7 +14,8 @@ pub mod side_panel;
 pub mod tabs;
 
 pub fn ui(f: &mut Frame, app: &mut App) {
-    let size = f.size();
+    let size = f.area();
+
 
     // Define main colors
     let bg_color = Color::Rgb(15, 15, 25);
@@ -133,7 +134,8 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 }
 
 fn render_help_modal(f: &mut Frame) {
-    let area = f.size();
+    let area = f.area();
+
     let help_area = centered_rect(60, 80, area);
 
     let accent_color = Color::Rgb(80, 140, 255);

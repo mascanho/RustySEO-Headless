@@ -16,7 +16,8 @@ pub fn render(f: &mut Frame, app: &mut App) {
     let accent_color = Color::Rgb(80, 140, 255);
     let border_color = Color::Rgb(40, 45, 60);
 
-    let area = f.size();
+    let area = f.area();
+
     let width = (area.width / 3).max(35).min(area.width);
     let modal_area = Rect {
         x: area.width.saturating_sub(width),
