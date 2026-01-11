@@ -349,6 +349,7 @@ impl App {
 
         self.page_data.clear();
         self.table_data.clear();
+        self.table_state.select(None); // Reset table selection when data is cleared
         self.crawl_progress = 0.0;
         self.is_crawling = true;
         self.logs_data
@@ -421,6 +422,18 @@ impl App {
     pub fn scroll_logs_right(&mut self, max_scroll: usize) {
         if self.logs_horizontal_scroll < max_scroll {
             self.logs_horizontal_scroll = self.logs_horizontal_scroll.saturating_add(1);
+        }
+    }
+
+    pub fn validate_table_state(&mut self) {
+        if let Some(selected) = self.table_state.selected() {
+            if selected >= self.table_data.len() {
+                if self.table_data.is_empty() {
+                    self.table_state.select(None);
+                } else {
+                    self.table_state.select(Some(self.table_data.len() - 1));
+                }
+            }
         }
     }
 

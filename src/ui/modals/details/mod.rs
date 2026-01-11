@@ -11,7 +11,7 @@ mod modal_tabs;
 
 pub fn render(f: &mut Frame, app: &mut App) {
     let area = f.size();
-    let detail_area = centered_rect(80, 80, area);
+    let detail_area = centered_rect(60, 70, area);
 
     let accent_color = Color::Rgb(80, 140, 255);
     let border_color = Color::Rgb(40, 45, 60);
@@ -28,12 +28,11 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     let selected_idx = app.table_state.selected().unwrap_or(0);
     // Ensure we don't out of bounds if data changed
-    if selected_idx >= app.table_data.len() {
+    if selected_idx >= app.table_data.len() || selected_idx >= app.page_data.len() {
+        app.show_details = false; // Close modal if data is invalid
         return;
     }
     let row_data = &app.table_data[selected_idx];
-
-    println!("------- {:#?}", &row_data);
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)

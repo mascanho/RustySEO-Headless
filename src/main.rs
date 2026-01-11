@@ -294,13 +294,27 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
 
                             KeyCode::Enter => {
                                 if app.current_state == AppState::Dashboard {
-                                    app.show_details = true;
+                                    app.validate_table_state();
+                                    if let Some(selected) = app.table_state.selected() {
+                                        if selected < app.table_data.len()
+                                            && selected < app.page_data.len()
+                                        {
+                                            app.show_details = true;
+                                        }
+                                    }
                                 }
                             }
 
                             KeyCode::Char('m') => {
                                 if app.current_state == AppState::Dashboard {
-                                    app.show_dashboard_menu = true;
+                                    app.validate_table_state();
+                                    if let Some(selected) = app.table_state.selected() {
+                                        if selected < app.table_data.len()
+                                            && selected < app.page_data.len()
+                                        {
+                                            app.show_dashboard_menu = true;
+                                        }
+                                    }
                                 }
                             }
 

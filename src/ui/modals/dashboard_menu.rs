@@ -14,7 +14,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
     let menu_area = centered_rect(25, 35, area);
 
     let accent_color = Color::Rgb(80, 140, 255);
-    let border_color = Color::Rgb(40, 45, 60);
+    let border_color = accent_color; // Blue border for actions menu
 
     let modal_block = Block::default()
         .borders(Borders::ALL)
@@ -88,7 +88,7 @@ pub fn handle_action(app: &mut App, action_index: usize) {
         None => return,
     };
 
-    if selected_idx >= app.table_data.len() {
+    if selected_idx >= app.table_data.len() || selected_idx >= app.page_data.len() {
         return;
     }
 
@@ -98,9 +98,16 @@ pub fn handle_action(app: &mut App, action_index: usize) {
     match action_index {
         0 => {
             // Copy URL
-            copy_to_clipboard(&url);
-            app.logs_data
-                .insert(0, format!("URL copied to clipboard: {}", url));
+            match copy_to_clipboard(&url) {
+                Ok(_) => {
+                    app.logs_data
+                        .insert(0, format!("✅ URL copied to clipboard: {}", url));
+                }
+                Err(e) => {
+                    app.logs_data
+                        .insert(0, format!("❌ Failed to copy URL to clipboard: {}", e));
+                }
+            }
         }
         1 => {
             // Open URL in Browser
@@ -143,27 +150,108 @@ pub fn handle_action(app: &mut App, action_index: usize) {
     app.show_dashboard_menu = false;
 }
 
-fn copy_to_clipboard(text: &str) {
-    // Platform-specific clipboard copying
+fn copy_to_clipboard(text: &str) -> Result<(), String> {
+    // Platform-specific clipboard copying with proper error handling
     #[cfg(target_os = "macos")]
     {
         use std::process::Command;
-        let _ = Command::new("pbcopy").arg(text).spawn();
+        match Command::new("pbcopy")
+            .stdin(std::process::Stdio::piped())
+            .spawn()
+        {
+            Ok(mut child) => {
+                use std::io::Write;
+                if let Some(mut stdin) = child.stdin.take() {
+                    if stdin.write_all(text.as_bytes()).is_ok() {
+                        return child
+                            .wait()
+                            .map_err(|e| format!("Failed to wait for pbcopy: {}", e))
+                            .and_then(|status| {
+                                if status.success() {
+                                    Ok(())
+                                } else {
+                                    Err(format!("pbcopy exited with status: {}", status))
+                                }
+                            });
+                    }
+                }
+                let _ = child.kill();
+                Err("Failed to write to pbcopy stdin".to_string())
+            }
+            Err(e) => Err(format!("Failed to spawn pbcopy: {}", e)),
+        }
     }
 
     #[cfg(target_os = "linux")]
     {
         use std::process::Command;
-        let _ = Command::new("xclip")
+        match Command::new("xclip")
             .args(&["-selection", "clipboard"])
-            .arg(text)
-            .spawn();
+            .stdin(std::process::Stdio::piped())
+            .spawn()
+        {
+            Ok(mut child) => {
+                use std::io::Write;
+                if let Some(mut stdin) = child.stdin.take() {
+                    if stdin.write_all(text.as_bytes()).is_ok() {
+                        return child
+                            .wait()
+                            .map_err(|e| format!("Failed to wait for xclip: {}", e))
+                            .and_then(|status| {
+                                if status.success() {
+                                    Ok(())
+                                } else {
+                                    Err(format!("xclip exited with status: {}", status))
+                                }
+                            });
+                    }
+                }
+                let _ = child.kill();
+                Err("Failed to write to xclip stdin".to_string())
+            }
+            Err(e) => Err(format!("Failed to spawn xclip: {}", e)),
+        }
     }
 
     #[cfg(target_os = "windows")]
     {
         use std::process::Command;
-        let _ = Command::new("clip").arg(text).spawn();
+        match Command::new("cmd")
+            .args(&["/C", "echo", &text.replace("\"", "\"\"")]) // Escape quotes for Windows
+            .stdout(std::process::Stdio::piped())
+            .spawn()
+            .and_then(|echo| echo.wait())
+            .and_then(|_| {
+                Command::new("clip")
+                    .stdin(std::process::Stdio::piped())
+                    .spawn()
+            }) {
+            Ok(mut child) => {
+                use std::io::Write;
+                if let Some(mut stdin) = child.stdin.take() {
+                    if stdin.write_all(text.as_bytes()).is_ok() {
+                        return child
+                            .wait()
+                            .map_err(|e| format!("Failed to wait for clip: {}", e))
+                            .and_then(|status| {
+                                if status.success() {
+                                    Ok(())
+                                } else {
+                                    Err(format!("clip exited with status: {}", status))
+                                }
+                            });
+                    }
+                }
+                let _ = child.kill();
+                Err("Failed to write to clip stdin".to_string())
+            }
+            Err(e) => Err(format!("Failed to spawn clipboard commands: {}", e)),
+        }
+    }
+
+    #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
+    {
+        Err("Clipboard copying not supported on this platform".to_string())
     }
 }
 
@@ -184,6 +272,30 @@ fn open_in_browser(url: &str) {
     #[cfg(target_os = "windows")]
     {
         use std::process::Command;
-        let _ = Command::new("cmd").args(&["/C", "start", url]).spawn();
+        match Command::new("clip")
+            .stdin(std::process::Stdio::piped())
+            .spawn()
+        {
+            Ok(mut child) => {
+                use std::io::Write;
+                if let Some(mut stdin) = child.stdin.take() {
+                    if stdin.write_all(text.as_bytes()).is_ok() {
+                        return child
+                            .wait()
+                            .map_err(|e| format!("Failed to wait for clip: {}", e))
+                            .and_then(|status| {
+                                if status.success() {
+                                    Ok(())
+                                } else {
+                                    Err(format!("clip exited with status: {}", status))
+                                }
+                            });
+                    }
+                }
+                let _ = child.kill();
+                Err("Failed to write to clip stdin".to_string())
+            }
+            Err(e) => Err(format!("Failed to spawn clip: {}", e)),
+        }
     }
 }

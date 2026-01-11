@@ -231,8 +231,6 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         ));
 
     f.render_stateful_widget(table, chunks[0], &mut app.table_state);
-
-    // Render Footer
     let footer_block = Block::default()
         .bg(Color::Rgb(15, 15, 25))
         .border_style(Style::default().fg(border_color));
