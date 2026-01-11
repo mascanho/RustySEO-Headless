@@ -15,7 +15,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
     let detail_area = centered_rect(60, 70, area);
 
     let accent_color = Color::Rgb(80, 140, 255);
-    let border_color = Color::Rgb(40, 45, 60);
+    let border_color = accent_color;
 
     let modal_block = Block::default()
         .borders(Borders::ALL)
