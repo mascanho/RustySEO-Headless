@@ -59,7 +59,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         .block(
             Block::default()
                 .title(Span::styled(
-                    format!(" Page Details: ID {} ", row_data[0]),
+                    format!(" Page Details: {} ", row_data[1]),
                     Style::default()
                         .fg(Color::Yellow)
                         .add_modifier(Modifier::BOLD),
