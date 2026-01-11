@@ -135,8 +135,22 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 // KeyCode::Char('l') | KeyCode::Right => app.next_detail_tab(),
                                 KeyCode::Tab => app.next_detail_tab(),
                                 KeyCode::BackTab => app.previous_detail_tab(),
-                                KeyCode::Char('k') | KeyCode::Up => app.previous_row(),
-                                KeyCode::Char('j') | KeyCode::Down => app.next_row(),
+                                KeyCode::Char('k') | KeyCode::Up => {
+                                    if app.detail_tab == 6 {
+                                        if app.schema_scroll > 0 {
+                                            app.schema_scroll -= 1;
+                                        }
+                                    } else {
+                                        app.previous_row();
+                                    }
+                                }
+                                KeyCode::Char('j') | KeyCode::Down => {
+                                    if app.detail_tab == 6 {
+                                        app.schema_scroll += 1;
+                                    } else {
+                                        app.next_row();
+                                    }
+                                }
                                 _ => {}
                             }
                             continue;

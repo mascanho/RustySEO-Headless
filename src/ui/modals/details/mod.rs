@@ -84,7 +84,6 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     // Render Content based on tab
     let content_block = Block::default().bg(Color::Rgb(20, 20, 30));
-
     match app.detail_tab {
         0 => modal_tabs::general::render(f, row_data, chunks[1], content_block),
         1 => modal_tabs::analysis::render(f, row_data, chunks[1], content_block),
@@ -97,12 +96,16 @@ pub fn render(f: &mut Frame, app: &mut App) {
         ),
         4 => modal_tabs::outlinks::render(f, chunks[1], content_block),
         5 => modal_tabs::images::render(f, chunks[1], content_block),
-        6 => modal_tabs::schema::render(
-            f,
-            &app.page_data[selected_idx].schema.clone(),
-            chunks[1],
-            content_block,
-        ),
+        6 => {
+            let schema_block = Block::default().bg(Color::Rgb(25, 15, 35));
+            modal_tabs::schema::render(
+                f,
+                &app.page_data[selected_idx].schema.clone(),
+                app.schema_scroll,
+                chunks[1],
+                schema_block,
+            );
+        }
         7 => modal_tabs::headers::render(
             f,
             &app.page_data[selected_idx].headers.clone(),

@@ -48,6 +48,7 @@ pub struct App {
     pub input_mode: bool,
     pub cursor_position: usize,
     pub detail_tab: usize,
+    pub schema_scroll: u16,
     pub input_url: String,
     pub crawl_receiver: Option<Receiver<PageData>>,
     pub is_crawling: bool,
