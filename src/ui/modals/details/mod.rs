@@ -40,6 +40,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         .constraints([
             Constraint::Length(3), // Tabs
             Constraint::Min(0),    // Content
+            Constraint::Length(1), // top Footer
             Constraint::Length(1), // Footer
         ])
         .split(inner_area);
@@ -61,9 +62,10 @@ pub fn render(f: &mut Frame, app: &mut App) {
         .block(
             Block::default()
                 .title(Span::styled(
-                    format!(" Page Details: {} ", row_data[1]),
+                    format!(" Page Details"),
                     Style::default()
                         .fg(Color::Yellow)
+                        .bold()
                         .add_modifier(Modifier::BOLD),
                 ))
                 .bg(Color::Rgb(15, 15, 25)),
@@ -106,7 +108,24 @@ pub fn render(f: &mut Frame, app: &mut App) {
         _ => {}
     }
 
-    // Render Footer
+    // Render Footers
+
+    let footer_top = Block::default()
+        .bg(Color::Rgb(15, 15, 25))
+        .border_style(Style::default().fg(border_color));
+
+    let url = &row_data[1];
+
+    let footer_top_text = Paragraph::new(Span::styled(
+        format!("URL: {}", url),
+        Style::default()
+            .fg(Color::Rgb(180, 120, 255))
+            .add_modifier(Modifier::ITALIC),
+    ))
+    .block(footer_top)
+    .alignment(Alignment::Center);
+    f.render_widget(footer_top_text, chunks[2]);
+
     let footer_block = Block::default()
         .bg(Color::Rgb(15, 15, 25))
         .border_style(Style::default().fg(border_color));
@@ -118,5 +137,5 @@ pub fn render(f: &mut Frame, app: &mut App) {
     ))
     .block(footer_block)
     .alignment(Alignment::Center);
-    f.render_widget(footer_text, chunks[2]);
+    f.render_widget(footer_text, chunks[3]);
 }
