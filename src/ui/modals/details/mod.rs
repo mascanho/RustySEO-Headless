@@ -97,7 +97,14 @@ pub fn render(f: &mut Frame, app: &mut App) {
             content_block,
         ),
         4 => modal_tabs::outlinks::render(f, chunks[1], content_block),
-        5 => modal_tabs::images::render(f, chunks[1], content_block),
+        5 => modal_tabs::images::render(
+            f,
+            &app.page_data[selected_idx].images,
+            app.detail_horizontal_scroll,
+            &mut app.detail_table_state,
+            chunks[1],
+            content_block,
+        ),
         6 => {
             let schema_block = Block::default().bg(Color::Rgb(25, 15, 35));
             modal_tabs::schema::render(

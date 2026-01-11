@@ -1,90 +1,122 @@
 use ratatui::{
     Frame,
-    layout::Rect,
+    layout::{Constraint, Rect},
     style::{Color, Modifier, Style},
-    text::{Line, Span},
-    widgets::{Block, Paragraph, Wrap},
+    text::Span,
+    widgets::{Block, Cell, Row, Table, TableState},
 };
 
-pub fn render(f: &mut Frame, area: Rect, block: Block) {
+pub fn render(
+    f: &mut Frame,
+    images: &[(String, String)],
+    horizontal_scroll: usize,
+    table_state: &mut TableState,
+    area: Rect,
+    block: Block,
+) {
     let accent_color = Color::Rgb(80, 140, 255);
 
-    let content = vec![
-        Line::from(vec![Span::styled(
-            " 🖼️  Image Optimization Analysis ",
+    let header_titles = ["#", "Image Src", "Alt Text"];
+
+    let header = Row::new(header_titles.iter().map(|h| {
+        Cell::from(format!(" {} ", h)).style(
             Style::default()
                 .add_modifier(Modifier::BOLD)
-                .fg(accent_color),
-        )]),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled("  🖼️  Total Images: ", Style::default().fg(Color::Cyan)),
-            Span::styled("12", Style::default().fg(Color::Yellow)),
-        ]),
-        Line::from(vec![
-            Span::styled("  📏 Average Size: ", Style::default().fg(Color::Cyan)),
-            Span::styled("245 KB", Style::default().fg(Color::Yellow)),
-        ]),
-        Line::from(vec![
-            Span::styled("  ⚡ Loading Speed: ", Style::default().fg(Color::Cyan)),
-            Span::styled("2.1s", Style::default().fg(Color::Green)),
-        ]),
-        Line::from(""),
-        Line::from(vec![Span::styled(
-            "  📋 ALT Text Status: ",
-            Style::default()
+                .fg(accent_color)
+                .bg(Color::Rgb(30, 30, 45)),
+        )
+    }))
+    .height(1);
+
+    let rows = images.iter().enumerate().map(|(i, (src, alt))| {
+        let is_selected = table_state.selected() == Some(i);
+
+        let mut row_style = if i % 2 == 0 {
+            Style::default().bg(Color::Rgb(20, 20, 30))
+        } else {
+            Style::default().bg(Color::Rgb(25, 25, 40))
+        };
+
+        if is_selected {
+            row_style = row_style
                 .fg(Color::White)
-                .add_modifier(Modifier::BOLD),
-        )]),
-        Line::from(vec![
-            Span::styled("    ✅ With ALT: ", Style::default().fg(Color::Green)),
-            Span::raw("10 images"),
-        ]),
-        Line::from(vec![
-            Span::styled("    ❌ Missing ALT: ", Style::default().fg(Color::Red)),
-            Span::raw("2 images"),
-        ]),
-        Line::from(""),
-        Line::from(vec![Span::styled(
-            "  📐 Image Dimensions: ",
-            Style::default()
-                .fg(Color::White)
-                .add_modifier(Modifier::BOLD),
-        )]),
-        Line::from(vec![
-            Span::styled("    • ", Style::default().fg(accent_color)),
-            Span::raw("Hero image: 1920x1080 (optimized)"),
-        ]),
-        Line::from(vec![
-            Span::styled("    • ", Style::default().fg(accent_color)),
-            Span::raw("Thumbnail: 300x200 (needs optimization)"),
-        ]),
-        Line::from(vec![
-            Span::styled("    • ", Style::default().fg(accent_color)),
-            Span::raw("Logo: 200x80 (SVG format)"),
-        ]),
-        Line::from(""),
-        Line::from(vec![Span::styled(
-            "  💡 Recommendations: ",
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD),
-        )]),
-        Line::from(vec![
-            Span::styled("    • ", Style::default().fg(accent_color)),
-            Span::raw("Compress images by 40% to improve load speed"),
-        ]),
-        Line::from(vec![
-            Span::styled("    • ", Style::default().fg(accent_color)),
-            Span::raw("Add descriptive ALT text to remaining images"),
-        ]),
+                .bg(accent_color)
+                .add_modifier(Modifier::BOLD);
+        }
+
+        let displayed_data = [(i + 1).to_string(), src.clone(), alt.clone()];
+
+        let cells = displayed_data.iter().enumerate().map(|(j, c)| {
+            let content = if j == 1 {
+                // Image Src column
+                let content = c.as_str();
+                if content.len() > 100 {
+                    let start = horizontal_scroll.min(content.len().saturating_sub(50));
+                    let end = (start + 100).min(content.len());
+                    if start > 0 {
+                        format!("…{}", &content[start..end])
+                    } else {
+                        content[start..end].to_string()
+                    }
+                } else {
+                    content.to_string()
+                }
+            } else {
+                c.as_str().to_string()
+            };
+
+            let padded_content = if j == 0 {
+                // Index
+                let w = 4;
+                let l = content.len();
+                if l < w {
+                    let left_pad = (w - l) / 2;
+                    let right_pad = w - l - left_pad;
+                    format!(
+                        "{}{}{}",
+                        " ".repeat(left_pad),
+                        content,
+                        " ".repeat(right_pad)
+                    )
+                } else {
+                    content
+                }
+            } else {
+                content
+            };
+
+            Cell::from(padded_content)
+        });
+
+        Row::new(cells).style(row_style).height(1)
+    });
+
+    let widths = [
+        Constraint::Length(4), // #
+        Constraint::Min(50),   // Image Src
+        Constraint::Min(30),   // Alt Text
     ];
 
-    let p = Paragraph::new(content)
-        .block(block.title(Span::styled(
-            " Image Assets Overview ",
-            Style::default().fg(Color::Yellow),
-        )))
-        .wrap(Wrap { trim: true });
-    f.render_widget(p, area);
+    let scroll_indicator = if horizontal_scroll > 0 {
+        format!(" [Scroll: {}] ", horizontal_scroll)
+    } else {
+        String::new()
+    };
+
+    let table = Table::new(rows, widths)
+        .header(header)
+        .block(
+            block
+                .title(Span::styled(
+                    format!(" 🖼️  Images ({}) {} ", images.len(), scroll_indicator),
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                ))
+                .border_style(Style::default().fg(accent_color)),
+        )
+        .column_spacing(1)
+        .style(Style::default().bg(Color::Rgb(20, 20, 30)));
+
+    f.render_stateful_widget(table, area, table_state);
 }

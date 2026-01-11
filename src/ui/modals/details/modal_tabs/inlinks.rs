@@ -44,7 +44,7 @@ pub fn render(
                 .add_modifier(Modifier::BOLD);
         }
 
-        let displayed_data = vec![(i + 1).to_string(), href.clone(), text.clone()];
+        let displayed_data = [(i + 1).to_string(), href.clone(), text.clone()];
 
         let cells = displayed_data.iter().enumerate().map(|(j, c)| {
             let content = if j == 1 {

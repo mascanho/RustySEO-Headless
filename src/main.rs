@@ -136,7 +136,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 KeyCode::Tab => app.next_detail_tab(),
                                 KeyCode::BackTab => app.previous_detail_tab(),
                                 KeyCode::Left => {
-                                    if app.detail_tab == 3 {
+                                    if app.detail_tab == 3 || app.detail_tab == 5 {
                                         if app.detail_horizontal_scroll > 0 {
                                             app.detail_horizontal_scroll =
                                                 app.detail_horizontal_scroll.saturating_sub(10);
@@ -146,12 +146,12 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     }
                                 }
                                 KeyCode::Right => {
-                                    if app.detail_tab == 3 {
+                                    if app.detail_tab == 3 || app.detail_tab == 5 {
                                         app.detail_horizontal_scroll += 10;
                                     }
                                 }
                                 KeyCode::Char('k') | KeyCode::Up => {
-                                    if app.detail_tab == 3 {
+                                    if app.detail_tab == 3 || app.detail_tab == 5 {
                                         let selected =
                                             app.detail_table_state.selected().unwrap_or(0);
                                         if selected > 0 {
@@ -166,7 +166,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     }
                                 }
                                 KeyCode::Char('j') | KeyCode::Down => {
-                                    if app.detail_tab == 3 {
+                                    if app.detail_tab == 3 || app.detail_tab == 5 {
                                         let selected =
                                             app.detail_table_state.selected().unwrap_or(0);
                                         app.detail_table_state.select(Some(selected + 1));
