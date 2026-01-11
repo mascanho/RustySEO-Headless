@@ -3,7 +3,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Tabs},
+    widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Tabs, Table, Row, Cell},
 };
 
 use crate::models::App;
@@ -39,8 +39,8 @@ pub fn render(f: &mut Frame, app: &mut App) {
     app.sidebar_tab_rect = Some(sidebar_tab_area);
 
     let sidebar_titles = vec![
-        " ⚙ Settings ",
         " 📊 Summary ",
+        " ⚙ Settings ",
         "  Filter ",
         " ⚡ Act ",
         "📚 Bookmarks",
@@ -78,80 +78,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     match app.sidebar_tab {
         0 => {
-            // Settings Tab
-            let mut items = Vec::new();
-            if let Some(settings) = &app.settings {
-                // Crawler Section
-                items.push(ListItem::new(Line::from(vec![
-                    Span::styled(" 🕷️  CRAWLER ENGINE ", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
-                ])));
-                items.push(ListItem::new(Line::from(vec![
-                    Span::styled("   Max Pages:      ", Style::default().fg(accent_color)),
-                    Span::styled(settings.crawler.max_pages.to_string(), Style::default().fg(Color::White)),
-                ])));
-                items.push(ListItem::new(Line::from(vec![
-                    Span::styled("   Concurrency:    ", Style::default().fg(accent_color)),
-                    Span::styled(settings.crawler.concurrency.to_string(), Style::default().fg(Color::White)),
-                ])));
-                items.push(ListItem::new(Line::from(vec![
-                    Span::styled("   Stay on Domain: ", Style::default().fg(accent_color)),
-                    Span::styled(settings.crawler.stay_on_domain.to_string(), Style::default().fg(if settings.crawler.stay_on_domain { Color::Green } else { Color::Red })),
-                ])));
-                items.push(ListItem::new(Line::from(vec![
-                    Span::styled("   User Agent:     ", Style::default().fg(accent_color)),
-                    Span::styled(settings.crawler.user_agent.clone(), Style::default().fg(Color::DarkGray)),
-                ])));
-                
-                items.push(ListItem::new(""));
-                
-                // UI Section
-                items.push(ListItem::new(Line::from(vec![
-                    Span::styled(" 🎨 UI / AESTHETICS ", Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD)),
-                ])));
-                items.push(ListItem::new(Line::from(vec![
-                    Span::styled("   Theme:          ", Style::default().fg(accent_color)),
-                    Span::styled(settings.ui.theme.clone(), Style::default().fg(Color::Cyan)),
-                ])));
-                items.push(ListItem::new(Line::from(vec![
-                    Span::styled("   Refresh Rate:   ", Style::default().fg(accent_color)),
-                    Span::styled(format!("{}ms", settings.ui.refresh_rate_ms), Style::default().fg(Color::White)),
-                ])));
-                
-                items.push(ListItem::new(""));
-                
-                // System Section
-                items.push(ListItem::new(Line::from(vec![
-                    Span::styled(" 🖥️  SYSTEM / DATA ", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
-                ])));
-                items.push(ListItem::new(Line::from(vec![
-                    Span::styled("   Database:       ", Style::default().fg(accent_color)),
-                    Span::styled(settings.system.database_path.clone(), Style::default().fg(Color::DarkGray)),
-                ])));
-                items.push(ListItem::new(Line::from(vec![
-                    Span::styled("   Export Format:  ", Style::default().fg(accent_color)),
-                    Span::styled(settings.system.export_format.clone().to_uppercase(), Style::default().fg(Color::Green)),
-                ])));
-                
-                items.push(ListItem::new(""));
-                items.push(ListItem::new(Line::from(vec![
-                    Span::styled(" 📂 Config Path: ", Style::default().fg(Color::DarkGray)),
-                ])));
-                let path = crate::models::AppSettings::path();
-                items.push(ListItem::new(Line::from(vec![
-                    Span::styled(format!("   {}", path.display()), Style::default().fg(Color::DarkGray).add_modifier(Modifier::ITALIC)),
-                ])));
-            } else {
-                items.push(ListItem::new(" No settings loaded. "));
-            }
-
-            let list = List::new(items).block(content_block.title(Span::styled(
-                " App Configuration ",
-                Style::default().fg(Color::Yellow),
-            )));
-            f.render_widget(list, sidebar_content_area);
-        }
-        1 => {
-            // Compute crawl summary stats (Previously arm 0)
+            // Summary Tab (Previously arm 1)
             let total_pages = app.page_data.len();
             let mut title_stats = (0, 0, 0); // <30, 30-60, >60
             let mut desc_stats = (0, 0, 0); // <120, 120-160, >160
@@ -164,42 +91,17 @@ pub fn render(f: &mut Frame, app: &mut App) {
             let mut total_headings = 0;
 
             for page in &app.page_data {
-                // Titles
-                if page.title_len < 30 {
-                    title_stats.0 += 1;
-                } else if page.title_len <= 60 {
-                    title_stats.1 += 1;
-                } else {
-                    title_stats.2 += 1;
-                }
+                if page.title_len < 30 { title_stats.0 += 1; }
+                else if page.title_len <= 60 { title_stats.1 += 1; }
+                else { title_stats.2 += 1; }
 
-                // Descriptions
-                if page.description_len < 120 {
-                    desc_stats.0 += 1;
-                } else if page.description_len <= 160 {
-                    desc_stats.1 += 1;
-                } else {
-                    desc_stats.2 += 1;
-                }
+                if page.description_len < 120 { desc_stats.0 += 1; }
+                else if page.description_len <= 160 { desc_stats.1 += 1; }
+                else { desc_stats.2 += 1; }
 
-                // Status
                 *status_counts.entry(page.status.clone()).or_insert(0) += 1;
-
-                // Mobile
-                if page.mobile {
-                    mobile_yes += 1;
-                } else {
-                    mobile_no += 1;
-                }
-
-                // Indexable
-                if page.indexability.to_lowercase().contains("noindex") {
-                    indexable_no += 1;
-                } else {
-                    indexable_yes += 1;
-                }
-
-                // Headings
+                if page.mobile { mobile_yes += 1; } else { mobile_no += 1; }
+                if page.indexability.to_lowercase().contains("noindex") { indexable_no += 1; } else { indexable_yes += 1; }
                 for (tag, _) in &page.headings {
                     *heading_counts.entry(tag.clone()).or_insert(0) += 1;
                     total_headings += 1;
@@ -215,12 +117,10 @@ pub fn render(f: &mut Frame, app: &mut App) {
                 ListItem::new(""),
                 ListItem::new(Line::from(Span::styled(
                     "PAGE TITLES",
-                    Style::default()
-                        .add_modifier(Modifier::UNDERLINED)
-                        .fg(Color::Cyan),
+                    Style::default().add_modifier(Modifier::UNDERLINED).fg(Color::Cyan),
                 ))),
                 ListItem::new(Line::from(vec![
-                    Span::styled("  < 30 chars: ", Style::default().fg(accent_color)),
+                    Span::styled("  < 30 chars:  ", Style::default().fg(accent_color)),
                     Span::raw(title_stats.0.to_string()),
                 ])),
                 ListItem::new(Line::from(vec![
@@ -228,79 +128,99 @@ pub fn render(f: &mut Frame, app: &mut App) {
                     Span::raw(title_stats.1.to_string()),
                 ])),
                 ListItem::new(Line::from(vec![
-                    Span::styled("  > 60 chars: ", Style::default().fg(accent_color)),
-                    Span::raw(total_headings.to_string()), // Simplified display
+                    Span::styled("  > 60 chars:  ", Style::default().fg(accent_color)),
+                    Span::raw(title_stats.2.to_string()),
                 ])),
-            ];
-            
-            // Re-adding titles stats correctly
-            items[6] = ListItem::new(Line::from(vec![
-                Span::styled("  > 60 chars: ", Style::default().fg(accent_color)),
-                Span::raw(title_stats.2.to_string()),
-            ]));
-
-            items.extend(vec![
-                ListItem::new(""),
-                ListItem::new(Line::from(Span::styled(
-                    "META DESCRIPTIONS",
-                    Style::default()
-                        .add_modifier(Modifier::UNDERLINED)
-                        .fg(Color::Cyan),
-                ))),
-                ListItem::new(Line::from(vec![
-                    Span::styled("  < 120 chars: ", Style::default().fg(accent_color)),
-                    Span::raw(desc_stats.0.to_string()),
-                ])),
-                ListItem::new(Line::from(vec![
-                    Span::styled("  120-160 chars: ", Style::default().fg(accent_color)),
-                    Span::raw(desc_stats.1.to_string()),
-                ])),
-                ListItem::new(Line::from(vec![
-                    Span::styled("  > 160 chars: ", Style::default().fg(accent_color)),
-                    Span::raw(desc_stats.2.to_string()),
-                ])),
-                ListItem::new(""),
-                ListItem::new(Line::from(Span::styled(
-                    "STATUS CODES",
-                    Style::default()
-                        .add_modifier(Modifier::UNDERLINED)
-                        .fg(Color::Cyan),
-                ))),
-            ]);
-
-            let mut status_keys: Vec<_> = status_counts.keys().collect();
-            status_keys.sort();
-            for status in status_keys {
-                let count = status_counts.get(status).unwrap();
-                items.push(ListItem::new(Line::from(vec![
-                    Span::styled(format!("  {}: ", status), Style::default().fg(accent_color)),
-                    Span::raw(count.to_string()),
-                ])));
-            }
-
-            items.extend(vec![
                 ListItem::new(""),
                 ListItem::new(Line::from(Span::styled(
                     "TECHNICAL",
-                    Style::default()
-                        .add_modifier(Modifier::UNDERLINED)
-                        .fg(Color::Cyan),
+                    Style::default().add_modifier(Modifier::UNDERLINED).fg(Color::Cyan),
                 ))),
                 ListItem::new(Line::from(vec![
                     Span::styled("  Mobile Friendly: ", Style::default().fg(accent_color)),
                     Span::raw(format!("Yes: {}, No: {}", mobile_yes, mobile_no)),
                 ])),
                 ListItem::new(Line::from(vec![
-                    Span::styled("  Indexable: ", Style::default().fg(accent_color)),
+                    Span::styled("  Indexable:      ", Style::default().fg(accent_color)),
                     Span::raw(format!("Yes: {}, No: {}", indexable_yes, indexable_no)),
                 ])),
-            ]);
+                ListItem::new(""),
+                ListItem::new(Line::from(Span::styled(
+                    "HEADINGS",
+                    Style::default().add_modifier(Modifier::UNDERLINED).fg(Color::Cyan),
+                ))),
+                ListItem::new(Line::from(vec![
+                    Span::styled("  Total Headings: ", Style::default().fg(accent_color)),
+                    Span::raw(total_headings.to_string()),
+                ])),
+            ];
+
+            let mut heading_keys: Vec<_> = heading_counts.keys().collect();
+            heading_keys.sort();
+            for tag in heading_keys {
+                let count = heading_counts.get(tag).unwrap();
+                items.push(ListItem::new(Line::from(vec![
+                    Span::styled(
+                        format!("  {}: ", tag.to_uppercase()),
+                        Style::default().fg(accent_color),
+                    ),
+                    Span::raw(count.to_string()),
+                ])));
+            }
 
             let list = List::new(items).block(content_block.title(Span::styled(
                 " Crawl Summary ",
                 Style::default().fg(Color::Yellow),
             )));
             f.render_widget(list, sidebar_content_area);
+        }
+        1 => {
+            // Settings Tab (Previously arm 0)
+            if let Some(settings) = &app.settings {
+                let chunks = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([Constraint::Min(0), Constraint::Length(3)])
+                    .split(sidebar_content_area);
+                
+                let table_area = chunks[0];
+                let footer_area = chunks[1];
+
+                let mut rows = Vec::new();
+
+                // Section Headers and Data in a structured Table-like way
+                rows.push(Row::new(vec![Cell::from(" 󱐋 ENGINE SETTINGS ").style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)), Cell::from("")]));
+                rows.push(Row::new(vec![Cell::from("   ├─ Max Pages"), Cell::from(settings.crawler.max_pages.to_string())]).style(Style::default().fg(accent_color)));
+                rows.push(Row::new(vec![Cell::from("   ├─ Concurrency"), Cell::from(settings.crawler.concurrency.to_string())]).style(Style::default().fg(accent_color)));
+                rows.push(Row::new(vec![Cell::from("   └─ Domain Lock"), Cell::from(if settings.crawler.stay_on_domain { " Enabled " } else { " Disabled " }).style(Style::default().fg(Color::Black).bg(if settings.crawler.stay_on_domain { Color::Green } else { Color::Red }))]).style(Style::default().fg(accent_color)));
+                
+                rows.push(Row::new(vec![Cell::from(""), Cell::from("")]));
+                
+                rows.push(Row::new(vec![Cell::from(" 🎨 VIEWPORT ").style(Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD)), Cell::from("")]));
+                rows.push(Row::new(vec![Cell::from("   ├─ Theme"), Cell::from(format!(" {} ", settings.ui.theme.clone())).style(Style::default().fg(Color::Black).bg(Color::Cyan))]).style(Style::default().fg(accent_color)));
+                rows.push(Row::new(vec![Cell::from("   └─ Refresh"), Cell::from(format!(" {}ms ", settings.ui.refresh_rate_ms)).style(Style::default().fg(Color::White))]).style(Style::default().fg(accent_color)));
+                
+                rows.push(Row::new(vec![Cell::from(""), Cell::from("")]));
+                
+                rows.push(Row::new(vec![Cell::from(" ⚙ SYSTEM ").style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)), Cell::from("")]));
+                rows.push(Row::new(vec![Cell::from("   ├─ Format"), Cell::from(settings.system.export_format.to_uppercase()).style(Style::default().fg(Color::Green))]).style(Style::default().fg(accent_color)));
+                rows.push(Row::new(vec![Cell::from("   └─ Log Level"), Cell::from(settings.system.log_level.to_uppercase()).style(Style::default().fg(Color::Yellow))]).style(Style::default().fg(accent_color)));
+
+                let table = Table::new(rows, [Constraint::Percentage(60), Constraint::Percentage(40)])
+                    .block(content_block.title(Span::styled(" Configuration ", Style::default().fg(Color::Yellow))));
+                
+                f.render_widget(table, table_area);
+
+                // Footer with Shortcut
+                let footer_text = vec![Line::from(vec![
+                    Span::styled(" ⌨ Shortcut: ", Style::default().fg(Color::DarkGray)),
+                    Span::styled(" 'E' ", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+                    Span::raw(" to Edit Settings File"),
+                ])];
+                let footer = Paragraph::new(footer_text)
+                    .block(Block::default().borders(Borders::TOP).border_style(Style::default().fg(border_color)))
+                    .style(Style::default().bg(Color::Rgb(15, 15, 25)));
+                f.render_widget(footer, footer_area);
+            }
         }
         2 => {
             // Filters (Previously arm 1)

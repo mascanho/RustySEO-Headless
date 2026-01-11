@@ -385,8 +385,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             }
 
                             // Quick jumps
-                            KeyCode::Char('s') => app.set_sidebar_tab(0),
-                            KeyCode::Char('g') => app.set_sidebar_tab(1),
+                            KeyCode::Char('g') => app.set_sidebar_tab(0),
+                            KeyCode::Char('s') => app.set_sidebar_tab(1),
                             KeyCode::Char('f') => app.set_sidebar_tab(2),
                             KeyCode::Char('a') => app.set_sidebar_tab(3),
                             KeyCode::Char('b') | KeyCode::Char('+') => app.set_sidebar_tab(4),
@@ -415,7 +415,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     && my >= s_rect.y
                                     && my < s_rect.y + s_rect.height
                                 {
-                                    let num_s_tabs = 4;
+                                    let num_s_tabs = 5;
                                     let s_tab_width = s_rect.width / num_s_tabs as u16;
                                     if s_tab_width > 0 {
                                         app.sidebar_tab = ((mx - s_rect.x) / s_tab_width)

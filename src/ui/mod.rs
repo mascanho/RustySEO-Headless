@@ -366,10 +366,10 @@ fn render_help_modal(f: &mut Frame) {
                 .fg(accent_color),
         )]),
         Line::from(vec![
-            Span::styled("  s", Style::default().fg(Color::Cyan)),
-            Span::raw(": Settings | "),
-            Span::styled("g", Style::default().fg(Color::Cyan)),
+            Span::styled("  g", Style::default().fg(Color::Cyan)),
             Span::raw(": Summary  | "),
+            Span::styled("s", Style::default().fg(Color::Cyan)),
+            Span::raw(": Settings | "),
             Span::styled("f", Style::default().fg(Color::Cyan)),
             Span::raw(": Filters  | "),
             Span::styled("a", Style::default().fg(Color::Cyan)),
