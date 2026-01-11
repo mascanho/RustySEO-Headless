@@ -11,7 +11,7 @@ use crate::ui::centered_rect;
 
 pub fn render(f: &mut Frame, app: &mut App) {
     let area = f.size();
-    let menu_area = centered_rect(40, 60, area);
+    let menu_area = centered_rect(25, 35, area);
 
     let accent_color = Color::Rgb(80, 140, 255);
     let border_color = Color::Rgb(40, 45, 60);
