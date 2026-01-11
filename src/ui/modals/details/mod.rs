@@ -89,7 +89,12 @@ pub fn render(f: &mut Frame, app: &mut App) {
         0 => modal_tabs::general::render(f, row_data, chunks[1], content_block),
         1 => modal_tabs::analysis::render(f, row_data, chunks[1], content_block),
         2 => modal_tabs::checklist::render(f, row_data, chunks[1], content_block),
-        3 => modal_tabs::inlinks::render(f, row_data, chunks[1], content_block),
+        3 => modal_tabs::inlinks::render(
+            f,
+            &app.page_data[selected_idx].anchor_links,
+            chunks[1],
+            content_block,
+        ),
         4 => modal_tabs::outlinks::render(f, chunks[1], content_block),
         5 => modal_tabs::images::render(f, chunks[1], content_block),
         6 => modal_tabs::schema::render(f, chunks[1], content_block),
@@ -115,16 +120,37 @@ pub fn render(f: &mut Frame, app: &mut App) {
         .border_style(Style::default().fg(border_color));
 
     let url = &row_data[1];
+    let status = &row_data[10];
 
-    let footer_top_text = Paragraph::new(Span::styled(
+    let footer_top_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Min(0),     // URL on left
+            Constraint::Length(10), // Status on right
+        ])
+        .split(chunks[2]);
+
+    let url_paragraph = Paragraph::new(Span::styled(
         format!("URL: {}", url),
         Style::default()
             .fg(Color::Rgb(180, 120, 255))
             .add_modifier(Modifier::ITALIC),
     ))
+    .block(footer_top.clone())
+    .alignment(Alignment::Left);
+    f.render_widget(url_paragraph, footer_top_chunks[0]);
+
+    let status_paragraph = Paragraph::new(Span::styled(
+        format!("Status: {}", status),
+        if status.contains("2") {
+            Style::default().fg(Color::Red)
+        } else {
+            Style::default().fg(Color::Green)
+        },
+    ))
     .block(footer_top)
-    .alignment(Alignment::Center);
-    f.render_widget(footer_top_text, chunks[2]);
+    .alignment(Alignment::Right);
+    f.render_widget(status_paragraph, footer_top_chunks[1]);
 
     let footer_block = Block::default()
         .bg(Color::Rgb(15, 15, 25))
