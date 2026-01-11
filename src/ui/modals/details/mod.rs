@@ -1,4 +1,4 @@
-use crate::{models::App, ui::centered_rect};
+use crate::{models::App, tui_dbg, tui_println, ui::centered_rect};
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout},
@@ -56,6 +56,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         " 📨 Headers ",
         " 📝 Headings ",
     ];
+
     let tabs = Tabs::new(titles)
         .block(
             Block::default()

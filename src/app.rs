@@ -63,55 +63,54 @@ impl Default for App {
 
 impl App {
     pub fn on_tick(&mut self) {
-        // Collect results from background crawler thread
-        let mut finished = false;
+        // 1. Collect results from background crawler thread
+        let mut results = Vec::new();
+        let mut crawl_finished = false;
         if let Some(ref rx) = self.crawl_receiver {
             loop {
                 match rx.try_recv() {
-                    Ok(data) => {
-                        self.page_data.push(data.clone());
-                        // ID, URL, Title, Title Len, H1, H1 Len, Desc, Desc Len, H2, H2 Len, Status, Mobile, Lang, Index, Anchor
-                        let row = vec![
-                            data.id.to_string(),
-                            data.url.clone(),
-                            data.title.clone(),
-                            data.title_len.to_string(),
-                            data.h1.clone(),
-                            data.h1_len.to_string(),
-                            data.description.clone(),
-                            data.description_len.to_string(),
-                            data.h2.clone(),
-                            data.h2_len.to_string(),
-                            data.status.clone(),
-                            data.mobile.to_string(),
-                            data.language.to_string(),
-                            data.indexability.to_string(),
-                            data.anchor_links.join(", "),
-                        ];
-                        self.table_data.push(row);
-                        self.logs_data.insert(0, format!("Crawled: {}", data.url));
-                        if self.logs_data.len() > 100 {
-                            self.logs_data.pop();
-                        }
-
-                        // Smoothly update overall progress based on some limit (e.g. 50 pages)
-                        self.crawl_progress = (self.table_data.len() as f64 / 50.0).min(1.0);
-                    }
+                    Ok(data) => results.push(data),
                     Err(mpsc::TryRecvError::Empty) => break,
                     Err(mpsc::TryRecvError::Disconnected) => {
-                        finished = true;
+                        crawl_finished = true;
                         break;
                     }
                 }
             }
         }
 
-        if finished {
+        // 2. Process collected results
+        for data in results {
+            self.page_data.push(data.clone());
+            let row = vec![
+                data.id.to_string(),
+                data.url.clone(),
+                data.title.clone(),
+                data.title_len.to_string(),
+                data.h1.clone(),
+                data.h1_len.to_string(),
+                data.description.clone(),
+                data.description_len.to_string(),
+                data.h2.clone(),
+                data.h2_len.to_string(),
+                data.status.clone(),
+                data.mobile.to_string(),
+                data.language.to_string(),
+                data.indexability.to_string(),
+                data.anchor_links.join(", "),
+            ];
+            self.table_data.push(row);
+            self.log(format!("Crawled: {}", data.url));
+
+            // Smoothly update overall progress based on some limit (e.g. 50 pages)
+            self.crawl_progress = (self.table_data.len() as f64 / 50.0).min(1.0);
+        }
+
+        if crawl_finished {
             self.is_crawling = false;
             self.crawl_receiver = None;
             self.crawl_progress = 1.0;
-            self.logs_data
-                .insert(0, "SYSTEM - Crawl finished successfully.".to_string());
+            self.log("SYSTEM - Crawl finished successfully.");
         }
 
         if self.input_url.is_empty() {
@@ -126,14 +125,23 @@ impl App {
             }
         }
 
-        // Process logs from tracing
+        // 3. Process logs from tracing
+        let mut tracing_logs = Vec::new();
         if let Some(ref rx) = self.log_receiver {
             while let Ok(log) = rx.try_recv() {
-                self.logs_data.insert(0, log);
-                if self.logs_data.len() > 100 {
-                    self.logs_data.pop();
-                }
+                tracing_logs.push(log);
             }
+        }
+
+        for log in tracing_logs {
+            self.log(log);
+        }
+    }
+
+    pub fn log<S: Into<String>>(&mut self, message: S) {
+        self.logs_data.insert(0, message.into());
+        if self.logs_data.len() > 100 {
+            self.logs_data.pop();
         }
     }
 
