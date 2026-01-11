@@ -6,7 +6,7 @@ use ratatui::{
     widgets::{Block, Paragraph},
 };
 
-pub fn render(f: &mut Frame, headings: &[(String, String)], area: Rect, block: Block) {
+pub fn render(f: &mut Frame, headings: &[(String, String)], scroll: u16, area: Rect, block: Block) {
     let content = if headings.is_empty() {
         vec![Line::from(Span::raw("No headings found on this page."))]
     } else {
@@ -27,10 +27,12 @@ pub fn render(f: &mut Frame, headings: &[(String, String)], area: Rect, block: B
             .collect::<Vec<_>>()
     };
 
-    let p = Paragraph::new(content).block(block.title(Span::styled(
-        " Headings Overview ",
-        Style::default().fg(Color::Yellow),
-    )));
+    let p = Paragraph::new(content)
+        .block(block.title(Span::styled(
+            " Headings Overview ",
+            Style::default().fg(Color::Yellow),
+        )))
+        .scroll((scroll, 0));
 
     f.render_widget(p, area);
 }

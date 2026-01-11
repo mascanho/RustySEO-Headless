@@ -136,17 +136,17 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 KeyCode::Tab => app.next_detail_tab(),
                                 KeyCode::BackTab => app.previous_detail_tab(),
                                 KeyCode::Char('k') | KeyCode::Up => {
-                                    if app.detail_tab == 6 {
-                                        if app.schema_scroll > 0 {
-                                            app.schema_scroll -= 1;
+                                    if [1, 2, 6, 7, 8].contains(&app.detail_tab) {
+                                        if app.detail_scroll > 0 {
+                                            app.detail_scroll = app.detail_scroll.saturating_sub(1);
                                         }
                                     } else {
                                         app.previous_row();
                                     }
                                 }
                                 KeyCode::Char('j') | KeyCode::Down => {
-                                    if app.detail_tab == 6 {
-                                        app.schema_scroll += 1;
+                                    if [1, 2, 6, 7, 8].contains(&app.detail_tab) {
+                                        app.detail_scroll += 1;
                                     } else {
                                         app.next_row();
                                     }

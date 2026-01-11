@@ -101,7 +101,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
             modal_tabs::schema::render(
                 f,
                 &app.page_data[selected_idx].schema.clone(),
-                app.schema_scroll,
+                app.detail_scroll,
                 chunks[1],
                 schema_block,
             );
@@ -115,6 +115,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         8 => modal_tabs::headings::render(
             f,
             &app.page_data[selected_idx].headings.clone(),
+            app.detail_scroll,
             chunks[1],
             content_block,
         ),

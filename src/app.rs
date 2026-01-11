@@ -52,7 +52,7 @@ impl Default for App {
             input_mode: false,
             cursor_position: 0,
             detail_tab: 0,
-            schema_scroll: 0,
+            detail_scroll: 0,
             input_url: String::new(),
             crawl_receiver: None,
             is_crawling: false,
