@@ -1,9 +1,9 @@
 use ratatui::{
     Frame,
-    layout::Rect,
+    layout::{Alignment, Rect},
     style::{Color, Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem},
+    widgets::{Block, Borders, Clear, List, ListItem, Paragraph},
 };
 
 use crate::models::App;
@@ -21,8 +21,13 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         .borders(Borders::TOP)
         .border_style(Style::default().fg(accent_color));
 
-    let log_items: Vec<ListItem> = app
-        .logs_data
+    let logs_to_render = if app.log_search_query.is_empty() && !app.show_log_search {
+        &app.logs_data
+    } else {
+        &app.filtered_logs_data
+    };
+
+    let log_items: Vec<ListItem> = logs_to_render
         .iter()
         .map(|log| {
             // Log format: [HH:MM:SS][LEVEL] message
@@ -64,4 +69,28 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         );
 
     f.render_stateful_widget(list, area, &mut app.logs_state);
+
+    // Floating Log Search Bar
+    if app.show_log_search {
+        let search_area = Rect {
+            x: area.x + area.width.saturating_sub(42),
+            y: area.y + area.height.saturating_sub(3),
+            width: 40.min(area.width),
+            height: 3,
+        };
+
+        let search_block = Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Yellow))
+            .bg(Color::Rgb(20, 20, 30))
+            .title(Span::styled(" 🔍 Search Logs ", Style::default().fg(Color::Cyan).bold()));
+
+        let search_text = Paragraph::new(app.log_search_query.as_str())
+            .block(search_block)
+            .alignment(Alignment::Left);
+
+        f.render_widget(Clear, search_area);
+        f.render_widget(search_text, search_area);
+    }
 }
+

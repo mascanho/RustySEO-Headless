@@ -77,6 +77,9 @@ impl Default for App {
             show_search: false,
             search_query: String::new(),
             filtered_table_data: Vec::new(),
+            show_log_search: false,
+            log_search_query: String::new(),
+            filtered_logs_data: vec![],
         }
     }
 }
@@ -179,6 +182,7 @@ impl App {
         if self.logs_data.len() > 100 {
             self.logs_data.pop();
         }
+        self.apply_log_filter();
     }
 
     pub fn new() -> Self {
@@ -641,4 +645,34 @@ impl App {
             }
         }
     }
+
+    pub fn apply_log_filter(&mut self) {
+        if self.log_search_query.is_empty() {
+            self.filtered_logs_data = self.logs_data.clone();
+            return;
+        }
+
+        let matcher = fuzzy_matcher::skim::SkimMatcherV2::default();
+        let mut matches: Vec<(i64, String)> = self.logs_data
+            .iter()
+            .filter_map(|log| {
+                matcher.fuzzy_match(log, &self.log_search_query)
+                    .map(|score| (score, log.clone()))
+            })
+            .collect();
+
+        // Sort by score descending
+        matches.sort_by(|a, b| b.0.cmp(&a.0));
+
+        self.filtered_logs_data = matches.into_iter().map(|(_, log)| log).collect();
+
+        // Adjust selection if it's out of bounds
+        let current_selected = self.logs_state.selected().unwrap_or(0);
+        if current_selected >= self.filtered_logs_data.len() && !self.filtered_logs_data.is_empty() {
+            self.logs_state.select(Some(self.filtered_logs_data.len().saturating_sub(1)));
+        } else if self.filtered_logs_data.is_empty() {
+            self.logs_state.select(None);
+        }
+    }
 }
+

@@ -182,4 +182,7 @@ pub struct App {
     pub show_search: bool,
     pub search_query: String,
     pub filtered_table_data: Vec<Vec<String>>,
+    pub show_log_search: bool,
+    pub log_search_query: String,
+    pub filtered_logs_data: Vec<String>,
 }

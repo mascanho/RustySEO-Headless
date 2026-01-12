@@ -222,7 +222,7 @@ fn render_help_modal(f: &mut Frame) {
         Line::from(vec![Span::styled(" m       ", Style::default().fg(key_color)), Span::raw("Actions Context Menu")]),
         Line::from(""),
         Line::from(vec![Span::styled("── FUZZY FILTER ──", Style::default().fg(header_color).bold())]),
-        Line::from(vec![Span::styled(" Ctrl+s  ", Style::default().fg(Color::Rgb(255, 170, 0))), Span::raw("Search Dashboard")]),
+        Line::from(vec![Span::styled(" Ctrl+s  ", Style::default().fg(Color::Rgb(255, 170, 0))), Span::raw("Search Dashboard/Logs")]),
         Line::from(vec![Span::styled(" Enter   ", Style::default().fg(key_color)), Span::raw("Apply Filter")]),
         Line::from(vec![Span::styled(" Esc     ", Style::default().fg(key_color)), Span::raw("Clear / Close Search")]),
     ];

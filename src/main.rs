@@ -105,6 +105,21 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             }
                             _ => {}
                         }
+                    } else if app.show_log_search {
+                        match key.code {
+                            KeyCode::Enter | KeyCode::Esc => {
+                                app.show_log_search = false;
+                            }
+                            KeyCode::Char(c) => {
+                                app.log_search_query.push(c);
+                                app.apply_log_filter();
+                            }
+                            KeyCode::Backspace => {
+                                app.log_search_query.pop();
+                                app.apply_log_filter();
+                            }
+                            _ => {}
+                        }
                     } else if app.input_mode {
                         match key.code {
                             KeyCode::Enter => {
@@ -247,6 +262,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                         // MODAL PRIORITY 2.8: Logs Console
                         if app.show_logs {
                             match key.code {
+                                KeyCode::Char('s') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                                    app.show_log_search = true;
+                                }
                                 KeyCode::Char('q') | KeyCode::Esc | KeyCode::Char('L') => {
                                     app.show_logs = false
                                 }
@@ -347,7 +365,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 app.input_mode = true
                             }
                             KeyCode::Char('s') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                                if app.current_state == AppState::Dashboard {
+                                if app.show_logs {
+                                    app.show_log_search = true;
+                                } else if app.current_state == AppState::Dashboard {
                                     app.show_search = true;
                                 }
                             }
