@@ -1,9 +1,9 @@
 use ratatui::{
     Frame,
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{Constraint, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::Span,
-    widgets::{Block, Borders, Cell, Paragraph, Row, Table},
+    widgets::{Block, Borders, Cell, Row, Table},
 };
 
 use crate::models::App;
@@ -11,14 +11,6 @@ use crate::models::App;
 pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     let accent_color = Color::Rgb(80, 140, 255);
     let border_color = Color::Rgb(40, 45, 60);
-
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Min(0),    // Table
-            Constraint::Length(1), // Footer
-        ])
-        .split(area);
 
     let header_titles = [
         "ID",
@@ -224,17 +216,5 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         .column_spacing(1)
         .style(Style::default().bg(Color::Rgb(15, 15, 25)));
 
-    f.render_stateful_widget(table, chunks[0], &mut app.table_state);
-    let footer_block = Block::default()
-        .bg(Color::Rgb(15, 15, 25))
-        .border_style(Style::default().fg(border_color));
-    let footer_text = Paragraph::new(Span::styled(
-        " j/k/↑/↓: Navigate | Enter: Details | t: Top | G: Bottom | ←/→: Scroll | Tab: Next Tab | ?: Help | q: Quit ",
-        Style::default()
-            .fg(Color::Gray)
-            .add_modifier(Modifier::ITALIC),
-    ))
-    .block(footer_block)
-    .alignment(ratatui::layout::Alignment::Center);
-    f.render_widget(footer_text, chunks[1]);
+    f.render_stateful_widget(table, area, &mut app.table_state);
 }
