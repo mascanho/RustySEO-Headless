@@ -70,7 +70,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
     let input_block = Block::default()
         .borders(Borders::ALL)
         .title(Span::styled(" 💬 Ask anything... (Enter to Send, Esc to Close) ", Style::default().fg(Color::Gray)))
-        .border_style(Style::default().fg(border_color))
+        .border_style(Style::default().fg(Color::Blue))
         .bg(Color::Rgb(20, 20, 30));
 
     let input_p = Paragraph::new(app.ai_input.as_str())
