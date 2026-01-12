@@ -73,7 +73,7 @@ impl Default for AppSettings {
     fn default() -> Self {
         Self {
             crawler: CrawlerConfig {
-                max_pages: 50,
+                max_pages: 100,
                 concurrency: 10,
                 user_agent: "RustySEO/0.1.0".to_string(),
                 stay_on_domain: true,

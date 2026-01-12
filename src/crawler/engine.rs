@@ -98,13 +98,13 @@ impl CrawlEngine {
             Err(_) => return,
         };
 
-        let mut to_visit = vec![start_url.to_string()];
+        let mut to_visit = vec![(start_url.to_string(), None)];
         let mut join_set = tokio::task::JoinSet::new();
 
         while !to_visit.is_empty() || !join_set.is_empty() {
             // Fill up our concurrency quota
             while !to_visit.is_empty() && join_set.len() < self.concurrency_limit {
-                let url = to_visit.pop().unwrap();
+                let (url, referer) = to_visit.pop().unwrap();
 
                 {
                     let mut visited = self.visited.lock().await;
@@ -117,7 +117,7 @@ impl CrawlEngine {
                 let engine = self.clone();
                 let base_url_clone = base_url.clone();
                 join_set
-                    .spawn(async move { engine.fetch_and_process(&url, &base_url_clone).await });
+                    .spawn(async move { engine.fetch_and_process(&url, &base_url_clone, referer).await });
             }
 
             // Wait for at least one task to complete
@@ -125,10 +125,11 @@ impl CrawlEngine {
                 match res {
                     Ok(Ok(data)) => {
                         // Extract new links BEFORE sending result to ensure consistency
+                        let current_url = data.url.clone();
                         for (link, _) in &data.anchor_links {
                             let visited = self.visited.lock().await;
                             if !visited.contains(link) && visited.len() < self.max_pages {
-                                to_visit.push(link.clone());
+                                to_visit.push((link.clone(), Some(current_url.clone())));
                             }
                         }
 
@@ -157,7 +158,7 @@ impl CrawlEngine {
         }
     }
 
-    async fn fetch_and_process(&self, url: &str, base_url: &Url) -> Result<PageData, String> {
+    async fn fetch_and_process(&self, url: &str, base_url: &Url, referer: Option<String>) -> Result<PageData, String> {
         // Implement Jitter
         self.apply_jitter().await;
 
@@ -166,21 +167,43 @@ impl CrawlEngine {
 
         let user_agent = self.pick_random_user_agent();
 
-        let response = self.client
+        let mut request = self.client
             .get(url)
             .header("User-Agent", user_agent)
             .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
             .header("Accept-Language", "en-US,en;q=0.5")
+            .header("Sec-Fetch-Dest", "document")
+            .header("Sec-Fetch-Mode", "navigate")
+            .header("Sec-Fetch-Site", "same-origin")
             .header("DNT", "1")
-            .header("Upgrade-Insecure-Requests", "1")
+            .header("Upgrade-Insecure-Requests", "1");
+
+        if let Some(ref_url) = referer {
+            request = request.header("Referer", ref_url);
+        }
+
+        let response = request
             .send()
             .await
             .map_err(|e| format!("Request failed: {}", e))?;
 
+        let status_code = response.status();
+        
+        if status_code.as_u16() == 429 {
+            tui_println!("Rate limited (429) at {}. Waiting 5s...", url);
+            sleep(Duration::from_secs(5)).await;
+            return Err("Rate limited".to_string());
+        }
+
+        if status_code.as_u16() == 403 {
+            tui_println!("Forbidden (403) at {}. Might be blocked.", url);
+            return Err("Forbidden/Blocked".to_string());
+        }
+
         let status = format!(
             "{} {}",
-            response.status().as_u16(),
-            response.status().canonical_reason().unwrap_or("")
+            status_code.as_u16(),
+            status_code.canonical_reason().unwrap_or("")
         );
 
         let headers: Vec<String> = response
@@ -220,7 +243,7 @@ impl CrawlEngine {
     async fn apply_jitter(&self) {
         let jitter = {
             let mut r = rng();
-            r.random_range(50..250)
+            r.random_range(300..1200)
         };
         sleep(Duration::from_millis(jitter)).await;
     }
