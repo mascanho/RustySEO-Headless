@@ -71,6 +71,8 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             Style::default().fg(Color::Yellow),
         ),
         Span::styled(" | ", Style::default().fg(border_color)),
+        Span::styled(" 🤖 AI Chat(A) ", Style::default().fg(Color::Rgb(200, 100, 255)).add_modifier(Modifier::BOLD)),
+        Span::styled(" | ", Style::default().fg(border_color)),
         Span::styled(" ⌨️  Help: '?' ", Style::default().fg(Color::Gray)),
     ])];
 

@@ -68,6 +68,10 @@ impl Default for App {
             log_receiver: None,
             show_logs: false,
             logs_height: 18,
+            show_ai_modal: false,
+            ai_input: String::new(),
+            ai_chat_history: vec![],
+            ai_chat_state: ratatui::widgets::ListState::default(),
         }
     }
 }
@@ -244,6 +248,52 @@ impl App {
 
     pub fn toggle_logs(&mut self) {
         self.show_logs = !self.show_logs;
+    }
+
+    pub fn toggle_ai_modal(&mut self) {
+        self.show_ai_modal = !self.show_ai_modal;
+        if self.show_ai_modal {
+            self.sidebar_visible = false;
+            self.show_help = false;
+        }
+    }
+
+    pub fn submit_ai_message(&mut self) {
+        if self.ai_input.trim().is_empty() {
+            return;
+        }
+
+        let user_msg = crate::models::ChatLog {
+            role: "user".to_string(),
+            content: self.ai_input.clone(),
+        };
+        self.ai_chat_history.push(user_msg);
+        let input = self.ai_input.clone();
+        self.ai_input.clear();
+
+        // Simulate AI thinking/response
+        let response = if input.to_lowercase().contains("hi") || input.to_lowercase().contains("hello") {
+            "Hello! I am your RustySEO AI assistant. How can I help you analyze your crawl today?".to_string()
+        } else if input.to_lowercase().contains("page") || input.to_lowercase().contains("url") {
+            format!("You have crawled {} pages so far. Would you like me to analyze the status codes or heading structures for you?", self.page_data.len())
+        } else {
+            "I'm currently processing your request. In a real implementation, I would analyze your SEO data and provide actionable insights!".to_string()
+        };
+
+        self.ai_chat_history.push(crate::models::ChatLog {
+            role: "assistant".to_string(),
+            content: response.to_string(),
+        });
+
+        // Scroll to bottom
+        if !self.ai_chat_history.is_empty() {
+            self.ai_chat_state.select(Some(self.ai_chat_history.len() - 1));
+        }
+    }
+
+    pub fn clear_ai_chat(&mut self) {
+        self.ai_chat_history.clear();
+        self.ai_chat_state.select(None);
     }
 
     pub fn increase_logs_height(&mut self) {

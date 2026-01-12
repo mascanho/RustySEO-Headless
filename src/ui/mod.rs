@@ -155,6 +155,10 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         f.render_widget(Clear, logs_area);
         tabs::logs::render(f, app, logs_area);
     }
+
+    if app.show_ai_modal {
+        modals::ai_chat::render(f, app);
+    }
 }
 
 fn render_help_modal(f: &mut Frame) {
@@ -224,7 +228,9 @@ fn render_help_modal(f: &mut Frame) {
         ]),
         Line::from(vec![
             Span::styled("  L       ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Toggle Logs Console"),
+            Span::raw(": Toggle Logs Console / "),
+            Span::styled("A", Style::default().fg(Color::Cyan)),
+            Span::raw(": AI Copilot"),
         ]),
         Line::from(vec![
             Span::styled("  [ / ]   ", Style::default().fg(Color::Cyan)),

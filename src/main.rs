@@ -129,6 +129,22 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             continue;
                         }
 
+                        // MODAL PRIORITY 1: AI Chat Modal
+                        if app.show_ai_modal {
+                            match key.code {
+                                KeyCode::Char('q') | KeyCode::Esc => app.show_ai_modal = false,
+                                KeyCode::Enter => app.submit_ai_message(),
+                                KeyCode::Backspace => {
+                                    app.ai_input.pop();
+                                }
+                                KeyCode::Char(c) => {
+                                    app.ai_input.push(c);
+                                }
+                                _ => {}
+                            }
+                            continue;
+                        }
+
                         // MODAL PRIORITY 2: Details Modal
                         if app.show_details {
                             match key.code {
@@ -394,6 +410,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             }
                             KeyCode::Char('f') => app.set_sidebar_tab(2),
                             KeyCode::Char('a') => app.set_sidebar_tab(3),
+                            KeyCode::Char('A') => app.toggle_ai_modal(),
                             KeyCode::Char('b') | KeyCode::Char('+') => app.set_sidebar_tab(4),
                             KeyCode::Char('L') => app.toggle_logs(),
                             // Number jumps

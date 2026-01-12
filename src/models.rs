@@ -130,6 +130,12 @@ impl AppSettings {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct ChatLog {
+    pub role: String,
+    pub content: String,
+}
+
 pub struct App {
     pub sidebar_visible: bool,
     pub task_panel_visible: bool,
@@ -169,4 +175,8 @@ pub struct App {
     pub log_receiver: Option<Receiver<String>>,
     pub show_logs: bool,
     pub logs_height: u16,
+    pub show_ai_modal: bool,
+    pub ai_input: String,
+    pub ai_chat_history: Vec<ChatLog>,
+    pub ai_chat_state: ratatui::widgets::ListState,
 }
