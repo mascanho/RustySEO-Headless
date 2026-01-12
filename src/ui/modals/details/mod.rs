@@ -47,15 +47,15 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     // Render Tabs
     let titles = vec![
-        " 📄 General ",
-        " 📊 Analysis ",
-        " ✅ Checklist ",
-        " 🔗 Inlinks ",
-        " ↗️  Outlinks ",
-        " 🖼️  Images ",
-        " 📋 Schema ",
-        " 📨 Headers ",
-        " 📝 Headings ",
+        "General",
+        "Analysis",
+        "Checklist",
+        "Inlinks",
+        "Outlinks",
+        "Images",
+        "Schema",
+        "Headers",
+        "Headings",
     ];
 
     let tabs = Tabs::new(titles)
@@ -78,7 +78,8 @@ pub fn render(f: &mut Frame, app: &mut App) {
                 .add_modifier(Modifier::BOLD)
                 .add_modifier(Modifier::REVERSED),
         )
-        .divider(Span::styled(" | ", Style::default().fg(border_color)));
+        .divider(Span::styled("|", Style::default().fg(border_color)));
+
 
     f.render_widget(tabs, chunks[0]);
 

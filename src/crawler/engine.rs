@@ -13,7 +13,6 @@ use crate::crawler::helpers::{
     html_parser::{extract_page_elements, PageData},
     user_agents::user_agents,
 };
-use crate::tui_println;
 
 #[derive(Debug, Clone)]
 pub struct CrawlEngine {
