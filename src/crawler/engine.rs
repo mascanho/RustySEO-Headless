@@ -12,6 +12,7 @@ use crate::crawler::helpers::{
     html_parser::{extract_page_elements, PageData},
     user_agents::user_agents,
 };
+use crate::tui_println;
 
 #[derive(Debug, Clone)]
 pub struct CrawlEngine {
@@ -77,7 +78,12 @@ impl CrawlEngine {
         let mut results = Vec::new();
         while let Some(data) = rx.recv().await {
             if headless {
-                println!("[{}] {} - {} links found", data.status, data.url, data.anchor_links.len());
+                println!(
+                    "[{}] {} - {} links found",
+                    data.status,
+                    data.url,
+                    data.anchor_links.len()
+                );
             }
             results.push(data);
         }
@@ -99,7 +105,7 @@ impl CrawlEngine {
             // Fill up our concurrency quota
             while !to_visit.is_empty() && join_set.len() < self.concurrency_limit {
                 let url = to_visit.pop().unwrap();
-                
+
                 {
                     let mut visited = self.visited.lock().await;
                     if visited.len() >= self.max_pages || visited.contains(&url) {
@@ -110,9 +116,8 @@ impl CrawlEngine {
 
                 let engine = self.clone();
                 let base_url_clone = base_url.clone();
-                join_set.spawn(async move {
-                    engine.fetch_and_process(&url, &base_url_clone).await
-                });
+                join_set
+                    .spawn(async move { engine.fetch_and_process(&url, &base_url_clone).await });
             }
 
             // Wait for at least one task to complete
@@ -126,16 +131,17 @@ impl CrawlEngine {
                                 to_visit.push(link.clone());
                             }
                         }
-                        
+
                         // Send result back
                         let _ = tx.send(data).await;
                     }
                     Ok(Err(e)) => {
                         // Log error? For now we just continue
-                        eprintln!("Crawl error: {}", e);
+                        tui_println!("Error: {}", e);
                     }
                     Err(e) => {
-                        eprintln!("Task panicked: {}", e);
+                        // Log error? For now we just continue
+                        tui_println!("Error: {}", e);
                     }
                 }
             }
@@ -159,7 +165,7 @@ impl CrawlEngine {
         let _permit = self.semaphore.acquire().await.map_err(|e| e.to_string())?;
 
         let user_agent = self.pick_random_user_agent();
-        
+
         let response = self.client
             .get(url)
             .header("User-Agent", user_agent)
@@ -183,7 +189,10 @@ impl CrawlEngine {
             .map(|(k, v)| format!("{}: {}", k, v.to_str().unwrap_or("")))
             .collect();
 
-        let html_content = response.text().await.map_err(|e| format!("Failed to read body: {}", e))?;
+        let html_content = response
+            .text()
+            .await
+            .map_err(|e| format!("Failed to read body: {}", e))?;
         let document = Html::parse_document(&html_content);
 
         let mut page_data = extract_page_elements(&document);
@@ -192,7 +201,8 @@ impl CrawlEngine {
         page_data.headers = headers;
 
         // Filter and normalize links to stay on same domain
-        page_data.anchor_links = page_data.anchor_links
+        page_data.anchor_links = page_data
+            .anchor_links
             .into_iter()
             .filter_map(|(href, text)| {
                 if let Ok(abs_url) = base_url.join(&href) {
