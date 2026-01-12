@@ -163,263 +163,90 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
 fn render_help_modal(f: &mut Frame) {
     let area = f.area();
-
-    let help_area = centered_rect(60, 80, area);
-
+    let help_area = centered_rect(80, 85, area);
     let accent_color = Color::Rgb(80, 140, 255);
+    let header_color = Color::Yellow;
+    let key_color = Color::Cyan;
 
     let block = Block::default()
         .title(Span::styled(
-            " ⌨️  Help / Shortcuts ",
+            " 🚀 ATALAIA SEO - Shortcut Mastery ",
             Style::default()
-                .fg(Color::Yellow)
+                .fg(header_color)
                 .add_modifier(Modifier::BOLD),
         ))
         .borders(Borders::ALL)
-        .border_style(
-            Style::default()
-                .fg(accent_color)
-                .add_modifier(Modifier::BOLD),
-        )
-        .bg(Color::Rgb(20, 20, 30));
+        .border_style(Style::default().fg(accent_color).add_modifier(Modifier::BOLD))
+        .bg(Color::Rgb(10, 10, 20));
 
-    let help_text = vec![
-        Line::from(vec![Span::styled(
-            "Global Navigation",
-            Style::default()
-                .add_modifier(Modifier::BOLD)
-                .fg(accent_color),
-        )]),
-        Line::from(vec![
-            Span::styled("  q       ", Style::default().fg(Color::Red)),
-            Span::raw(": Quit"),
-        ]),
-        Line::from(vec![
-            Span::styled("  ?       ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Toggle Help"),
-        ]),
-        Line::from(vec![
-            Span::styled("  Esc     ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Close Modals / Reset View"),
-        ]),
-        Line::from(vec![
-            Span::styled("  Ctrl+i  ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Open Input Modal"),
-        ]),
-        Line::from(vec![
-            Span::styled("  Tab     ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Next Tab / Cycle Active Window"),
-        ]),
-        Line::from(vec![
-            Span::styled("  Shift+Tab", Style::default().fg(Color::Cyan)),
-            Span::raw(": Previous Tab"),
-        ]),
-        Line::from(vec![
-            Span::styled("  h / ←   ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Previous Tab"),
-        ]),
-        Line::from(vec![
-            Span::styled("  l / →   ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Next Tab / Toggle Sidebar"),
-        ]),
-        Line::from(vec![
-            Span::styled("  1-9, 0  ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Jump to Tab (1:Dash, 2:Crawl, 3:Conn, 4-0: SEO Tools)"),
-        ]),
-        Line::from(vec![
-            Span::styled("  L       ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Toggle Logs Console / "),
-            Span::styled("A", Style::default().fg(Color::Cyan)),
-            Span::raw(": AI Copilot"),
-        ]),
-        Line::from(vec![
-            Span::styled("  [ / ]   ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Decrease / Increase Console Height"),
-        ]),
+    f.render_widget(Clear, help_area);
+    f.render_widget(block.clone(), help_area);
+
+    let inner_area = block.inner(help_area);
+
+    // Split into 3 columns
+    let cols = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage(33),
+            Constraint::Percentage(33),
+            Constraint::Percentage(34),
+        ])
+        .margin(1)
+        .split(inner_area);
+
+    // COLUMN 1: NAVIGATION & VIEW
+    let nav_text = vec![
+        Line::from(vec![Span::styled("── NAVIGATION ──", Style::default().fg(header_color).bold())]),
+        Line::from(vec![Span::styled(" q       ", Style::default().fg(Color::Red)), Span::raw("Quit Application")]),
+        Line::from(vec![Span::styled(" ?       ", Style::default().fg(key_color)), Span::raw("Toggle Help")]),
+        Line::from(vec![Span::styled(" Esc     ", Style::default().fg(key_color)), Span::raw("Reset / Close Modals")]),
+        Line::from(vec![Span::styled(" Tab     ", Style::default().fg(key_color)), Span::raw("Cycle Main Tabs")]),
+        Line::from(vec![Span::styled(" 1-9, 0  ", Style::default().fg(key_color)), Span::raw("Direct Tab Access")]),
         Line::from(""),
-        Line::from(vec![Span::styled(
-            "Dashboard / Logs Navigation",
-            Style::default()
-                .add_modifier(Modifier::BOLD)
-                .fg(accent_color),
-        )]),
-        Line::from(vec![
-            Span::styled("  k / ↑   ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Previous Row / Log"),
-        ]),
-        Line::from(vec![
-            Span::styled("  j / ↓   ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Next Row / Log"),
-        ]),
-        Line::from(vec![
-            Span::styled("  g       ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Jump to Top"),
-        ]),
-        Line::from(vec![
-            Span::styled("  G       ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Jump to Bottom"),
-        ]),
-        Line::from(vec![
-            Span::styled("  ← / →   ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Horizontal Scroll (Dashboard)"),
-        ]),
-        Line::from(vec![
-            Span::styled("  Enter   ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Show Row Details"),
-        ]),
-        Line::from(vec![
-            Span::styled("  m       ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Open Actions Menu"),
-        ]),
-        Line::from(""),
-        Line::from(vec![Span::styled(
-            "Input Mode",
-            Style::default()
-                .add_modifier(Modifier::BOLD)
-                .fg(accent_color),
-        )]),
-        Line::from(vec![
-            Span::styled("  Enter   ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Submit Input"),
-        ]),
-        Line::from(vec![
-            Span::styled("  Esc     ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Cancel Input"),
-        ]),
-        Line::from(vec![
-            Span::styled("  Any Char", Style::default().fg(Color::Cyan)),
-            Span::raw(": Type Character"),
-        ]),
-        Line::from(vec![
-            Span::styled("  Backsp  ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Delete Character"),
-        ]),
-        Line::from(vec![
-            Span::styled("  ← / →   ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Move Cursor"),
-        ]),
-        Line::from(""),
-        Line::from(vec![Span::styled(
-            "Sidebar Navigation",
-            Style::default()
-                .add_modifier(Modifier::BOLD)
-                .fg(accent_color),
-        )]),
-        Line::from(vec![
-            Span::styled("  Esc/h/← ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Close Sidebar"),
-        ]),
-        Line::from(vec![
-            Span::styled("  k / ↑   ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Previous Item"),
-        ]),
-        Line::from(vec![
-            Span::styled("  j / ↓   ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Next Item"),
-        ]),
-        Line::from(vec![
-            Span::styled("  l / →   ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Next Tab"),
-        ]),
-        Line::from(vec![
-            Span::styled("  Tab     ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Next Item"),
-        ]),
-        Line::from(vec![
-            Span::styled("  Shift+Tab", Style::default().fg(Color::Cyan)),
-            Span::raw(": Previous Item"),
-        ]),
-        Line::from(vec![
-            Span::styled("  Enter   ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Select Bookmark"),
-        ]),
-        Line::from(""),
-        Line::from(vec![Span::styled(
-            "Details Modal",
-            Style::default()
-                .add_modifier(Modifier::BOLD)
-                .fg(accent_color),
-        )]),
-        Line::from(vec![
-            Span::styled("  q / Esc ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Close Details"),
-        ]),
-        Line::from(vec![
-            Span::styled("  h / ←   ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Previous Tab"),
-        ]),
-        Line::from(vec![
-            Span::styled("  l / →   ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Next Tab"),
-        ]),
-        Line::from(vec![
-            Span::styled("  Tab     ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Next Tab"),
-        ]),
-        Line::from(vec![
-            Span::styled("  Shift+Tab", Style::default().fg(Color::Cyan)),
-            Span::raw(": Previous Tab"),
-        ]),
-        Line::from(""),
-        Line::from(vec![Span::styled(
-            "Dashboard Actions Menu",
-            Style::default()
-                .add_modifier(Modifier::BOLD)
-                .fg(accent_color),
-        )]),
-        Line::from(vec![
-            Span::styled("  q / Esc ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Close Menu"),
-        ]),
-        Line::from(vec![
-            Span::styled("  j / ↓   ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Next Action"),
-        ]),
-        Line::from(vec![
-            Span::styled("  k / ↑   ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Previous Action"),
-        ]),
-        Line::from(vec![
-            Span::styled("  Enter   ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Execute Action"),
-        ]),
-        Line::from(""),
-        Line::from(vec![Span::styled(
-            "Quick Sidebar Access",
-            Style::default()
-                .add_modifier(Modifier::BOLD)
-                .fg(accent_color),
-        )]),
-        Line::from(vec![
-            Span::styled("  g", Style::default().fg(Color::Cyan)),
-            Span::raw(": Summary  | "),
-            Span::styled("s", Style::default().fg(Color::Cyan)),
-            Span::raw(": Settings | "),
-            Span::styled("f", Style::default().fg(Color::Cyan)),
-            Span::raw(": Filters  | "),
-            Span::styled("a", Style::default().fg(Color::Cyan)),
-            Span::raw(": Actions  | "),
-            Span::styled("b", Style::default().fg(Color::Cyan)),
-            Span::raw(": Bookmarks"),
-        ]),
-        Line::from(""),
-        Line::from(vec![Span::styled(
-            "Help Modal",
-            Style::default()
-                .add_modifier(Modifier::BOLD)
-                .fg(accent_color),
-        )]),
-        Line::from(vec![
-            Span::styled("  q/Esc/? ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Close Help"),
-        ]),
+        Line::from(vec![Span::styled("── SYSTEM ──", Style::default().fg(header_color).bold())]),
+        Line::from(vec![Span::styled(" Ctrl+i  ", Style::default().fg(key_color)), Span::raw("Open URL Input")]),
+        Line::from(vec![Span::styled(" L       ", Style::default().fg(key_color)), Span::raw("Toggle System Logs")]),
+        Line::from(vec![Span::styled(" A       ", Style::default().fg(key_color)), Span::raw("AI Copilot Panel")]),
+        Line::from(vec![Span::styled(" [ / ]   ", Style::default().fg(key_color)), Span::raw("Resize Log Console")]),
     ];
 
-    let p = Paragraph::new(help_text).block(block);
+    // COLUMN 2: DASHBOARD & CRAWL
+    let dash_text = vec![
+        Line::from(vec![Span::styled("── DASHBOARD ──", Style::default().fg(header_color).bold())]),
+        Line::from(vec![Span::styled(" k / ↑   ", Style::default().fg(key_color)), Span::raw("Previous Row")]),
+        Line::from(vec![Span::styled(" j / ↓   ", Style::default().fg(key_color)), Span::raw("Next Row")]),
+        Line::from(vec![Span::styled(" g / G   ", Style::default().fg(key_color)), Span::raw("Top / Bottom")]),
+        Line::from(vec![Span::styled(" ← / →   ", Style::default().fg(key_color)), Span::raw("Horizontal Scroll")]),
+        Line::from(vec![Span::styled(" Enter   ", Style::default().fg(key_color)), Span::raw("View Page Details")]),
+        Line::from(vec![Span::styled(" m       ", Style::default().fg(key_color)), Span::raw("Actions Context Menu")]),
+        Line::from(""),
+        Line::from(vec![Span::styled("── FUZZY FILTER ──", Style::default().fg(header_color).bold())]),
+        Line::from(vec![Span::styled(" Ctrl+s  ", Style::default().fg(Color::Rgb(255, 170, 0))), Span::raw("Search Dashboard")]),
+        Line::from(vec![Span::styled(" Enter   ", Style::default().fg(key_color)), Span::raw("Apply Filter")]),
+        Line::from(vec![Span::styled(" Esc     ", Style::default().fg(key_color)), Span::raw("Clear / Close Search")]),
+    ];
 
-    f.render_widget(ratatui::widgets::Clear, help_area);
-    f.render_widget(p, help_area);
+    // COLUMN 3: SIDEBAR & MODALS
+    let sidebar_text = vec![
+        Line::from(vec![Span::styled("── SIDEBAR JUMPS ──", Style::default().fg(header_color).bold())]),
+        Line::from(vec![Span::styled(" g       ", Style::default().fg(key_color)), Span::raw("Audit Summary")]),
+        Line::from(vec![Span::styled(" s       ", Style::default().fg(key_color)), Span::raw("System Settings")]),
+        Line::from(vec![Span::styled(" f       ", Style::default().fg(key_color)), Span::raw("Audit Filters")]),
+        Line::from(vec![Span::styled(" a       ", Style::default().fg(key_color)), Span::raw("Quick Actions")]),
+        Line::from(vec![Span::styled(" b       ", Style::default().fg(key_color)), Span::raw("URL Bookmarks")]),
+        Line::from(""),
+        Line::from(vec![Span::styled("── MODAL CONTROLS ──", Style::default().fg(header_color).bold())]),
+        Line::from(vec![Span::styled(" h / l   ", Style::default().fg(key_color)), Span::raw("Cycle Modal Tabs")]),
+        Line::from(vec![Span::styled(" Backsp  ", Style::default().fg(key_color)), Span::raw("Remove Bookmark")]),
+        Line::from(vec![Span::styled(" Ctrl+AI ", Style::default().fg(key_color)), Span::raw("Global AI Access")]),
+    ];
+
+    f.render_widget(Paragraph::new(nav_text).style(Style::default().fg(Color::Gray)), cols[0]);
+    f.render_widget(Paragraph::new(dash_text).style(Style::default().fg(Color::Gray)), cols[1]);
+    f.render_widget(Paragraph::new(sidebar_text).style(Style::default().fg(Color::Gray)), cols[2]);
 }
+
 
 fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
     let popup_layout = Layout::default()
