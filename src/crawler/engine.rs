@@ -3,6 +3,7 @@ use rand::Rng;
 use reqwest::Client;
 use scraper::Html;
 use std::collections::HashSet;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex, Semaphore};
 use tokio::time::{sleep, Duration};
@@ -18,6 +19,7 @@ use crate::tui_println;
 pub struct CrawlEngine {
     client: Client,
     visited: Arc<Mutex<HashSet<String>>>,
+    success_count: Arc<AtomicUsize>,
     max_pages: usize,
     user_agents: Vec<String>,
     concurrency_limit: usize,
@@ -43,6 +45,7 @@ impl CrawlEngine {
                 .build()
                 .unwrap(),
             visited: Arc::new(Mutex::new(HashSet::new())),
+            success_count: Arc::new(AtomicUsize::new(0)),
             max_pages: 500, // Safety limit
             user_agents: user_agents_vec,
             concurrency_limit,
@@ -104,11 +107,15 @@ impl CrawlEngine {
         while !to_visit.is_empty() || !join_set.is_empty() {
             // Fill up our concurrency quota
             while !to_visit.is_empty() && join_set.len() < self.concurrency_limit {
+                if self.success_count.load(Ordering::SeqCst) >= self.max_pages {
+                    break;
+                }
+
                 let (url, referer) = to_visit.pop().unwrap();
 
                 {
                     let mut visited = self.visited.lock().await;
-                    if visited.len() >= self.max_pages || visited.contains(&url) {
+                    if visited.contains(&url) {
                         continue;
                     }
                     visited.insert(url.clone());
@@ -134,25 +141,20 @@ impl CrawlEngine {
                         }
 
                         // Send result back
+                        self.success_count.fetch_add(1, Ordering::SeqCst);
                         let _ = tx.send(data).await;
                     }
                     Ok(Err(e)) => {
-                        // Log error? For now we just continue
-                        tui_println!("Error: {}", e);
+                        tracing::error!("Crawl Error: {}", e);
                     }
                     Err(e) => {
-                        // Log error? For now we just continue
-                        tui_println!("Error: {}", e);
+                        tracing::error!("Task Panic/Error: {}", e);
                     }
                 }
             }
 
             // If we hit max pages, we stop spawning but finish existing ones
-            let visited_count = {
-                let v = self.visited.lock().await;
-                v.len()
-            };
-            if visited_count >= self.max_pages {
+            if self.success_count.load(Ordering::SeqCst) >= self.max_pages {
                 to_visit.clear();
             }
         }
@@ -190,14 +192,14 @@ impl CrawlEngine {
         let status_code = response.status();
         
         if status_code.as_u16() == 429 {
-            tui_println!("Rate limited (429) at {}. Waiting 5s...", url);
+            tracing::error!("Rate limited (429) at {}. Waiting 5s...", url);
             sleep(Duration::from_secs(5)).await;
-            return Err("Rate limited".to_string());
+            return Err(format!("Rate limited (429) at {}", url));
         }
 
         if status_code.as_u16() == 403 {
-            tui_println!("Forbidden (403) at {}. Might be blocked.", url);
-            return Err("Forbidden/Blocked".to_string());
+            tracing::error!("Forbidden (403) at {}. Might be blocked.", url);
+            return Err(format!("Forbidden (403) at {}", url));
         }
 
         let status = format!(
