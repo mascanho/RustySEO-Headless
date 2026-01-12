@@ -89,11 +89,12 @@ pub fn handle_action(app: &mut App, action_index: usize) {
         None => return,
     };
 
-    if selected_idx >= app.table_data.len() || selected_idx >= app.page_data.len() {
+    // Use filtered_table_data as it matches the visual selection
+    if selected_idx >= app.filtered_table_data.len() {
         return;
     }
 
-    let row_data = &app.table_data[selected_idx];
+    let row_data = &app.filtered_table_data[selected_idx];
     let url = row_data[1].clone(); // URL is at index 1
 
     match action_index {
@@ -108,7 +109,7 @@ pub fn handle_action(app: &mut App, action_index: usize) {
                 .insert(0, format!("Opening URL in browser: {}", url));
         }
         2 => {
-            // Check Keywords - could open a keywords analysis modal
+            // Check Keywords
             app.logs_data
                 .insert(0, format!("Keywords check for: {}", url));
         }
@@ -141,6 +142,7 @@ pub fn handle_action(app: &mut App, action_index: usize) {
 
     app.show_dashboard_menu = false;
 }
+
 
 fn copy_to_clipboard(text: String) {
     std::thread::spawn(move || {
@@ -178,35 +180,57 @@ fn copy_to_clipboard(text: String) {
         {
             use std::io::Write;
             use std::process::{Command, Stdio};
-            match Command::new("xclip")
+
+            // Try Wayland first (wl-copy)
+            let try_wl = Command::new("wl-copy")
+                .stdin(Stdio::piped())
+                .spawn();
+
+            if let Ok(mut child) = try_wl {
+                if let Some(mut stdin) = child.stdin.take() {
+                    let _ = stdin.write_all(text.as_bytes());
+                    drop(stdin);
+                    let _ = child.wait();
+                    tracing::info!("✅ URL copied to clipboard (Wayland): {}", text);
+                    return;
+                }
+            }
+
+            // Try xclip
+            let try_xclip = Command::new("xclip")
                 .args(&["-selection", "clipboard"])
                 .stdin(Stdio::piped())
-                .spawn()
-            {
-                Ok(mut child) => {
-                    if let Some(mut stdin) = child.stdin.take() {
-                        if stdin.write_all(text.as_bytes()).is_ok() {
-                            drop(stdin);
-                            match child.wait() {
-                                Ok(status) if status.success() => {
-                                    tracing::info!("✅ URL copied to clipboard: {}", text);
-                                }
-                                Ok(status) => {
-                                    tracing::error!("❌ xclip exited with status: {}", status);
-                                }
-                                Err(e) => {
-                                    tracing::error!("❌ Failed to wait for xclip: {}", e);
-                                }
-                            }
-                            return;
-                        }
-                    }
-                    let _ = child.kill();
-                    tracing::error!("❌ Failed to write to xclip stdin");
+                .spawn();
+
+            if let Ok(mut child) = try_xclip {
+                if let Some(mut stdin) = child.stdin.take() {
+                    let _ = stdin.write_all(text.as_bytes());
+                    drop(stdin);
+                    let _ = child.wait();
+                    tracing::info!("✅ URL copied to clipboard (xclip): {}", text);
+                    return;
                 }
-                Err(e) => tracing::error!("❌ Failed to spawn xclip: {}", e),
             }
+
+            // Try xsel
+            let try_xsel = Command::new("xsel")
+                .args(&["--clipboard", "--input"])
+                .stdin(Stdio::piped())
+                .spawn();
+
+            if let Ok(mut child) = try_xsel {
+                if let Some(mut stdin) = child.stdin.take() {
+                    let _ = stdin.write_all(text.as_bytes());
+                    drop(stdin);
+                    let _ = child.wait();
+                    tracing::info!("✅ URL copied to clipboard (xsel): {}", text);
+                    return;
+                }
+            }
+
+            tracing::error!("❌ Failed to copy to clipboard: No clipboard tool found (install wl-copy, xclip, or xsel)");
         }
+
 
         #[cfg(target_os = "windows")]
         {

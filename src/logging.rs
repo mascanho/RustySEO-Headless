@@ -18,9 +18,10 @@ impl<S: Subscriber> tracing_subscriber::Layer<S> for TuiLayer {
         let mut visitor = LogVisitor::new();
         event.record(&mut visitor);
 
-        // Include level
+        // Include level and timestamp
         let level = *event.metadata().level();
-        let formatted = format!("[{}] {}", level, visitor.message);
+        let timestamp = chrono::Local::now().format("%H:%M:%S").to_string();
+        let formatted = format!("[{}][{}] {}", timestamp, level, visitor.message);
 
         let _ = self.sender.send(formatted);
     }

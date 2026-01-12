@@ -61,21 +61,22 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         }
 
         let displayed_data = vec![
-            &data[0],  // ID
-            &data[1],  // URL
-            &data[2],  // Title
-            &data[3],  // Title Len
-            &data[4],  // H1
-            &data[5],  // H1 Len
-            &data[6],  // Desc
-            &data[7],  // Desc Len
-            &data[8],  // H2
-            &data[9],  // H2 Len
-            &data[10], // Status
-            &data[11], // Mobile
-            &data[12], // Language
-            &data[13], // Indexability
+            (i + 1).to_string(), // Sequential ID
+            data[1].clone(),     // URL
+            data[2].clone(),     // Title
+            data[3].clone(),     // Title Len
+            data[4].clone(),     // H1
+            data[5].clone(),     // H1 Len
+            data[6].clone(),     // Desc
+            data[7].clone(),     // Desc Len
+            data[8].clone(),     // H2
+            data[9].clone(),     // H2 Len
+            data[10].clone(),    // Status
+            data[11].clone(),    // Mobile
+            data[12].clone(),    // Language
+            data[13].clone(),    // Indexability
         ];
+
 
         let cells = displayed_data.iter().enumerate().map(|(j, c)| {
             let mut content = if j == 1 || j == 2 || j == 4 || j == 6 || j == 8 {

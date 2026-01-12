@@ -167,6 +167,7 @@ impl CrawlEngine {
         let _permit = self.semaphore.acquire().await.map_err(|e| e.to_string())?;
 
         let user_agent = self.pick_random_user_agent();
+        tracing::debug!("[UA] Using agent: {} for {}", user_agent, url);
 
         let mut request = self.client
             .get(url)
@@ -190,6 +191,28 @@ impl CrawlEngine {
 
         let status_code = response.status();
         
+        // Detailed response logging for debugging blocks/CDNs
+        tracing::info!("[FETCH] {} -> STATUS: {}", url, status_code);
+        
+        let headers_list: Vec<String> = response
+            .headers()
+            .iter()
+            .map(|(k, v)| format!("{}: {}", k, v.to_str().unwrap_or("[invalid]")))
+            .collect();
+
+        // Check for specific security headers or CDN signals
+        for h in &headers_list {
+            let h_low = h.to_lowercase();
+            if h_low.contains("server: cloudflare") {
+                tracing::warn!("--- Blocking Signal: Cloudflare detected at {}", url);
+            }
+            if h_low.contains("x-cache: hit") || h_low.contains("x-cache: miss") {
+                tracing::debug!("--- Cache Info: {} for {}", h, url);
+            }
+        }
+        
+        tracing::debug!("<<< RESPONSE HEADERS ({}):\n{}", url, headers_list.join("\n"));
+
         if status_code.as_u16() == 429 {
             tracing::error!("Rate limited (429) at {}. Waiting 5s...", url);
             sleep(Duration::from_secs(5)).await;
@@ -207,11 +230,8 @@ impl CrawlEngine {
             status_code.canonical_reason().unwrap_or("")
         );
 
-        let headers: Vec<String> = response
-            .headers()
-            .iter()
-            .map(|(k, v)| format!("{}: {}", k, v.to_str().unwrap_or("")))
-            .collect();
+        let headers = headers_list;
+
 
         let html_content = response
             .text()

@@ -28,12 +28,23 @@ pub fn render(f: &mut Frame, app: &mut App) {
     f.render_widget(modal_block, detail_area);
 
     let selected_idx = app.table_state.selected().unwrap_or(0);
-    // Ensure we don't out of bounds if data changed
-    if selected_idx >= app.table_data.len() || selected_idx >= app.page_data.len() {
-        app.show_details = false; // Close modal if data is invalid
+    
+    // Always use filtered_table_data as it is synchronized with table_data when no filter is active
+    if selected_idx >= app.filtered_table_data.len() {
+        app.show_details = false;
         return;
     }
-    let row_data = &app.table_data[selected_idx];
+    
+    let row_data = &app.filtered_table_data[selected_idx];
+    
+    // The first column (index 0) of the row data contains the original persistent ID
+    let original_id = row_data[0].parse::<usize>().unwrap_or(1);
+    let page_idx = original_id.saturating_sub(1);
+
+    if page_idx >= app.page_data.len() {
+        app.show_details = false;
+        return;
+    }
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -91,7 +102,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         2 => modal_tabs::checklist::render(f, row_data, chunks[1], content_block),
         3 => modal_tabs::inlinks::render(
             f,
-            &app.page_data[selected_idx].anchor_links,
+            &app.page_data[page_idx].anchor_links,
             app.detail_horizontal_scroll,
             &mut app.detail_table_state,
             chunks[1],
@@ -100,7 +111,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         4 => modal_tabs::outlinks::render(f, chunks[1], content_block),
         5 => modal_tabs::images::render(
             f,
-            &app.page_data[selected_idx].images,
+            &app.page_data[page_idx].images,
             app.detail_horizontal_scroll,
             &mut app.detail_table_state,
             chunks[1],
@@ -110,7 +121,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
             let schema_block = Block::default().bg(Color::Rgb(25, 15, 35));
             modal_tabs::schema::render(
                 f,
-                &app.page_data[selected_idx].schema.clone(),
+                &app.page_data[page_idx].schema.clone(),
                 app.detail_scroll,
                 chunks[1],
                 schema_block,
@@ -118,13 +129,13 @@ pub fn render(f: &mut Frame, app: &mut App) {
         }
         7 => modal_tabs::headers::render(
             f,
-            &app.page_data[selected_idx].headers.clone(),
+            &app.page_data[page_idx].headers.clone(),
             chunks[1],
             content_block,
         ),
         8 => modal_tabs::headings::render(
             f,
-            &app.page_data[selected_idx].headings.clone(),
+            &app.page_data[page_idx].headings.clone(),
             app.detail_horizontal_scroll,
             &mut app.detail_table_state,
             chunks[1],
@@ -134,35 +145,8 @@ pub fn render(f: &mut Frame, app: &mut App) {
     }
 
     // Render Footers
-
-    let footer_top = Block::default()
-        .bg(Color::Rgb(15, 15, 25))
-        .border_style(Style::default().fg(border_color));
-
     let url = &row_data[1];
     let status = &row_data[10];
-
-    let footer_top_chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Min(0),     // URL on left
-            Constraint::Length(15), // Status on right
-        ])
-        .split(chunks[2]);
-
-    let url_line = Line::from(vec![
-        Span::styled("URL: ", Style::default().fg(Color::Yellow)),
-        Span::styled(
-            url,
-            Style::default()
-                .fg(Color::Rgb(180, 120, 255))
-                .add_modifier(Modifier::ITALIC),
-        ),
-    ]);
-    let url_paragraph = Paragraph::new(url_line)
-        .block(footer_top.clone())
-        .alignment(Alignment::Left);
-    f.render_widget(url_paragraph, footer_top_chunks[0]);
 
     let status_code = status
         .split_whitespace()
@@ -170,6 +154,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         .unwrap_or("0")
         .parse::<u16>()
         .unwrap_or(0);
+
     let status_color = match status_code / 100 {
         1 => Color::Blue,
         2 => Color::Green,
@@ -178,25 +163,45 @@ pub fn render(f: &mut Frame, app: &mut App) {
         5 => Color::Rgb(255, 0, 255), // Magenta
         _ => Color::Gray,
     };
-    let status_line = Line::from(vec![
-        Span::styled("Status: ", Style::default().fg(Color::Yellow)),
-        Span::styled(status, Style::default().fg(status_color)),
-    ]);
-    let status_paragraph = Paragraph::new(status_line)
-        .block(footer_top)
-        .alignment(Alignment::Right);
-    f.render_widget(status_paragraph, footer_top_chunks[1]);
 
-    let footer_block = Block::default()
-        .bg(Color::Rgb(15, 15, 25))
-        .border_style(Style::default().fg(border_color));
-    let footer_text = Paragraph::new(Span::styled(
-        " Tab: Next Tab | Shift+Tab: Prev Tab | Q/Esc: Close ",
+    let footer_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Min(0),
+            Constraint::Length(25),
+        ])
+        .split(chunks[2]);
+
+    let url_line = Line::from(vec![
+        Span::styled(" 🔗 ", Style::default().fg(Color::Yellow)),
+        Span::styled(url, Style::default().fg(Color::Rgb(180, 150, 255)).add_modifier(Modifier::ITALIC)),
+    ]);
+
+    let status_line = Line::from(vec![
+        Span::styled("⚡ Status: ", Style::default().fg(Color::Yellow)),
+        Span::styled(status, Style::default().fg(status_color).bold()),
+        Span::raw(" "),
+    ]);
+
+    let url_p = Paragraph::new(url_line)
+        .block(Block::default().bg(Color::Rgb(20, 20, 35)))
+        .alignment(Alignment::Left);
+
+    let status_p = Paragraph::new(status_line)
+        .block(Block::default().bg(Color::Rgb(20, 20, 35)))
+        .alignment(Alignment::Right);
+
+    f.render_widget(url_p, footer_chunks[0]);
+    f.render_widget(status_p, footer_chunks[1]);
+
+
+    let footer_bottom = Paragraph::new(Span::styled(
+        " 💡 Tab: Next | Shift+Tab: Prev | Esc: Close ",
         Style::default()
-            .fg(Color::Gray)
+            .fg(Color::DarkGray)
             .add_modifier(Modifier::ITALIC),
     ))
-    .block(footer_block)
+    .block(Block::default().bg(Color::Rgb(10, 10, 20)))
     .alignment(Alignment::Center);
-    f.render_widget(footer_text, chunks[3]);
+    f.render_widget(footer_bottom, chunks[3]);
 }

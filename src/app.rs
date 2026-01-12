@@ -166,7 +166,16 @@ impl App {
     }
 
     pub fn log<S: Into<String>>(&mut self, message: S) {
-        self.logs_data.insert(0, message.into());
+        let msg = message.into();
+        // Check if it already has a timestamp [HH:MM:SS]
+        let log_entry = if msg.starts_with('[') && msg.get(9..10) == Some("]") && msg.get(1..9).map(|s| s.contains(':')).unwrap_or(false) {
+            msg
+        } else {
+            let timestamp = chrono::Local::now().format("%H:%M:%S").to_string();
+            format!("[{}] [SYSTEM] {}", timestamp, msg)
+        };
+
+        self.logs_data.insert(0, log_entry);
         if self.logs_data.len() > 100 {
             self.logs_data.pop();
         }
