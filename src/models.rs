@@ -179,4 +179,7 @@ pub struct App {
     pub ai_input: String,
     pub ai_chat_history: Vec<ChatLog>,
     pub ai_chat_state: ratatui::widgets::ListState,
+    pub show_search: bool,
+    pub search_query: String,
+    pub filtered_table_data: Vec<Vec<String>>,
 }

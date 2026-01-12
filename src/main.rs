@@ -90,7 +90,22 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
         if event::poll(tick_rate)? {
             match event::read()? {
                 Event::Key(key) => {
-                    if app.input_mode {
+                    if app.show_search {
+                        match key.code {
+                            KeyCode::Enter | KeyCode::Esc => {
+                                app.show_search = false;
+                            }
+                            KeyCode::Char(c) => {
+                                app.search_query.push(c);
+                                app.apply_filter();
+                            }
+                            KeyCode::Backspace => {
+                                app.search_query.pop();
+                                app.apply_filter();
+                            }
+                            _ => {}
+                        }
+                    } else if app.input_mode {
                         match key.code {
                             KeyCode::Enter => {
                                 app.input_url = app.input.drain(..).collect();
@@ -330,6 +345,11 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             KeyCode::Esc => app.reset(),
                             KeyCode::Char('i') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                                 app.input_mode = true
+                            }
+                            KeyCode::Char('s') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                                if app.current_state == AppState::Dashboard {
+                                    app.show_search = true;
+                                }
                             }
 
                             // Tab/BackTab always cycle main states if no modal

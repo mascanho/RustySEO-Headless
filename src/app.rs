@@ -1,4 +1,6 @@
 use std::sync::mpsc;
+use fuzzy_matcher::skim::SkimMatcherV2;
+use fuzzy_matcher::FuzzyMatcher;
 
 use crate::models::{App, AppSettings};
 use crate::ui::modals::dashboard_menu;
@@ -72,6 +74,9 @@ impl Default for App {
             ai_input: String::new(),
             ai_chat_history: vec![],
             ai_chat_state: ratatui::widgets::ListState::default(),
+            show_search: false,
+            search_query: String::new(),
+            filtered_table_data: Vec::new(),
         }
     }
 }
@@ -124,6 +129,8 @@ impl App {
             // Update overall progress
             let limit = self.settings.as_ref().map(|s| s.crawler.max_pages).unwrap_or(50) as f64;
             self.crawl_progress = (self.table_data.len() as f64 / limit).min(1.0);
+            
+            self.apply_filter();
         }
 
         if crawl_finished {
@@ -591,6 +598,38 @@ impl App {
     pub fn execute_dashboard_menu_action(&mut self) {
         if self.show_dashboard_menu {
             dashboard_menu::handle_action(self, self.dashboard_menu_selection);
+        }
+    }
+
+    pub fn apply_filter(&mut self) {
+        if self.search_query.is_empty() {
+            self.filtered_table_data = self.table_data.clone();
+            return;
+        }
+
+        let matcher = SkimMatcherV2::default();
+        let mut scored_data: Vec<(i64, Vec<String>)> = self.table_data.iter()
+            .filter_map(|row| {
+                // Search across multiple columns (URL, Title, Description)
+                let search_blob = format!("{} {} {}", row[1], row[2], row[6]);
+                matcher.fuzzy_match(&search_blob, &self.search_query)
+                    .map(|score| (score, row.clone()))
+            })
+            .collect();
+
+        // Sort by score descending
+        scored_data.sort_by(|a, b| b.0.cmp(&a.0));
+        self.filtered_table_data = scored_data.into_iter().map(|(_, row)| row).collect();
+        
+        // Reset selection if it's out of bounds
+        if let Some(selected) = self.table_state.selected() {
+            if selected >= self.filtered_table_data.len() {
+                if self.filtered_table_data.is_empty() {
+                    self.table_state.select(None);
+                } else {
+                    self.table_state.select(Some(0));
+                }
+            }
         }
     }
 }

@@ -3,7 +3,7 @@ use ratatui::{
     layout::{Constraint, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::Span,
-    widgets::{Block, Borders, Cell, Row, Table},
+    widgets::{Block, Borders, Cell, Row, Table, Paragraph, Clear},
 };
 
 use crate::models::App;
@@ -11,6 +11,11 @@ use crate::models::App;
 pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     let accent_color = Color::Rgb(80, 140, 255);
     let border_color = Color::Rgb(40, 45, 60);
+
+    // Ensure we have filtered data if it was just initialized
+    if app.filtered_table_data.is_empty() && !app.table_data.is_empty() && app.search_query.is_empty() {
+        app.filtered_table_data = app.table_data.clone();
+    }
 
     let header_titles = [
         "ID",
@@ -39,7 +44,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     }))
     .height(1);
 
-    let rows = app.table_data.iter().enumerate().map(|(i, data)| {
+    let rows = app.filtered_table_data.iter().enumerate().map(|(i, data)| {
         let is_selected = app.table_state.selected() == Some(i);
 
         let mut row_style = if i % 2 == 0 {
@@ -217,4 +222,28 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         .style(Style::default().bg(Color::Rgb(15, 15, 25)));
 
     f.render_stateful_widget(table, area, &mut app.table_state);
+
+    // Floating Search Bar at bottom right
+    if app.show_search {
+        let search_area = Rect {
+            x: area.x + area.width.saturating_sub(40),
+            y: area.y + area.height.saturating_sub(3),
+            width: 38,
+            height: 3,
+        };
+
+        let search_block = Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Yellow))
+            .bg(Color::Rgb(25, 25, 40))
+            .title(Span::styled(" Fuzzy Search ", Style::default().fg(Color::Cyan).bold()));
+
+        let search_text = format!("> {}", app.search_query);
+        let search_paragraph = Paragraph::new(search_text)
+            .block(search_block)
+            .style(Style::default().fg(Color::White));
+
+        f.render_widget(Clear, search_area);
+        f.render_widget(search_paragraph, search_area);
+    }
 }
