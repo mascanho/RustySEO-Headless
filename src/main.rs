@@ -209,11 +209,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                         || app.detail_tab == 5
                                         || app.detail_tab == 8
                                     {
-                                        let selected =
-                                            app.detail_table_state.selected().unwrap_or(0);
-                                        if selected > 0 {
-                                            app.detail_table_state.select(Some(selected - 1));
-                                        }
+                                        let len = app.get_current_detail_len();
+                                        app.previous_detail_row(len);
                                     } else if [1, 2, 6, 7].contains(&app.detail_tab) {
                                         if app.detail_scroll > 0 {
                                             app.detail_scroll = app.detail_scroll.saturating_sub(1);
@@ -227,9 +224,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                         || app.detail_tab == 5
                                         || app.detail_tab == 8
                                     {
-                                        let selected =
-                                            app.detail_table_state.selected().unwrap_or(0);
-                                        app.detail_table_state.select(Some(selected + 1));
+                                        let len = app.get_current_detail_len();
+                                        app.next_detail_row(len);
                                     } else if [1, 2, 6, 7].contains(&app.detail_tab) {
                                         app.detail_scroll += 1;
                                     } else {

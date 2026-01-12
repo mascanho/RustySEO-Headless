@@ -190,9 +190,17 @@ impl App {
     }
 
     pub fn next_row(&mut self) {
+        let len = if self.search_query.is_empty() {
+            self.table_data.len()
+        } else {
+            self.filtered_table_data.len()
+        };
+        if len == 0 {
+            return;
+        }
         let i = match self.table_state.selected() {
             Some(i) => {
-                if i >= self.table_data.len() - 1 {
+                if i >= len - 1 {
                     0
                 } else {
                     i + 1
@@ -204,14 +212,18 @@ impl App {
     }
 
     pub fn previous_row(&mut self) {
+        let len = if self.search_query.is_empty() {
+            self.table_data.len()
+        } else {
+            self.filtered_table_data.len()
+        };
+        if len == 0 {
+            return;
+        }
         let i = match self.table_state.selected() {
             Some(i) => {
                 if i == 0 {
-                    if self.table_data.is_empty() {
-                        0
-                    } else {
-                        self.table_data.len() - 1
-                    }
+                    len - 1
                 } else {
                     i - 1
                 }
@@ -222,12 +234,17 @@ impl App {
     }
 
     pub fn next_log(&mut self) {
-        if self.logs_data.is_empty() {
+        let len = if self.log_search_query.is_empty() && !self.show_log_search {
+            self.logs_data.len()
+        } else {
+            self.filtered_logs_data.len()
+        };
+        if len == 0 {
             return;
         }
         let i = match self.logs_state.selected() {
             Some(i) => {
-                if i >= self.logs_data.len() - 1 {
+                if i >= len - 1 {
                     0
                 } else {
                     i + 1
@@ -239,13 +256,18 @@ impl App {
     }
 
     pub fn previous_log(&mut self) {
-        if self.logs_data.is_empty() {
+        let len = if self.log_search_query.is_empty() && !self.show_log_search {
+            self.logs_data.len()
+        } else {
+            self.filtered_logs_data.len()
+        };
+        if len == 0 {
             return;
         }
         let i = match self.logs_state.selected() {
             Some(i) => {
                 if i == 0 {
-                    self.logs_data.len() - 1
+                    len - 1
                 } else {
                     i - 1
                 }
@@ -406,6 +428,60 @@ impl App {
         self.detail_scroll = 0;
         self.detail_horizontal_scroll = 0;
         self.detail_table_state.select(Some(0));
+    }
+
+    pub fn next_detail_row(&mut self, len: usize) {
+        if len == 0 {
+            return;
+        }
+        let i = match self.detail_table_state.selected() {
+            Some(i) => {
+                if i >= len - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.detail_table_state.select(Some(i));
+    }
+
+    pub fn previous_detail_row(&mut self, len: usize) {
+        if len == 0 {
+            return;
+        }
+        let i = match self.detail_table_state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    len - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.detail_table_state.select(Some(i));
+    }
+
+    pub fn get_current_detail_len(&self) -> usize {
+        let selected_idx = self.table_state.selected().unwrap_or(0);
+        if selected_idx >= self.filtered_table_data.len() {
+            return 0;
+        }
+        let row_data = &self.filtered_table_data[selected_idx];
+        let original_id = row_data[0].parse::<usize>().unwrap_or(1);
+        let page_idx = original_id.saturating_sub(1);
+        if page_idx >= self.page_data.len() {
+            return 0;
+        }
+
+        match self.detail_tab {
+            3 => self.page_data[page_idx].anchor_links.len(),
+            5 => self.page_data[page_idx].images.len(),
+            8 => self.page_data[page_idx].headings.len(),
+            _ => 0,
+        }
     }
 
     pub fn next_state(&mut self) {
@@ -597,13 +673,18 @@ impl App {
     }
 
     pub fn next_dashboard_menu_item(&mut self) {
-        if self.dashboard_menu_selection < 6 {
+        // There are 7 items in the menu (0 to 6)
+        if self.dashboard_menu_selection >= 6 {
+            self.dashboard_menu_selection = 0;
+        } else {
             self.dashboard_menu_selection += 1;
         }
     }
 
     pub fn previous_dashboard_menu_item(&mut self) {
-        if self.dashboard_menu_selection > 0 {
+        if self.dashboard_menu_selection == 0 {
+            self.dashboard_menu_selection = 6;
+        } else {
             self.dashboard_menu_selection = self.dashboard_menu_selection.saturating_sub(1);
         }
     }
