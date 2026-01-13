@@ -23,6 +23,7 @@ pub struct CrawlEngine {
     user_agents: Vec<String>,
     concurrency_limit: usize,
     semaphore: Arc<Semaphore>,
+    stats: crate::crawler::stats::CrawlStats,
 }
 
 impl CrawlEngine {
@@ -49,6 +50,7 @@ impl CrawlEngine {
             user_agents: user_agents_vec,
             concurrency_limit,
             semaphore: Arc::new(Semaphore::new(concurrency_limit)),
+            stats: crate::crawler::stats::CrawlStats::new(),
         }
     }
 
@@ -153,44 +155,70 @@ impl CrawlEngine {
                         let current_success = self.success_count.load(Ordering::SeqCst);
                         let links_found = data.anchor_links.len();
                         
+                        self.stats.add_discovered(links_found);
+                        
                         // Only add new links if we haven't reached max successful crawls
                         if current_success < self.max_pages {
                             let mut new_links = Vec::new();
+                            let mut filtered_count = 0;
+                            let mut duplicate_count = 0;
+                            
                             {
                                 let visited = self.visited.lock().await;
                                 for (link, _) in &data.anchor_links {
                                     // Normalize each discovered link
                                     if let Some(normalized_link) = crate::crawler::url_normalizer::normalize_url(link) {
-                                        if !visited.contains(&normalized_link) && 
-                                           crate::crawler::url_normalizer::should_crawl_url(&normalized_link) {
+                                        if !crate::crawler::url_normalizer::should_crawl_url(&normalized_link) {
+                                            filtered_count += 1;
+                                            continue;
+                                        }
+                                        
+                                        if visited.contains(&normalized_link) {
+                                            duplicate_count += 1;
+                                        } else {
                                             new_links.push(normalized_link);
                                         }
+                                    } else {
+                                        filtered_count += 1;
                                     }
                                 }
                             } // Release lock before pushing to queue
+                            
+                            self.stats.add_filtered(filtered_count);
+                            self.stats.add_duplicate(duplicate_count);
                             
                             // Add all new links to the queue
                             queue.push_batch(new_links.clone(), Some(current_url.clone()));
                             
                             tracing::info!(
-                                "[QUEUE] Page: {} | Found: {} links | New: {} | Queue: {} | Success: {}/{}", 
+                                "[QUEUE] Page: {} | Found: {} links | New: {} | Filtered: {} | Duplicates: {} | Queue: {} | Success: {}/{}", 
                                 current_url,
                                 links_found,
-                                new_links.len(), 
+                                new_links.len(),
+                                filtered_count,
+                                duplicate_count,
                                 queue.len(), 
                                 current_success + 1,
                                 self.max_pages
                             );
+                            
+                            // Print summary stats every 50 pages
+                            if (current_success + 1) % 50 == 0 {
+                                tracing::warn!("[STATS] {}", self.stats.get_summary());
+                            }
                         }
 
                         // Send result back
                         self.success_count.fetch_add(1, Ordering::SeqCst);
+                        self.stats.increment_crawled();
                         let _ = tx.send(data).await;
                     }
                     Ok(Err(e)) => {
+                        self.stats.increment_failed();
                         tracing::error!("Crawl Error: {}", e);
                     }
                     Err(e) => {
+                        self.stats.increment_failed();
                         tracing::error!("Task Panic/Error: {}", e);
                     }
                 }
@@ -201,6 +229,9 @@ impl CrawlEngine {
                 queue.clear();
             }
         }
+        
+        // Final stats
+        tracing::warn!("[CRAWL COMPLETE] {}", self.stats.get_summary());
     }
 
     async fn fetch_and_process(&self, url: &str, base_url: &Url, referer: Option<String>) -> Result<PageData, String> {
