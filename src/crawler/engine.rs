@@ -106,6 +106,21 @@ impl CrawlEngine {
         let mut queue = crate::crawler::queue::CrawlQueue::new();
         queue.push(start_url.to_string(), None);
         
+        // Try to discover URLs from sitemap.xml and robots.txt
+        tracing::info!("[DISCOVERY] Attempting to discover URLs from sitemap and robots.txt...");
+        let sitemap_urls = crate::crawler::sitemap::discover_additional_urls(start_url, &self.client).await;
+        if !sitemap_urls.is_empty() {
+            tracing::info!("[DISCOVERY] Found {} URLs from sitemaps, adding to queue", sitemap_urls.len());
+            for url in sitemap_urls {
+                // Only add URLs from the same domain
+                if let Ok(parsed) = Url::parse(&url) {
+                    if parsed.domain() == base_url.domain() {
+                        queue.push(url, None);
+                    }
+                }
+            }
+        }
+        
         let mut join_set = tokio::task::JoinSet::new();
 
         while !queue.is_empty() || !join_set.is_empty() {
@@ -227,6 +242,19 @@ impl CrawlEngine {
             // If we hit max pages, we stop spawning but finish existing ones
             if self.success_count.load(Ordering::SeqCst) >= self.max_pages {
                 queue.clear();
+            }
+            
+            // Diagnostic: Check if queue is empty but we haven't hit max pages
+            if queue.is_empty() && join_set.is_empty() {
+                let current = self.success_count.load(Ordering::SeqCst);
+                if current < self.max_pages {
+                    tracing::warn!(
+                        "[QUEUE EXHAUSTED] Crawl stopped at {} pages (target: {}). No more links to discover. {}",
+                        current,
+                        self.max_pages,
+                        self.stats.get_summary()
+                    );
+                }
             }
         }
         
