@@ -100,30 +100,48 @@ impl CrawlEngine {
             Err(_) => return,
         };
 
-        let mut to_visit = vec![(start_url.to_string(), None)];
+        // Use our new queue module for breadth-first crawling
+        let mut queue = crate::crawler::queue::CrawlQueue::new();
+        queue.push(start_url.to_string(), None);
+        
         let mut join_set = tokio::task::JoinSet::new();
 
-        while !to_visit.is_empty() || !join_set.is_empty() {
+        while !queue.is_empty() || !join_set.is_empty() {
             // Fill up our concurrency quota
-            while !to_visit.is_empty() && join_set.len() < self.concurrency_limit {
+            while !queue.is_empty() && join_set.len() < self.concurrency_limit {
                 if self.success_count.load(Ordering::SeqCst) >= self.max_pages {
                     break;
                 }
 
-                let (url, referer) = to_visit.pop().unwrap();
+                let (url, referer) = queue.pop().unwrap();
+
+                // Normalize URL before checking if visited
+                let normalized_url = match crate::crawler::url_normalizer::normalize_url(&url) {
+                    Some(u) => u,
+                    None => {
+                        tracing::warn!("[SKIP] Failed to normalize URL: {}", url);
+                        continue;
+                    }
+                };
+
+                // Check if we should crawl this URL
+                if !crate::crawler::url_normalizer::should_crawl_url(&normalized_url) {
+                    tracing::debug!("[SKIP] URL filtered out: {}", normalized_url);
+                    continue;
+                }
 
                 {
                     let mut visited = self.visited.lock().await;
-                    if visited.contains(&url) {
+                    if visited.contains(&normalized_url) {
                         continue;
                     }
-                    visited.insert(url.clone());
+                    visited.insert(normalized_url.clone());
                 }
 
                 let engine = self.clone();
                 let base_url_clone = base_url.clone();
                 join_set
-                    .spawn(async move { engine.fetch_and_process(&url, &base_url_clone, referer).await });
+                    .spawn(async move { engine.fetch_and_process(&normalized_url, &base_url_clone, referer).await });
             }
 
             // Wait for at least one task to complete
@@ -132,11 +150,37 @@ impl CrawlEngine {
                     Ok(Ok(data)) => {
                         // Extract new links BEFORE sending result to ensure consistency
                         let current_url = data.url.clone();
-                        for (link, _) in &data.anchor_links {
-                            let visited = self.visited.lock().await;
-                            if !visited.contains(link) && visited.len() < self.max_pages {
-                                to_visit.push((link.clone(), Some(current_url.clone())));
-                            }
+                        let current_success = self.success_count.load(Ordering::SeqCst);
+                        let links_found = data.anchor_links.len();
+                        
+                        // Only add new links if we haven't reached max successful crawls
+                        if current_success < self.max_pages {
+                            let mut new_links = Vec::new();
+                            {
+                                let visited = self.visited.lock().await;
+                                for (link, _) in &data.anchor_links {
+                                    // Normalize each discovered link
+                                    if let Some(normalized_link) = crate::crawler::url_normalizer::normalize_url(link) {
+                                        if !visited.contains(&normalized_link) && 
+                                           crate::crawler::url_normalizer::should_crawl_url(&normalized_link) {
+                                            new_links.push(normalized_link);
+                                        }
+                                    }
+                                }
+                            } // Release lock before pushing to queue
+                            
+                            // Add all new links to the queue
+                            queue.push_batch(new_links.clone(), Some(current_url.clone()));
+                            
+                            tracing::info!(
+                                "[QUEUE] Page: {} | Found: {} links | New: {} | Queue: {} | Success: {}/{}", 
+                                current_url,
+                                links_found,
+                                new_links.len(), 
+                                queue.len(), 
+                                current_success + 1,
+                                self.max_pages
+                            );
                         }
 
                         // Send result back
@@ -154,7 +198,7 @@ impl CrawlEngine {
 
             // If we hit max pages, we stop spawning but finish existing ones
             if self.success_count.load(Ordering::SeqCst) >= self.max_pages {
-                to_visit.clear();
+                queue.clear();
             }
         }
     }
@@ -245,18 +289,28 @@ impl CrawlEngine {
         page_data.headers = headers;
 
         // Filter and normalize links to stay on same domain
+        let mut seen_urls = HashSet::new();
         page_data.anchor_links = page_data
             .anchor_links
             .into_iter()
             .filter_map(|(href, text)| {
-                if let Ok(abs_url) = base_url.join(&href) {
+                if let Ok(mut abs_url) = base_url.join(&href) {
+                    // Remove fragment (e.g., #section) to avoid duplicate crawls
+                    abs_url.set_fragment(None);
+                    
                     if abs_url.domain() == base_url.domain() {
-                        return Some((abs_url.to_string(), text));
+                        let url_str = abs_url.to_string();
+                        // Deduplicate within this page
+                        if seen_urls.insert(url_str.clone()) {
+                            return Some((url_str, text));
+                        }
                     }
                 }
                 None
             })
             .collect();
+        
+        tracing::info!("[LINKS] Found {} unique same-domain links on {}", page_data.anchor_links.len(), url);
 
         Ok(page_data)
     }
