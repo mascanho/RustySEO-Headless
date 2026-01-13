@@ -50,13 +50,15 @@ pub fn render(
             let content = if j == 1 {
                 // Image Src column
                 let content = c.as_str();
-                if content.len() > 100 {
-                    let start = horizontal_scroll.min(content.len().saturating_sub(50));
-                    let end = (start + 100).min(content.len());
+                let char_count = content.chars().count();
+                if char_count > 100 {
+                    let start = horizontal_scroll.min(char_count.saturating_sub(50));
+                    let end = (start + 100).min(char_count);
+                    let sliced: String = content.chars().skip(start).take(end - start).collect();
                     if start > 0 {
-                        format!("…{}", &content[start..end])
+                        format!("…{}", sliced)
                     } else {
-                        content[start..end].to_string()
+                        sliced
                     }
                 } else {
                     content.to_string()

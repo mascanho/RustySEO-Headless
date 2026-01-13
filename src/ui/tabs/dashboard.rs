@@ -1,9 +1,9 @@
 use ratatui::{
-    Frame,
     layout::{Constraint, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::Span,
-    widgets::{Block, Borders, Cell, Row, Table, Paragraph, Clear},
+    widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table},
+    Frame,
 };
 
 use crate::models::App;
@@ -13,7 +13,10 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     let border_color = Color::Rgb(40, 45, 60);
 
     // Ensure we have filtered data if it was just initialized
-    if app.filtered_table_data.is_empty() && !app.table_data.is_empty() && app.search_query.is_empty() {
+    if app.filtered_table_data.is_empty()
+        && !app.table_data.is_empty()
+        && app.search_query.is_empty()
+    {
         app.filtered_table_data = app.table_data.clone();
     }
 
@@ -77,18 +80,19 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             data[13].clone(),    // Indexability
         ];
 
-
         let cells = displayed_data.iter().enumerate().map(|(j, c)| {
             let mut content = if j == 1 || j == 2 || j == 4 || j == 6 || j == 8 {
                 // URL, Title, H1, Desc, H2
                 let content = c.as_str();
-                if content.len() > 100 {
-                    let start = app.horizontal_scroll.min(content.len().saturating_sub(50));
-                    let end = (start + 100).min(content.len());
+                let char_count = content.chars().count();
+                if char_count > 50 {
+                    let start = app.horizontal_scroll.min(char_count.saturating_sub(50));
+                    let end = (start + 50).min(char_count);
+                    let sliced: String = content.chars().skip(start).take(end - start).collect();
                     if start > 0 {
-                        format!("…{}", &content[start..end])
+                        format!("…{}", sliced)
                     } else {
-                        content[start..end].to_string()
+                        sliced
                     }
                 } else {
                     content.to_string()
@@ -237,7 +241,10 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Yellow))
             .bg(Color::Rgb(25, 25, 40))
-            .title(Span::styled(" Fuzzy Search ", Style::default().fg(Color::Cyan).bold()));
+            .title(Span::styled(
+                " Fuzzy Search ",
+                Style::default().fg(Color::Cyan).bold(),
+            ));
 
         let search_text = format!("> {}", app.search_query);
         let search_paragraph = Paragraph::new(search_text)
