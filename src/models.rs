@@ -10,6 +10,7 @@ pub struct AppSettings {
     pub ui: UiConfig,
     pub system: SystemConfig,
     pub connectors: ConnectorsConfig,
+    pub provider: LLMprovider,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -69,6 +70,11 @@ pub struct OpenAiConfig {
     pub model: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LLMprovider {
+    pub llm: String,
+}
+
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
@@ -90,6 +96,10 @@ impl Default for AppSettings {
                 database_path: "./rustyseo.db".to_string(),
                 log_level: "info".to_string(),
                 export_format: "csv".to_string(),
+            },
+
+            provider: LLMprovider {
+                llm: "Not selected".to_string(),
             },
             connectors: ConnectorsConfig {
                 pagespeed: PageSpeedConfig {
