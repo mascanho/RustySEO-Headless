@@ -177,24 +177,33 @@ impl CrawlEngine {
                             let mut new_links = Vec::new();
                             let mut filtered_count = 0;
                             let mut duplicate_count = 0;
+                            let mut normalization_failed = 0;
                             
                             {
                                 let visited = self.visited.lock().await;
                                 for (link, _) in &data.anchor_links {
                                     // Normalize each discovered link
-                                    if let Some(normalized_link) = crate::crawler::url_normalizer::normalize_url(link) {
-                                        if !crate::crawler::url_normalizer::should_crawl_url(&normalized_link) {
-                                            filtered_count += 1;
+                                    let normalized_link = match crate::crawler::url_normalizer::normalize_url(link) {
+                                        Some(u) => u,
+                                        None => {
+                                            normalization_failed += 1;
+                                            tracing::debug!("[LINK] Failed to normalize: {}", link);
                                             continue;
                                         }
-                                        
-                                        if visited.contains(&normalized_link) {
-                                            duplicate_count += 1;
-                                        } else {
-                                            new_links.push(normalized_link);
-                                        }
-                                    } else {
+                                    };
+                                    
+                                    if !crate::crawler::url_normalizer::should_crawl_url(&normalized_link) {
                                         filtered_count += 1;
+                                        tracing::debug!("[LINK] Filtered (non-HTML): {}", normalized_link);
+                                        continue;
+                                    }
+                                    
+                                    if visited.contains(&normalized_link) {
+                                        duplicate_count += 1;
+                                        tracing::debug!("[LINK] Duplicate: {}", normalized_link);
+                                    } else {
+                                        new_links.push(normalized_link.clone());
+                                        tracing::debug!("[LINK] NEW -> Queue: {}", normalized_link);
                                     }
                                 }
                             } // Release lock before pushing to queue
@@ -206,12 +215,13 @@ impl CrawlEngine {
                             queue.push_batch(new_links.clone(), Some(current_url.clone()));
                             
                             tracing::info!(
-                                "[QUEUE] Page: {} | Found: {} links | New: {} | Filtered: {} | Duplicates: {} | Queue: {} | Success: {}/{}", 
+                                "[QUEUE] Page: {} | Found: {} links | New: {} | Filtered: {} | Duplicates: {} | Failed Norm: {} | Queue: {} | Success: {}/{}", 
                                 current_url,
                                 links_found,
                                 new_links.len(),
                                 filtered_count,
                                 duplicate_count,
+                                normalization_failed,
                                 queue.len(), 
                                 current_success + 1,
                                 self.max_pages
@@ -220,6 +230,16 @@ impl CrawlEngine {
                             // Print summary stats every 50 pages
                             if (current_success + 1) % 50 == 0 {
                                 tracing::warn!("[STATS] {}", self.stats.get_summary());
+                            }
+                            
+                            // Warning if no new links found
+                            if new_links.is_empty() && links_found > 0 {
+                                tracing::warn!(
+                                    "[WARNING] Page {} had {} links but ALL were duplicates/filtered. Queue size: {}",
+                                    current_url,
+                                    links_found,
+                                    queue.len()
+                                );
                             }
                         }
 

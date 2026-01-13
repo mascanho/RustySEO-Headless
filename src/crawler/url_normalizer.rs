@@ -33,16 +33,23 @@ pub fn should_crawl_url(url: &str) -> bool {
     let url_lower = url.to_lowercase();
     
     // Skip common non-HTML resources
+    // Note: We check the path component, not the full URL, to avoid filtering
+    // URLs with query parameters like ?format=json
+    let url_path = if let Ok(parsed) = Url::parse(url) {
+        parsed.path().to_lowercase()
+    } else {
+        url_lower.clone()
+    };
+    
     let skip_extensions = [
-        ".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp", ".ico",
-        ".pdf", ".zip", ".tar", ".gz", ".rar",
-        ".mp4", ".mp3", ".avi", ".mov", ".wmv",
-        ".css", ".js", ".woff", ".woff2", ".ttf", ".eot",
-        ".xml", ".json", ".txt",
+        ".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp", ".ico", ".bmp",
+        ".pdf", ".zip", ".tar", ".gz", ".rar", ".7z",
+        ".mp4", ".mp3", ".avi", ".mov", ".wmv", ".flv", ".webm",
+        ".css", ".js", ".woff", ".woff2", ".ttf", ".eot", ".otf",
     ];
     
     for ext in &skip_extensions {
-        if url_lower.ends_with(ext) {
+        if url_path.ends_with(ext) {
             return false;
         }
     }
