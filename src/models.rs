@@ -151,10 +151,12 @@ pub struct App {
     pub task_panel_visible: bool,
     pub current_state: AppState,
     pub sidebar_tab: usize,
-    pub bookmark_index: usize,
     pub bookmarks: Vec<String>,
+    pub bookmark_index: usize,
     pub bookmark_input: String,
     pub bookmark_cursor: usize,
+    pub bookmark_subview: usize, // 0=bookmarks, 1=last_crawled
+    pub last_crawled_index: usize,
     pub table_data: Vec<Vec<String>>,
     pub page_data: Vec<crate::crawler::PageData>,
     pub table_state: ratatui::widgets::TableState,

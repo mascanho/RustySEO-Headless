@@ -32,10 +32,12 @@ impl Default for App {
             task_panel_visible: false,
             current_state: AppState::Dashboard,
             sidebar_tab: 0,
-            bookmark_index: 0,
             bookmarks: vec![],
+            bookmark_index: 0,
             bookmark_input: String::new(),
             bookmark_cursor: 0,
+            bookmark_subview: 0, // 0=bookmarks, 1=last_crawled
+            last_crawled_index: 0,
             table_data,
             page_data,
             table_state,
@@ -422,6 +424,44 @@ impl App {
                 self.bookmark_index = 0;
             }
         }
+    }
+
+    pub fn toggle_bookmark_subview(&mut self) {
+        self.bookmark_subview = if self.bookmark_subview == 0 { 1 } else { 0 };
+        self.last_crawled_index = 0;
+    }
+
+    pub fn next_last_crawled(&mut self) {
+        let recent_urls = self.get_recent_crawled_urls();
+        if !recent_urls.is_empty() {
+            self.last_crawled_index = (self.last_crawled_index + 1) % recent_urls.len();
+        }
+    }
+
+    pub fn previous_last_crawled(&mut self) {
+        let recent_urls = self.get_recent_crawled_urls();
+        if !recent_urls.is_empty() {
+            self.last_crawled_index = if self.last_crawled_index == 0 {
+                recent_urls.len() - 1
+            } else {
+                self.last_crawled_index - 1
+            };
+        }
+    }
+
+    pub fn get_recent_crawled_urls(&self) -> Vec<String> {
+        self.table_data
+            .iter()
+            .rev()
+            .take(10) // Show last 10 crawled URLs
+            .filter_map(|row| {
+                if row.len() > 1 {
+                    Some(row[1].clone()) // URL is at index 1
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     pub fn next_detail_tab(&mut self) {

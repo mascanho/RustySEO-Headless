@@ -381,8 +381,12 @@ fn render_help_modal(f: &mut Frame) {
             Style::default().fg(header_color).bold(),
         )]),
         Line::from(vec![
+            Span::styled(" ← / →   ", Style::default().fg(key_color)),
+            Span::raw("Navigate Bookmark Tabs"),
+        ]),
+        Line::from(vec![
             Span::styled(" Enter   ", Style::default().fg(key_color)),
-            Span::raw("Add/Crawl Bookmark"),
+            Span::raw("Add/Crawl Selection"),
         ]),
         Line::from(vec![
             Span::styled(" D       ", Style::default().fg(key_color)),

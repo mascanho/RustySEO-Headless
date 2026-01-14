@@ -315,17 +315,45 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
 
                             if app.sidebar_tab == 4 {
                                 match key.code {
+                                    KeyCode::Left => {
+                                        if app.bookmark_input.is_empty() {
+                                            if app.bookmark_subview > 0 {
+                                                app.bookmark_subview -= 1;
+                                            }
+                                        } else {
+                                            app.move_bookmark_cursor_left();
+                                        }
+                                    }
+                                    KeyCode::Right => {
+                                        if app.bookmark_input.is_empty() {
+                                            app.bookmark_subview = (app.bookmark_subview + 1) % 2;
+                                        } else {
+                                            app.move_bookmark_cursor_right();
+                                        }
+                                    }
                                     KeyCode::Enter => {
-                                        if !app.bookmark_input.is_empty() {
-                                            crate::db::add_bookmark(&app.bookmark_input);
-                                            app.bookmarks = crate::db::load_bookmarks();
-                                            app.bookmark_input.clear();
-                                            app.bookmark_cursor = 0;
-                                        } else if let Some(url) =
-                                            app.bookmarks.get(app.bookmark_index)
-                                        {
-                                            app.input_url = url.to_string();
-                                            app.start_crawl();
+                                        if app.bookmark_subview == 0 {
+                                            // Bookmarks view
+                                            if !app.bookmark_input.is_empty() {
+                                                crate::db::add_bookmark(&app.bookmark_input);
+                                                app.bookmarks = crate::db::load_bookmarks();
+                                                app.bookmark_input.clear();
+                                                app.bookmark_cursor = 0;
+                                            } else if let Some(url) =
+                                                app.bookmarks.get(app.bookmark_index)
+                                            {
+                                                app.input_url = url.to_string();
+                                                app.start_crawl();
+                                            }
+                                        } else {
+                                            // Last crawled view
+                                            let recent_urls = app.get_recent_crawled_urls();
+                                            if let Some(url) =
+                                                recent_urls.get(app.last_crawled_index)
+                                            {
+                                                app.input_url = url.to_string();
+                                                app.start_crawl();
+                                            }
                                         }
                                     }
                                     KeyCode::Esc => {
@@ -337,17 +365,35 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                         }
                                     }
                                     KeyCode::Char(c) => {
-                                        if c == 'D' && app.bookmark_input.is_empty() {
+                                        if app.bookmark_subview == 0
+                                            && c == 'D'
+                                            && app.bookmark_input.is_empty()
+                                        {
                                             app.remove_selected_bookmark();
-                                        } else {
+                                        } else if app.bookmark_subview == 0 {
                                             app.enter_bookmark_char(c);
                                         }
                                     }
-                                    KeyCode::Backspace => app.delete_bookmark_char(),
-                                    KeyCode::Left => app.move_bookmark_cursor_left(),
-                                    KeyCode::Right => app.move_bookmark_cursor_right(),
-                                    KeyCode::Up => app.previous_bookmark(),
-                                    KeyCode::Down => app.next_bookmark(),
+                                    KeyCode::Backspace => {
+                                        if app.bookmark_subview == 0 {
+                                            app.delete_bookmark_char();
+                                        }
+                                    }
+
+                                    KeyCode::Up => {
+                                        if app.bookmark_subview == 0 {
+                                            app.previous_bookmark();
+                                        } else {
+                                            app.previous_last_crawled();
+                                        }
+                                    }
+                                    KeyCode::Down => {
+                                        if app.bookmark_subview == 0 {
+                                            app.next_bookmark();
+                                        } else {
+                                            app.next_last_crawled();
+                                        }
+                                    }
                                     KeyCode::Tab => app.next_sidebar_tab(),
                                     KeyCode::BackTab => app.previous_sidebar_tab(),
                                     _ => {}
