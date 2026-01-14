@@ -184,29 +184,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 // KeyCode::Char('l') | KeyCode::Right => app.next_detail_tab(),
                                 KeyCode::Tab => app.next_detail_tab(),
                                 KeyCode::BackTab => app.previous_detail_tab(),
-                                KeyCode::Left => {
-                                    if app.detail_tab == 3
-                                        || app.detail_tab == 4
-                                        || app.detail_tab == 5
-                                        || app.detail_tab == 8
-                                    {
-                                        if app.detail_horizontal_scroll > 0 {
-                                            app.detail_horizontal_scroll =
-                                                app.detail_horizontal_scroll.saturating_sub(10);
-                                        }
-                                    } else {
-                                        app.previous_detail_tab();
-                                    }
-                                }
-                                KeyCode::Right => {
-                                    if app.detail_tab == 3
-                                        || app.detail_tab == 4
-                                        || app.detail_tab == 5
-                                        || app.detail_tab == 8
-                                    {
-                                        app.detail_horizontal_scroll += 10;
-                                    }
-                                }
+                                KeyCode::Left => app.previous_detail_tab(),
+                                KeyCode::Right => app.next_detail_tab(),
                                 KeyCode::Char('k') => {
                                     if app.detail_tab == 3
                                         || app.detail_tab == 4
