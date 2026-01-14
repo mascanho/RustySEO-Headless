@@ -1,9 +1,9 @@
 use ratatui::{
-    Frame,
     layout::{Constraint, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::Span,
     widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table},
+    Frame,
 };
 
 use crate::models::App;
@@ -25,9 +25,9 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         "URL",
         "Title",
         "Len",
-        "H1",
-        "Len",
         "Desc",
+        "Len",
+        "H1",
         "Len",
         "H2",
         "Len",
@@ -68,10 +68,10 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             data[1].clone(),     // URL
             data[2].clone(),     // Title
             data[3].clone(),     // Title Len
-            data[4].clone(),     // H1
-            data[5].clone(),     // H1 Len
             data[6].clone(),     // Desc
             data[7].clone(),     // Desc Len
+            data[4].clone(),     // H1
+            data[5].clone(),     // H1 Len
             data[8].clone(),     // H2
             data[9].clone(),     // H2 Len
             data[10].clone(),    // Status
@@ -157,6 +157,26 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 };
             }
 
+            if j == 3 {
+                if let Ok(len) = c.parse::<usize>() {
+                    if len > 60 && !is_selected {
+                        cell_style = cell_style.fg(Color::Red);
+                    } else if len < 60 && !is_selected {
+                        cell_style = cell_style.fg(Color::Green);
+                    }
+                }
+            }
+
+            if j == 5 {
+                if let Ok(len) = c.parse::<usize>() {
+                    if len > 160 && !is_selected {
+                        cell_style = cell_style.fg(Color::Red);
+                    } else if len < 160 && !is_selected {
+                        cell_style = cell_style.fg(Color::Green);
+                    }
+                }
+            }
+
             // Indexability column logic
             if j == 13 {
                 if content.contains("noindex") {
@@ -174,8 +194,8 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
             let content = if j == 3 || j == 5 || j == 7 || j == 9 || j == 10 || j == 11 {
                 let w = match j {
-                    3 | 7 => 5,
-                    5 | 9 => 7,
+                    3 | 5 => 5,
+                    7 | 9 => 7,
                     10 | 11 => 8,
                     _ => unreachable!(),
                 };
@@ -207,10 +227,10 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         Constraint::Min(55),    // URL
         Constraint::Length(20), // Title
         Constraint::Length(5),  // Title Len
-        Constraint::Length(20), // H1
-        Constraint::Length(7),  // H1 Len
         Constraint::Length(20), // Desc
         Constraint::Length(5),  // Desc Len
+        Constraint::Length(20), // H1
+        Constraint::Length(7),  // H1 Len
         Constraint::Length(15), // H2
         Constraint::Length(7),  // H2 Len
         Constraint::Length(8),  // Status

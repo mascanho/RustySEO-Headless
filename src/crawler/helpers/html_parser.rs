@@ -23,6 +23,7 @@ pub struct PageData {
     pub headers: Vec<String>,
     pub schema: Vec<String>,
     pub content_type: String,
+    pub canonicals: Vec<String>,
 }
 
 pub fn extract_page_elements(document: &Html) -> PageData {
@@ -125,6 +126,12 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         content_type = ct.to_string();
     }
 
+    let canonical_selector = Selector::parse("link[rel=canonical]").unwrap();
+    let canonicals: Vec<String> = document
+        .select(&canonical_selector)
+        .map(|e| e.value().attr("href").unwrap().to_string())
+        .collect();
+
     PageData {
         id: 0,
         url: "".to_string(),
@@ -147,5 +154,6 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         headers: vec![],
         schema,
         content_type,
+        canonicals,
     }
 }

@@ -1,11 +1,11 @@
 use std::fmt::format;
 
 use ratatui::{
-    Frame,
     layout::{Margin, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Paragraph, Wrap},
+    Frame,
 };
 
 pub fn render(f: &mut Frame, row_data: &[String], scroll: u16, area: Rect, block: Block) {
@@ -60,7 +60,7 @@ pub fn render(f: &mut Frame, row_data: &[String], scroll: u16, area: Rect, block
                     .add_modifier(Modifier::BOLD)
                     .fg(accent_color),
             ),
-            Span::raw(&row_data[4]),
+            Span::raw(&row_data[6]),
         ]),
         Line::from(vec![
             Span::styled(
@@ -69,7 +69,7 @@ pub fn render(f: &mut Frame, row_data: &[String], scroll: u16, area: Rect, block
                     .add_modifier(Modifier::BOLD)
                     .fg(accent_color),
             ),
-            Span::raw(&row_data[5]),
+            Span::raw(&row_data[7]),
             Span::raw(" chars"),
         ]),
         Line::from(vec![
@@ -107,7 +107,7 @@ pub fn render(f: &mut Frame, row_data: &[String], scroll: u16, area: Rect, block
             ),
         ]),
         Line::from(""),
-        Line::from(Span::raw(&row_data[6])),
+        Line::from(Span::raw(&row_data[4])),
         Line::from(""),
         // TECHNICAL Section
         Line::from(Span::styled(
@@ -162,6 +162,15 @@ pub fn render(f: &mut Frame, row_data: &[String], scroll: u16, area: Rect, block
                     .fg(accent_color),
             ),
             Span::raw(&row_data[14]),
+        ]),
+        Line::from(vec![
+            Span::styled(
+                "CANONICALS: ",
+                Style::default()
+                    .add_modifier(Modifier::BOLD)
+                    .fg(accent_color),
+            ),
+            Span::raw(&row_data[16]),
         ]),
     ];
 
