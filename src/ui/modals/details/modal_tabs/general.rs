@@ -1,9 +1,9 @@
 use ratatui::{
-    Frame,
-    layout::Rect,
+    layout::{Margin, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, List, ListItem},
+    Frame,
 };
 
 pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
@@ -146,10 +146,10 @@ pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
 
     let list = List::new(items)
         .block(block.title(Span::styled(
-            " General Information ",
+            "General Information ",
             Style::default().fg(Color::Yellow),
         )))
         .style(Style::default().fg(Color::White));
 
-    f.render_widget(list, area);
+    f.render_widget(list, area.inner(Margin::new(1, 0)));
 }
