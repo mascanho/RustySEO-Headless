@@ -1,9 +1,9 @@
 use ratatui::{
-    Frame,
     layout::{Constraint, Rect},
     style::{Color, Modifier, Style},
     text::Span,
     widgets::{Block, Cell, Row, Table, TableState},
+    Frame,
 };
 
 pub fn render(
@@ -110,7 +110,7 @@ pub fn render(
         .block(
             block
                 .title(Span::styled(
-                    format!(" 📝 Headings ({}) {} ", headings.len(), scroll_indicator),
+                    format!(" Headings ({}) {} ", headings.len(), scroll_indicator),
                     Style::default()
                         .fg(Color::Yellow)
                         .add_modifier(Modifier::BOLD),
