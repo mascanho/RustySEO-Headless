@@ -20,13 +20,6 @@ pub fn render(
 
     let mut content = vec![
         // PAGE INFORMATION Section
-        Line::from(Span::styled(
-            "PAGE INFORMATION",
-            Style::default()
-                .add_modifier(Modifier::BOLD)
-                .fg(Color::Cyan)
-                .add_modifier(Modifier::UNDERLINED),
-        )),
         Line::from(""),
         Line::from(vec![
             Span::styled(
@@ -65,7 +58,10 @@ pub fn render(
                 Style::default().fg(Color::Yellow),
             ),
         ]),
-        // HEADINGS Section
+        Line::from(""),
+        Line::from(Span::raw(&row_data[6])),
+        // HEADINGS SECTION
+        Line::from(""),
         Line::from(Span::styled(
             "HEADINGS",
             Style::default()
@@ -81,7 +77,7 @@ pub fn render(
                     .add_modifier(Modifier::BOLD)
                     .fg(accent_color),
             ),
-            Span::raw(&row_data[6]),
+            Span::raw(&row_data[4]),
         ]),
         Line::from(vec![
             Span::styled(
@@ -90,7 +86,7 @@ pub fn render(
                     .add_modifier(Modifier::BOLD)
                     .fg(accent_color),
             ),
-            Span::raw(&row_data[7]),
+            Span::raw(&row_data[5]),
             Span::raw(" chars"),
         ]),
         Line::from(vec![
@@ -112,9 +108,54 @@ pub fn render(
             Span::raw(&row_data[9]),
             Span::raw(" chars"),
         ]),
+        // CONTENT SECTION
         Line::from(""),
+        Line::from(Span::styled(
+            "CONTENT",
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::UNDERLINED),
+        )),
         Line::from(""),
-        Line::from(Span::raw(&row_data[4])),
+        Line::from(vec![
+            Span::styled(
+                "H1: ",
+                Style::default()
+                    .add_modifier(Modifier::BOLD)
+                    .fg(accent_color),
+            ),
+            Span::raw(&row_data[4]),
+        ]),
+        Line::from(vec![
+            Span::styled(
+                "H1 Length: ",
+                Style::default()
+                    .add_modifier(Modifier::BOLD)
+                    .fg(accent_color),
+            ),
+            Span::raw(&row_data[5]),
+            Span::raw(" chars"),
+        ]),
+        Line::from(vec![
+            Span::styled(
+                "H2: ",
+                Style::default()
+                    .add_modifier(Modifier::BOLD)
+                    .fg(accent_color),
+            ),
+            Span::raw(&row_data[8]),
+        ]),
+        Line::from(vec![
+            Span::styled(
+                "H2 Length: ",
+                Style::default()
+                    .add_modifier(Modifier::BOLD)
+                    .fg(accent_color),
+            ),
+            Span::raw(&row_data[9]),
+            Span::raw(" chars"),
+        ]),
         Line::from(""),
         // TECHNICAL Section
         Line::from(Span::styled(
