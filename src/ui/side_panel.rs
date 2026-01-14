@@ -39,19 +39,13 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     app.sidebar_tab_rect = Some(sidebar_tab_area);
 
-    let sidebar_titles = vec![
-        " 📊 Summary ",
-        " ⚙ Settings ",
-        "  Filter ",
-        " ⚡ Act ",
-        "📚 Bookmarks",
-    ];
+    let sidebar_titles = vec!["Summary", "Settings", "Filter", "Act", "Bookmarks"];
     let sidebar_tabs = Tabs::new(sidebar_titles)
         .block(
             Block::default()
                 .borders(Borders::ALL)
                 .title(Span::styled(
-                    " 🛠️  Tools ",
+                    " Tools ",
                     Style::default()
                         .fg(Color::Yellow)
                         .add_modifier(Modifier::BOLD),
