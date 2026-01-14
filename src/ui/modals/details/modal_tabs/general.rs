@@ -223,12 +223,13 @@ pub fn render(
                     .add_modifier(Modifier::BOLD),
             )]));
             for (href, hreflang) in alternates {
-                let lang = hreflang.unwrap_or("unknown".to_string());
-                content.push(Line::from(vec![
-                    Span::styled("  • ", Style::default().fg(Color::Cyan)),
-                    Span::styled(format!("{}: ", lang), Style::default().fg(Color::Yellow)),
-                    Span::raw(href),
-                ]));
+                if let Some(lang) = hreflang {
+                    content.push(Line::from(vec![
+                        Span::styled("  • ", Style::default().fg(Color::Cyan)),
+                        Span::styled(format!("{}: ", lang), Style::default().fg(Color::Yellow)),
+                        Span::raw(href),
+                    ]));
+                }
             }
         }
     }
