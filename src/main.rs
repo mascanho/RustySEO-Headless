@@ -4,11 +4,11 @@ use crossterm::{
         self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers, MouseEventKind,
     },
     execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{
-    Terminal,
     backend::{Backend, CrosstermBackend},
+    Terminal,
 };
 use std::{error::Error, io};
 
@@ -222,6 +222,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 }
                                 KeyCode::Char('j') => {
                                     if app.detail_tab == 3
+                                        || app.detail_tab == 4
                                         || app.detail_tab == 5
                                         || app.detail_tab == 8
                                     {
@@ -236,7 +237,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 KeyCode::Up => {
                                     if key.modifiers.contains(KeyModifiers::CONTROL) {
                                         // Ctrl+Up for modal table scrolling
-                                        if app.detail_tab == 3
+                                        if app.detail_tab == 2
+                                            || app.detail_tab == 3
+                                            || app.detail_tab == 4
                                             || app.detail_tab == 5
                                             || app.detail_tab == 8
                                         {
