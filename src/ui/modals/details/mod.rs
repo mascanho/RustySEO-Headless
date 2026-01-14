@@ -51,7 +51,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         .constraints([
             Constraint::Length(3), // Tabs
             Constraint::Min(0),    // Content
-            Constraint::Length(1), // top Footer
+            Constraint::Length(1), // Footer
             Constraint::Length(1), // Footer
         ])
         .split(inner_area);
@@ -180,7 +180,11 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     let footer_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Min(0), Constraint::Length(25)])
+        .constraints([
+            Constraint::Min(0),
+            Constraint::Length(25),
+            Constraint::Length(20),
+        ])
         .split(chunks[2]);
 
     let url_line = Line::from(vec![
@@ -200,15 +204,41 @@ pub fn render(f: &mut Frame, app: &mut App) {
     ]);
 
     let url_p = Paragraph::new(url_line)
-        .block(Block::default().bg(Color::Rgb(20, 20, 35)))
+        .block(Block::default().bg(Color::Black))
         .alignment(Alignment::Left);
 
     let status_p = Paragraph::new(status_line)
-        .block(Block::default().bg(Color::Rgb(20, 20, 35)))
+        .block(Block::default().bg(Color::Black))
         .alignment(Alignment::Right);
+
+    // File Size
+    let file_size = app.page_data[page_idx].size as u64;
+
+    let format_size = |size: u64| -> String {
+        if size >= 1024 * 1024 {
+            format!("{:.1} MB", size as f64 / (1024.0 * 1024.0))
+        } else if size >= 1024 {
+            format!("{:.1} KB", size as f64 / 1024.0)
+        } else {
+            format!("{} B", size)
+        }
+    };
+
+    let file_size_line = Line::from(vec![
+        Span::styled("📁 ", Style::default().fg(Color::Yellow)),
+        Span::styled(
+            format_size(file_size),
+            Style::default().fg(Color::White).bold(),
+        ),
+    ]);
+
+    let file_size_p = Paragraph::new(file_size_line)
+        .block(Block::default().bg(Color::Rgb(128, 0, 128))) // Purple
+        .alignment(Alignment::Center);
 
     f.render_widget(url_p, footer_chunks[0]);
     f.render_widget(status_p, footer_chunks[1]);
+    f.render_widget(file_size_p, footer_chunks[2]);
 
     let footer_bottom = Paragraph::new(Span::styled(
         " 💡 Tab: Next | Shift+Tab: Prev | Esc: Close ",

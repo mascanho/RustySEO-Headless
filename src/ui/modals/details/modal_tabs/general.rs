@@ -1,11 +1,11 @@
 use std::fmt::format;
 
 use ratatui::{
-    Frame,
     layout::{Margin, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Paragraph, Wrap},
+    Frame,
 };
 
 pub fn render(
@@ -168,7 +168,7 @@ pub fn render(
                     .add_modifier(Modifier::BOLD)
                     .fg(accent_color),
             ),
-            Span::raw(&row_data[14]),
+            Span::raw(&row_data[15]),
         ]),
     ];
 
