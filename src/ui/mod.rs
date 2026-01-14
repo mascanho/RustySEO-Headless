@@ -204,10 +204,10 @@ fn render_help_modal(f: &mut Frame) {
         .margin(1)
         .split(inner_area);
 
-    // COLUMN 1: NAVIGATION & VIEW
+    // COLUMN 1: GLOBAL NAVIGATION
     let nav_text = vec![
         Line::from(vec![Span::styled(
-            "── NAVIGATION ──",
+            "── GLOBAL CONTROLS ──",
             Style::default().fg(header_color).bold(),
         )]),
         Line::from(vec![
@@ -223,16 +223,29 @@ fn render_help_modal(f: &mut Frame) {
             Span::raw("Reset / Close Modals"),
         ]),
         Line::from(vec![
+            Span::styled(" A       ", Style::default().fg(key_color)),
+            Span::raw("AI Copilot Panel"),
+        ]),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "── MAIN TABS ──",
+            Style::default().fg(header_color).bold(),
+        )]),
+        Line::from(vec![
             Span::styled(" Tab     ", Style::default().fg(key_color)),
-            Span::raw("Cycle Main Tabs"),
+            Span::raw("Next Main Tab"),
         ]),
         Line::from(vec![
-            Span::styled(" 1-9, 0  ", Style::default().fg(key_color)),
+            Span::styled(" Sh+Tab  ", Style::default().fg(key_color)),
+            Span::raw("Previous Main Tab"),
+        ]),
+        Line::from(vec![
+            Span::styled(" 1-9,0   ", Style::default().fg(key_color)),
             Span::raw("Direct Tab Access"),
         ]),
         Line::from(""),
         Line::from(vec![Span::styled(
-            "── SYSTEM ──",
+            "── SYSTEM TOOLS ──",
             Style::default().fg(header_color).bold(),
         )]),
         Line::from(vec![
@@ -244,8 +257,8 @@ fn render_help_modal(f: &mut Frame) {
             Span::raw("Toggle System Logs"),
         ]),
         Line::from(vec![
-            Span::styled(" A       ", Style::default().fg(key_color)),
-            Span::raw("AI Copilot Panel"),
+            Span::styled(" Ctrl+s  ", Style::default().fg(Color::Rgb(255, 170, 0))),
+            Span::raw("Search Dashboard/Logs"),
         ]),
         Line::from(vec![
             Span::styled(" [ / ]   ", Style::default().fg(key_color)),
@@ -253,10 +266,10 @@ fn render_help_modal(f: &mut Frame) {
         ]),
     ];
 
-    // COLUMN 2: DASHBOARD & CRAWL
+    // COLUMN 2: DASHBOARD & MODALS
     let dash_text = vec![
         Line::from(vec![Span::styled(
-            "── DASHBOARD ──",
+            "── DASHBOARD TABLE ──",
             Style::default().fg(header_color).bold(),
         )]),
         Line::from(vec![
@@ -268,12 +281,8 @@ fn render_help_modal(f: &mut Frame) {
             Span::raw("Next Row"),
         ]),
         Line::from(vec![
-            Span::styled(" g / G   ", Style::default().fg(key_color)),
+            Span::styled(" t / G   ", Style::default().fg(key_color)),
             Span::raw("Top / Bottom"),
-        ]),
-        Line::from(vec![
-            Span::styled(" ← / →   ", Style::default().fg(key_color)),
-            Span::raw("Horizontal Scroll"),
         ]),
         Line::from(vec![
             Span::styled(" Enter   ", Style::default().fg(key_color)),
@@ -285,13 +294,34 @@ fn render_help_modal(f: &mut Frame) {
         ]),
         Line::from(""),
         Line::from(vec![Span::styled(
-            "── FUZZY FILTER ──",
+            "── DETAILS MODAL ──",
             Style::default().fg(header_color).bold(),
         )]),
         Line::from(vec![
-            Span::styled(" Ctrl+s  ", Style::default().fg(Color::Rgb(255, 170, 0))),
-            Span::raw("Search Dashboard/Logs"),
+            Span::styled(" h / ←   ", Style::default().fg(key_color)),
+            Span::raw("Previous Tab"),
         ]),
+        Line::from(vec![
+            Span::styled(" l / →   ", Style::default().fg(key_color)),
+            Span::raw("Next Tab"),
+        ]),
+        Line::from(vec![
+            Span::styled(" Tab/Sh+Tab", Style::default().fg(key_color)),
+            Span::raw("Cycle Tabs"),
+        ]),
+        Line::from(vec![
+            Span::styled(" k / j   ", Style::default().fg(key_color)),
+            Span::raw("Table Nav (In/Out/Img/H)"),
+        ]),
+        Line::from(vec![
+            Span::styled(" Ctrl+↑/↓", Style::default().fg(key_color)),
+            Span::raw("Modal Table Nav"),
+        ]),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "── SEARCH MODE ──",
+            Style::default().fg(header_color).bold(),
+        )]),
         Line::from(vec![
             Span::styled(" Enter   ", Style::default().fg(key_color)),
             Span::raw("Apply Filter"),
@@ -302,7 +332,7 @@ fn render_help_modal(f: &mut Frame) {
         ]),
     ];
 
-    // COLUMN 3: SIDEBAR & MODALS
+    // COLUMN 3: SIDEBAR & OTHER
     let sidebar_text = vec![
         Line::from(vec![Span::styled(
             "── SIDEBAR JUMPS ──",
@@ -310,52 +340,66 @@ fn render_help_modal(f: &mut Frame) {
         )]),
         Line::from(vec![
             Span::styled(" g       ", Style::default().fg(key_color)),
-            Span::raw("Audit Summary"),
+            Span::raw("Settings Tab"),
         ]),
         Line::from(vec![
             Span::styled(" s       ", Style::default().fg(key_color)),
-            Span::raw("System Settings"),
+            Span::raw("Filters Tab"),
         ]),
         Line::from(vec![
             Span::styled(" f       ", Style::default().fg(key_color)),
-            Span::raw("Audit Filters"),
+            Span::raw("Stats Tab"),
         ]),
         Line::from(vec![
             Span::styled(" a       ", Style::default().fg(key_color)),
-            Span::raw("Quick Actions"),
+            Span::raw("Actions Tab"),
         ]),
         Line::from(vec![
-            Span::styled(" b       ", Style::default().fg(key_color)),
-            Span::raw("URL Bookmarks"),
+            Span::styled(" b / +   ", Style::default().fg(key_color)),
+            Span::raw("Bookmarks Tab"),
         ]),
         Line::from(""),
         Line::from(vec![Span::styled(
-            "── MODAL CONTROLS ──",
+            "── SIDEBAR CONTROLS ──",
             Style::default().fg(header_color).bold(),
         )]),
         Line::from(vec![
-            Span::styled(" h / l   ", Style::default().fg(key_color)),
-            Span::raw("Cycle Modal Tabs"),
+            Span::styled(" Esc/←/h", Style::default().fg(key_color)),
+            Span::raw("Close Sidebar"),
         ]),
         Line::from(vec![
-            Span::styled(" ↑ / ↓   ", Style::default().fg(key_color)),
-            Span::raw("Navigate Dashboard"),
+            Span::styled(" k / ↑   ", Style::default().fg(key_color)),
+            Span::raw("Previous Sidebar Tab"),
         ]),
         Line::from(vec![
-            Span::styled(" Ctrl+↑  ", Style::default().fg(key_color)),
-            Span::raw("Modal Table Up"),
+            Span::styled(" j / ↓   ", Style::default().fg(key_color)),
+            Span::raw("Next Sidebar Tab"),
+        ]),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "── BOOKMARK ACTIONS ──",
+            Style::default().fg(header_color).bold(),
+        )]),
+        Line::from(vec![
+            Span::styled(" Enter   ", Style::default().fg(key_color)),
+            Span::raw("Add/Crawl Bookmark"),
         ]),
         Line::from(vec![
-            Span::styled(" Ctrl+↓  ", Style::default().fg(key_color)),
-            Span::raw("Modal Table Down"),
+            Span::styled(" D       ", Style::default().fg(key_color)),
+            Span::raw("Delete Bookmark"),
         ]),
         Line::from(vec![
             Span::styled(" Backsp  ", Style::default().fg(key_color)),
-            Span::raw("Remove Bookmark"),
+            Span::raw("Delete Input Char"),
         ]),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "── SETTINGS ACTIONS ──",
+            Style::default().fg(header_color).bold(),
+        )]),
         Line::from(vec![
-            Span::styled(" Ctrl+AI ", Style::default().fg(key_color)),
-            Span::raw("Global AI Access"),
+            Span::styled(" E       ", Style::default().fg(key_color)),
+            Span::raw("Edit Settings File"),
         ]),
     ];
 
