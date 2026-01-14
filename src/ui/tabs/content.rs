@@ -1,9 +1,9 @@
 use ratatui::{
-    Frame,
     layout::{Constraint, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::Span,
     widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table},
+    Frame,
 };
 
 use crate::models::App;
@@ -22,23 +22,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         app.filtered_table_data = app.table_data.clone();
     }
 
-    let header_titles = [
-        "ID",
-        "URL",
-        "Title",
-        "Len",
-        "Desc",
-        "Len",
-        "H1",
-        "Len",
-        "H2",
-        "Len",
-        "Status",
-        "Mobile",
-        "Lang",
-        "Indexable",
-        "Canonicals",
-    ];
+    let header_titles = ["ID", "URL", "Word Count"];
 
     let header = Row::new(header_titles.iter().map(|h| {
         Cell::from(format!(" {} ", h)).style(
@@ -69,19 +53,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         let displayed_data = vec![
             (i + 1).to_string(), // Sequential ID
             data[1].clone(),     // URL
-            data[2].clone(),     // Title
-            data[3].clone(),     // Title Len
-            data[6].clone(),     // Desc
-            data[7].clone(),     // Desc Len
-            data[4].clone(),     // H1
-            data[5].clone(),     // H1 Len
-            data[8].clone(),     // H2
-            data[9].clone(),     // H2 Len
-            data[10].clone(),    // Status
-            data[11].clone(),    // Mobile
-            data[12].clone(),    // Language
-            data[13].clone(),    // Indexability
-            data[15].clone(),    // Canonicals
+            data[18].clone(),    // Word Count
         ];
 
         let cells = displayed_data.iter().enumerate().map(|(j, c)| {
