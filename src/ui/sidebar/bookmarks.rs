@@ -1,10 +1,10 @@
 use crate::models::App;
 use ratatui::{
+    Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph, Tabs},
-    Frame,
 };
 
 pub fn render(
@@ -25,7 +25,7 @@ pub fn render(
         .constraints([
             Constraint::Length(3),
             Constraint::Min(0),
-            Constraint::Length(3),
+            Constraint::Length(2),
         ])
         .split(inner_area);
 
