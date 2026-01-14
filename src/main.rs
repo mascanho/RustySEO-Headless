@@ -4,11 +4,11 @@ use crossterm::{
         self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers, MouseEventKind,
     },
     execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{
-    Terminal,
     backend::{Backend, CrosstermBackend},
+    Terminal,
 };
 use std::{error::Error, io};
 
@@ -438,7 +438,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             KeyCode::Char('i') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                                 app.input_mode = true
                             }
-                            KeyCode::Char('s') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                            KeyCode::Char('f') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                                 if app.show_logs {
                                     app.show_log_search = true;
                                 } else if app.current_state == AppState::Dashboard {
@@ -448,7 +448,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
 
                             // Tab/BackTab always cycle main states if no modal
                             KeyCode::Tab => app.next_state(),
-                            KeyCode::BackTab => app.previous_state(),
+                            KeyCode::Backspace => app.previous_state(),
 
                             // Vim Navigation
                             // KeyCode::Char('h') | KeyCode::Left => app.previous_state(),
