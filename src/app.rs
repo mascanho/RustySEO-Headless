@@ -1,6 +1,6 @@
-use std::sync::mpsc;
-use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
+use fuzzy_matcher::skim::SkimMatcherV2;
+use std::sync::mpsc;
 
 use crate::models::{App, AppSettings};
 use crate::ui::modals::dashboard_menu;
@@ -108,7 +108,7 @@ impl App {
             let mut page_data = data.clone();
             page_data.id = current_id;
             self.page_data.push(page_data);
-            
+
             let row = vec![
                 current_id.to_string(),
                 data.url.clone(),
@@ -130,9 +130,13 @@ impl App {
             self.log(format!("Crawled: {}", data.url));
 
             // Update overall progress
-            let limit = self.settings.as_ref().map(|s| s.crawler.max_pages).unwrap_or(50) as f64;
+            let limit = self
+                .settings
+                .as_ref()
+                .map(|s| s.crawler.max_pages)
+                .unwrap_or(50) as f64;
             self.crawl_progress = (self.table_data.len() as f64 / limit).min(1.0);
-            
+
             self.apply_filter();
         }
 
@@ -171,7 +175,10 @@ impl App {
     pub fn log<S: Into<String>>(&mut self, message: S) {
         let msg = message.into();
         // Check if it already has a timestamp [HH:MM:SS]
-        let log_entry = if msg.starts_with('[') && msg.get(9..10) == Some("]") && msg.get(1..9).map(|s| s.contains(':')).unwrap_or(false) {
+        let log_entry = if msg.starts_with('[')
+            && msg.get(9..10) == Some("]")
+            && msg.get(1..9).map(|s| s.contains(':')).unwrap_or(false)
+        {
             msg
         } else {
             let timestamp = chrono::Local::now().format("%H:%M:%S").to_string();
@@ -314,10 +321,16 @@ impl App {
         self.ai_input.clear();
 
         // Simulate AI thinking/response
-        let response = if input.to_lowercase().contains("hi") || input.to_lowercase().contains("hello") {
-            "Hello! I am your RustySEO AI assistant. How can I help you analyze your crawl today?".to_string()
+        let response = if input.to_lowercase().contains("hi")
+            || input.to_lowercase().contains("hello")
+        {
+            "Hello! I am your RustySEO AI assistant. How can I help you analyze your crawl today?"
+                .to_string()
         } else if input.to_lowercase().contains("page") || input.to_lowercase().contains("url") {
-            format!("You have crawled {} pages so far. Would you like me to analyze the status codes or heading structures for you?", self.page_data.len())
+            format!(
+                "You have crawled {} pages so far. Would you like me to analyze the status codes or heading structures for you?",
+                self.page_data.len()
+            )
         } else {
             "I'm currently processing your request. In a real implementation, I would analyze your SEO data and provide actionable insights!".to_string()
         };
@@ -329,7 +342,8 @@ impl App {
 
         // Scroll to bottom
         if !self.ai_chat_history.is_empty() {
-            self.ai_chat_state.select(Some(self.ai_chat_history.len() - 1));
+            self.ai_chat_state
+                .select(Some(self.ai_chat_history.len() - 1));
         }
     }
 
@@ -357,10 +371,8 @@ impl App {
         #[cfg(not(target_os = "macos"))]
         let cmd = "xdg-open";
 
-        let _ = std::process::Command::new(cmd)
-            .arg(path)
-            .spawn();
-        
+        let _ = std::process::Command::new(cmd).arg(path).spawn();
+
         self.log("Opening settings file...".to_string());
     }
 
@@ -582,20 +594,31 @@ impl App {
         let (tx, rx) = mpsc::channel();
         self.crawl_receiver = Some(rx);
         let target_url = self.input_url.clone();
-        let max_pages = self.settings.as_ref().map(|s| s.crawler.max_pages).unwrap_or(500);
-        let concurrency = self.settings.as_ref().map(|s| s.crawler.concurrency).unwrap_or(10);
+        let max_pages = self
+            .settings
+            .as_ref()
+            .map(|s| s.crawler.max_pages)
+            .unwrap_or(500);
+        let concurrency = self
+            .settings
+            .as_ref()
+            .map(|s| s.crawler.concurrency)
+            .unwrap_or(10);
 
         tokio::task::spawn(async move {
-            let engine = crate::crawler::CrawlEngine::new().await
+            let engine = crate::crawler::CrawlEngine::new()
+                .await
                 .with_max_pages(max_pages)
                 .with_concurrency(concurrency);
-            
+
             let (tokio_tx, mut tokio_rx) = tokio::sync::mpsc::channel(100);
             let engine_clone = engine.clone();
             let target_url_clone = target_url.clone();
-            
+
             tokio::spawn(async move {
-                engine_clone.crawl_concurrently(&target_url_clone, tokio_tx).await;
+                engine_clone
+                    .crawl_concurrently(&target_url_clone, tokio_tx)
+                    .await;
             });
 
             while let Some(data) = tokio_rx.recv().await {
@@ -702,11 +725,14 @@ impl App {
         }
 
         let matcher = SkimMatcherV2::default();
-        let mut scored_data: Vec<(i64, Vec<String>)> = self.table_data.iter()
+        let mut scored_data: Vec<(i64, Vec<String>)> = self
+            .table_data
+            .iter()
             .filter_map(|row| {
                 // Search across multiple columns (URL, Title, Description)
                 let search_blob = format!("{} {} {}", row[1], row[2], row[6]);
-                matcher.fuzzy_match(&search_blob, &self.search_query)
+                matcher
+                    .fuzzy_match(&search_blob, &self.search_query)
                     .map(|score| (score, row.clone()))
             })
             .collect();
@@ -714,7 +740,7 @@ impl App {
         // Sort by score descending
         scored_data.sort_by(|a, b| b.0.cmp(&a.0));
         self.filtered_table_data = scored_data.into_iter().map(|(_, row)| row).collect();
-        
+
         // Reset selection if it's out of bounds
         if let Some(selected) = self.table_state.selected() {
             if selected >= self.filtered_table_data.len() {
@@ -734,10 +760,12 @@ impl App {
         }
 
         let matcher = fuzzy_matcher::skim::SkimMatcherV2::default();
-        let mut matches: Vec<(i64, String)> = self.logs_data
+        let mut matches: Vec<(i64, String)> = self
+            .logs_data
             .iter()
             .filter_map(|log| {
-                matcher.fuzzy_match(log, &self.log_search_query)
+                matcher
+                    .fuzzy_match(log, &self.log_search_query)
                     .map(|score| (score, log.clone()))
             })
             .collect();
@@ -749,11 +777,12 @@ impl App {
 
         // Adjust selection if it's out of bounds
         let current_selected = self.logs_state.selected().unwrap_or(0);
-        if current_selected >= self.filtered_logs_data.len() && !self.filtered_logs_data.is_empty() {
-            self.logs_state.select(Some(self.filtered_logs_data.len().saturating_sub(1)));
+        if current_selected >= self.filtered_logs_data.len() && !self.filtered_logs_data.is_empty()
+        {
+            self.logs_state
+                .select(Some(self.filtered_logs_data.len().saturating_sub(1)));
         } else if self.filtered_logs_data.is_empty() {
             self.logs_state.select(None);
         }
     }
 }
-

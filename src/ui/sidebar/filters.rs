@@ -1,3 +1,4 @@
+use crate::models::App;
 use ratatui::{
     Frame,
     layout::Rect,
@@ -5,7 +6,6 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, List, ListItem},
 };
-use crate::models::App;
 
 pub fn render(f: &mut Frame, _app: &mut App, area: Rect, content_block: Block) {
     let items = vec![

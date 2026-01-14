@@ -1,16 +1,16 @@
-use rand::rng;
 use rand::Rng;
+use rand::rng;
 use reqwest::Client;
 use scraper::Html;
 use std::collections::HashSet;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
-use tokio::sync::{mpsc, Mutex, Semaphore};
-use tokio::time::{sleep, Duration};
+use std::sync::atomic::{AtomicUsize, Ordering};
+use tokio::sync::{Mutex, Semaphore, mpsc};
+use tokio::time::{Duration, sleep};
 use url::Url;
 
 use crate::crawler::helpers::{
-    html_parser::{extract_page_elements, PageData},
+    html_parser::{PageData, extract_page_elements},
     user_agents::user_agents,
 };
 
@@ -105,12 +105,16 @@ impl CrawlEngine {
         // Use our new queue module for breadth-first crawling
         let mut queue = crate::crawler::queue::CrawlQueue::new();
         queue.push(start_url.to_string(), None);
-        
+
         // Try to discover URLs from sitemap.xml and robots.txt
         tracing::info!("[DISCOVERY] Attempting to discover URLs from sitemap and robots.txt...");
-        let sitemap_urls = crate::crawler::sitemap::discover_additional_urls(start_url, &self.client).await;
+        let sitemap_urls =
+            crate::crawler::sitemap::discover_additional_urls(start_url, &self.client).await;
         if !sitemap_urls.is_empty() {
-            tracing::info!("[DISCOVERY] Found {} URLs from sitemaps, adding to queue", sitemap_urls.len());
+            tracing::info!(
+                "[DISCOVERY] Found {} URLs from sitemaps, adding to queue",
+                sitemap_urls.len()
+            );
             for url in sitemap_urls {
                 // Only add URLs from the same domain
                 if let Ok(parsed) = Url::parse(&url) {
@@ -120,7 +124,7 @@ impl CrawlEngine {
                 }
             }
         }
-        
+
         let mut join_set = tokio::task::JoinSet::new();
 
         while !queue.is_empty() || !join_set.is_empty() {
@@ -157,8 +161,11 @@ impl CrawlEngine {
 
                 let engine = self.clone();
                 let base_url_clone = base_url.clone();
-                join_set
-                    .spawn(async move { engine.fetch_and_process(&normalized_url, &base_url_clone, referer).await });
+                join_set.spawn(async move {
+                    engine
+                        .fetch_and_process(&normalized_url, &base_url_clone, referer)
+                        .await
+                });
             }
 
             // Wait for at least one task to complete
@@ -169,35 +176,44 @@ impl CrawlEngine {
                         let current_url = data.url.clone();
                         let current_success = self.success_count.load(Ordering::SeqCst);
                         let links_found = data.anchor_links.len();
-                        
+
                         self.stats.add_discovered(links_found);
-                        
+
                         // Only add new links if we haven't reached max successful crawls
                         if current_success < self.max_pages {
                             let mut new_links = Vec::new();
                             let mut filtered_count = 0;
                             let mut duplicate_count = 0;
                             let mut normalization_failed = 0;
-                            
+
                             {
                                 let visited = self.visited.lock().await;
                                 for (link, _) in &data.anchor_links {
                                     // Normalize each discovered link
-                                    let normalized_link = match crate::crawler::url_normalizer::normalize_url(link) {
-                                        Some(u) => u,
-                                        None => {
-                                            normalization_failed += 1;
-                                            tracing::debug!("[LINK] Failed to normalize: {}", link);
-                                            continue;
-                                        }
-                                    };
-                                    
-                                    if !crate::crawler::url_normalizer::should_crawl_url(&normalized_link) {
+                                    let normalized_link =
+                                        match crate::crawler::url_normalizer::normalize_url(link) {
+                                            Some(u) => u,
+                                            None => {
+                                                normalization_failed += 1;
+                                                tracing::debug!(
+                                                    "[LINK] Failed to normalize: {}",
+                                                    link
+                                                );
+                                                continue;
+                                            }
+                                        };
+
+                                    if !crate::crawler::url_normalizer::should_crawl_url(
+                                        &normalized_link,
+                                    ) {
                                         filtered_count += 1;
-                                        tracing::debug!("[LINK] Filtered (non-HTML): {}", normalized_link);
+                                        tracing::debug!(
+                                            "[LINK] Filtered (non-HTML): {}",
+                                            normalized_link
+                                        );
                                         continue;
                                     }
-                                    
+
                                     if visited.contains(&normalized_link) {
                                         duplicate_count += 1;
                                         tracing::debug!("[LINK] Duplicate: {}", normalized_link);
@@ -207,31 +223,31 @@ impl CrawlEngine {
                                     }
                                 }
                             } // Release lock before pushing to queue
-                            
+
                             self.stats.add_filtered(filtered_count);
                             self.stats.add_duplicate(duplicate_count);
-                            
+
                             // Add all new links to the queue
                             queue.push_batch(new_links.clone(), Some(current_url.clone()));
-                            
+
                             tracing::info!(
-                                "[QUEUE] Page: {} | Found: {} links | New: {} | Filtered: {} | Duplicates: {} | Failed Norm: {} | Queue: {} | Success: {}/{}", 
+                                "[QUEUE] Page: {} | Found: {} links | New: {} | Filtered: {} | Duplicates: {} | Failed Norm: {} | Queue: {} | Success: {}/{}",
                                 current_url,
                                 links_found,
                                 new_links.len(),
                                 filtered_count,
                                 duplicate_count,
                                 normalization_failed,
-                                queue.len(), 
+                                queue.len(),
                                 current_success + 1,
                                 self.max_pages
                             );
-                            
+
                             // Print summary stats every 50 pages
                             if (current_success + 1) % 50 == 0 {
                                 tracing::warn!("[STATS] {}", self.stats.get_summary());
                             }
-                            
+
                             // Warning if no new links found
                             if new_links.is_empty() && links_found > 0 {
                                 tracing::warn!(
@@ -263,7 +279,7 @@ impl CrawlEngine {
             if self.success_count.load(Ordering::SeqCst) >= self.max_pages {
                 queue.clear();
             }
-            
+
             // Diagnostic: Check if queue is empty but we haven't hit max pages
             if queue.is_empty() && join_set.is_empty() {
                 let current = self.success_count.load(Ordering::SeqCst);
@@ -277,12 +293,17 @@ impl CrawlEngine {
                 }
             }
         }
-        
+
         // Final stats
         tracing::warn!("[CRAWL COMPLETE] {}", self.stats.get_summary());
     }
 
-    async fn fetch_and_process(&self, url: &str, base_url: &Url, referer: Option<String>) -> Result<PageData, String> {
+    async fn fetch_and_process(
+        &self,
+        url: &str,
+        base_url: &Url,
+        referer: Option<String>,
+    ) -> Result<PageData, String> {
         // Implement Jitter
         self.apply_jitter().await;
 
@@ -313,10 +334,10 @@ impl CrawlEngine {
             .map_err(|e| format!("Request failed: {}", e))?;
 
         let status_code = response.status();
-        
+
         // Detailed response logging for debugging blocks/CDNs
         tracing::info!("[FETCH] {} -> STATUS: {}", url, status_code);
-        
+
         let headers_list: Vec<String> = response
             .headers()
             .iter()
@@ -333,8 +354,12 @@ impl CrawlEngine {
                 tracing::debug!("--- Cache Info: {} for {}", h, url);
             }
         }
-        
-        tracing::debug!("<<< RESPONSE HEADERS ({}):\n{}", url, headers_list.join("\n"));
+
+        tracing::debug!(
+            "<<< RESPONSE HEADERS ({}):\n{}",
+            url,
+            headers_list.join("\n")
+        );
 
         if status_code.as_u16() == 429 {
             tracing::error!("Rate limited (429) at {}. Waiting 5s...", url);
@@ -354,7 +379,6 @@ impl CrawlEngine {
         );
 
         let headers = headers_list;
-
 
         let html_content = response
             .text()
@@ -376,7 +400,7 @@ impl CrawlEngine {
                 if let Ok(mut abs_url) = base_url.join(&href) {
                     // Remove fragment (e.g., #section) to avoid duplicate crawls
                     abs_url.set_fragment(None);
-                    
+
                     if abs_url.domain() == base_url.domain() {
                         let url_str = abs_url.to_string();
                         // Deduplicate within this page
@@ -388,8 +412,12 @@ impl CrawlEngine {
                 None
             })
             .collect();
-        
-        tracing::info!("[LINKS] Found {} unique same-domain links on {}", page_data.anchor_links.len(), url);
+
+        tracing::info!(
+            "[LINKS] Found {} unique same-domain links on {}",
+            page_data.anchor_links.len(),
+            url
+        );
 
         Ok(page_data)
     }

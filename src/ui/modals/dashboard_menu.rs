@@ -143,7 +143,6 @@ pub fn handle_action(app: &mut App, action_index: usize) {
     app.show_dashboard_menu = false;
 }
 
-
 fn copy_to_clipboard(text: String) {
     std::thread::spawn(move || {
         #[cfg(target_os = "macos")]
@@ -182,9 +181,7 @@ fn copy_to_clipboard(text: String) {
             use std::process::{Command, Stdio};
 
             // Try Wayland first (wl-copy)
-            let try_wl = Command::new("wl-copy")
-                .stdin(Stdio::piped())
-                .spawn();
+            let try_wl = Command::new("wl-copy").stdin(Stdio::piped()).spawn();
 
             if let Ok(mut child) = try_wl {
                 if let Some(mut stdin) = child.stdin.take() {
@@ -228,9 +225,10 @@ fn copy_to_clipboard(text: String) {
                 }
             }
 
-            tracing::error!("❌ Failed to copy to clipboard: No clipboard tool found (install wl-copy, xclip, or xsel)");
+            tracing::error!(
+                "❌ Failed to copy to clipboard: No clipboard tool found (install wl-copy, xclip, or xsel)"
+            );
         }
-
 
         #[cfg(target_os = "windows")]
         {

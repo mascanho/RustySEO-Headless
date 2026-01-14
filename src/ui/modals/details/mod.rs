@@ -28,15 +28,15 @@ pub fn render(f: &mut Frame, app: &mut App) {
     f.render_widget(modal_block, detail_area);
 
     let selected_idx = app.table_state.selected().unwrap_or(0);
-    
+
     // Always use filtered_table_data as it is synchronized with table_data when no filter is active
     if selected_idx >= app.filtered_table_data.len() {
         app.show_details = false;
         return;
     }
-    
+
     let row_data = &app.filtered_table_data[selected_idx];
-    
+
     // The first column (index 0) of the row data contains the original persistent ID
     let original_id = row_data[0].parse::<usize>().unwrap_or(1);
     let page_idx = original_id.saturating_sub(1);
@@ -90,7 +90,6 @@ pub fn render(f: &mut Frame, app: &mut App) {
                 .add_modifier(Modifier::REVERSED),
         )
         .divider(Span::styled("|", Style::default().fg(border_color)));
-
 
     f.render_widget(tabs, chunks[0]);
 
@@ -166,15 +165,17 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     let footer_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Min(0),
-            Constraint::Length(25),
-        ])
+        .constraints([Constraint::Min(0), Constraint::Length(25)])
         .split(chunks[2]);
 
     let url_line = Line::from(vec![
         Span::styled(" 🔗 ", Style::default().fg(Color::Yellow)),
-        Span::styled(url, Style::default().fg(Color::Rgb(180, 150, 255)).add_modifier(Modifier::ITALIC)),
+        Span::styled(
+            url,
+            Style::default()
+                .fg(Color::Rgb(180, 150, 255))
+                .add_modifier(Modifier::ITALIC),
+        ),
     ]);
 
     let status_line = Line::from(vec![
@@ -193,7 +194,6 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     f.render_widget(url_p, footer_chunks[0]);
     f.render_widget(status_p, footer_chunks[1]);
-
 
     let footer_bottom = Paragraph::new(Span::styled(
         " 💡 Tab: Next | Shift+Tab: Prev | Esc: Close ",

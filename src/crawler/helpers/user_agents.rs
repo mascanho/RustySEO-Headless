@@ -23,4 +23,3 @@ const USER_AGENTS: &[&str] = &[
 pub fn user_agents() -> Result<Vec<String>, String> {
     Ok(USER_AGENTS.iter().map(|ua| ua.to_string()).collect())
 }
-

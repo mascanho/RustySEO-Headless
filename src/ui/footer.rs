@@ -6,8 +6,8 @@ use ratatui::{
     widgets::{Block, Borders, Gauge, Paragraph},
 };
 
-use crate::models::App;
 use crate::app::AppState;
+use crate::models::App;
 
 pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     let accent_color = Color::Rgb(80, 140, 255);
@@ -72,13 +72,29 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             Style::default().fg(Color::Yellow),
         ),
         Span::styled(" | ", Style::default().fg(border_color)),
-        Span::styled(" 🤖 AI(A) ", Style::default().fg(Color::Rgb(200, 100, 255)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            " 🤖 AI(A) ",
+            Style::default()
+                .fg(Color::Rgb(200, 100, 255))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(" | ", Style::default().fg(border_color)),
         if app.current_state == AppState::Dashboard {
             if app.show_search {
-                Span::styled(" 🔍 SEARCHING... ", Style::default().fg(Color::Rgb(255, 170, 0)).add_modifier(Modifier::BOLD).add_modifier(Modifier::REVERSED))
+                Span::styled(
+                    " 🔍 SEARCHING... ",
+                    Style::default()
+                        .fg(Color::Rgb(255, 170, 0))
+                        .add_modifier(Modifier::BOLD)
+                        .add_modifier(Modifier::REVERSED),
+                )
             } else if !app.search_query.is_empty() {
-                Span::styled(format!(" 🔍 FILTER: '{}' ", app.search_query), Style::default().fg(Color::Rgb(255, 170, 0)).add_modifier(Modifier::BOLD))
+                Span::styled(
+                    format!(" 🔍 FILTER: '{}' ", app.search_query),
+                    Style::default()
+                        .fg(Color::Rgb(255, 170, 0))
+                        .add_modifier(Modifier::BOLD),
+                )
             } else {
                 Span::styled(" 🔍 SEARCH(Ctrl+S) ", Style::default().fg(Color::DarkGray))
             }
@@ -86,15 +102,12 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             Span::raw("")
         },
         if app.current_state == AppState::Dashboard {
-             Span::styled(" | ", Style::default().fg(border_color))
+            Span::styled(" | ", Style::default().fg(border_color))
         } else {
             Span::raw("")
         },
         Span::styled(" ⌨️  Help: '?' ", Style::default().fg(Color::Gray)),
     ])];
-
-
-
 
     let p = Paragraph::new(status_text)
         .block(

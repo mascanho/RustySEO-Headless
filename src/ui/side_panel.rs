@@ -7,7 +7,7 @@ use ratatui::{
 };
 
 use crate::models::App;
-use crate::ui::sidebar::{summary, settings, filters, actions, bookmarks};
+use crate::ui::sidebar::{actions, bookmarks, filters, settings, summary};
 
 pub fn render(f: &mut Frame, app: &mut App) {
     if !app.sidebar_visible {
@@ -79,10 +79,24 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     match app.sidebar_tab {
         0 => summary::render(f, app, sidebar_content_area, content_block, accent_color),
-        1 => settings::render(f, app, sidebar_content_area, content_block, accent_color, border_color),
+        1 => settings::render(
+            f,
+            app,
+            sidebar_content_area,
+            content_block,
+            accent_color,
+            border_color,
+        ),
         2 => filters::render(f, app, sidebar_content_area, content_block),
         3 => actions::render(f, app, sidebar_content_area, content_block),
-        4 => bookmarks::render(f, app, sidebar_content_area, content_block, accent_color, border_color),
+        4 => bookmarks::render(
+            f,
+            app,
+            sidebar_content_area,
+            content_block,
+            accent_color,
+            border_color,
+        ),
         _ => {}
     }
 }

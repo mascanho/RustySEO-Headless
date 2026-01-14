@@ -1,7 +1,7 @@
 use std::sync::mpsc;
 use tracing::{Event, Subscriber};
 use tracing_subscriber::layer::Context;
-use tracing_subscriber::{prelude::*, Registry};
+use tracing_subscriber::{Registry, prelude::*};
 
 pub struct TuiLayer {
     sender: mpsc::Sender<String>,

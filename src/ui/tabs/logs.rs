@@ -38,21 +38,44 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             };
 
             let (icon, color, message) = if rest.contains("ERROR") {
-                ("✘", Color::Red, rest.replace("[ERROR]", "").trim().to_string())
+                (
+                    "✘",
+                    Color::Red,
+                    rest.replace("[ERROR]", "").trim().to_string(),
+                )
             } else if rest.contains("DEBUG") {
-                ("⚙", Color::DarkGray, rest.replace("[DEBUG]", "").trim().to_string())
+                (
+                    "⚙",
+                    Color::DarkGray,
+                    rest.replace("[DEBUG]", "").trim().to_string(),
+                )
             } else if rest.contains("SYSTEM") {
-                ("🖥", Color::Cyan, rest.replace("[SYSTEM]", "").trim().to_string())
+                (
+                    "🖥",
+                    Color::Cyan,
+                    rest.replace("[SYSTEM]", "").trim().to_string(),
+                )
             } else if rest.contains("WARN") {
-                ("⚠", Color::Yellow, rest.replace("[WARN]", "").trim().to_string())
+                (
+                    "⚠",
+                    Color::Yellow,
+                    rest.replace("[WARN]", "").trim().to_string(),
+                )
             } else if rest.contains("INFO") {
-                ("ℹ", Color::Rgb(100, 150, 255), rest.replace("[INFO]", "").trim().to_string())
+                (
+                    "ℹ",
+                    Color::Rgb(100, 150, 255),
+                    rest.replace("[INFO]", "").trim().to_string(),
+                )
             } else {
                 ("ℹ", Color::Rgb(100, 150, 255), rest.trim().to_string())
             };
 
             ListItem::new(Line::from(vec![
-                Span::styled(format!("{} ", timestamp), Style::default().fg(Color::DarkGray)),
+                Span::styled(
+                    format!("{} ", timestamp),
+                    Style::default().fg(Color::DarkGray),
+                ),
                 Span::styled(icon, Style::default().fg(color)),
                 Span::styled(format!(" {}", message), Style::default().fg(Color::Gray)),
             ]))
@@ -83,7 +106,10 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Yellow))
             .bg(Color::Rgb(20, 20, 30))
-            .title(Span::styled(" 🔍 Search Logs ", Style::default().fg(Color::Cyan).bold()));
+            .title(Span::styled(
+                " 🔍 Search Logs ",
+                Style::default().fg(Color::Cyan).bold(),
+            ));
 
         let search_text = Paragraph::new(app.log_search_query.as_str())
             .block(search_block)
@@ -93,4 +119,3 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         f.render_widget(search_text, search_area);
     }
 }
-

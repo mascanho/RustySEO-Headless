@@ -30,33 +30,57 @@ pub fn render(f: &mut Frame, app: &mut App) {
     let input_area = chunks[1];
 
     // 1. Render Chat History
-    let history_items: Vec<ListItem> = app.ai_chat_history.iter().map(|msg| {
-        let (role_label, role_style, content_style) = if msg.role == "user" {
-            (" 👤 YOU ", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD), Style::default().fg(Color::White))
-        } else {
-            (" 🤖 AI  ", Style::default().fg(accent_color).add_modifier(Modifier::BOLD), Style::default().fg(Color::Rgb(200, 200, 220)))
-        };
+    let history_items: Vec<ListItem> = app
+        .ai_chat_history
+        .iter()
+        .map(|msg| {
+            let (role_label, role_style, content_style) = if msg.role == "user" {
+                (
+                    " 👤 YOU ",
+                    Style::default()
+                        .fg(Color::Cyan)
+                        .add_modifier(Modifier::BOLD),
+                    Style::default().fg(Color::White),
+                )
+            } else {
+                (
+                    " 🤖 AI  ",
+                    Style::default()
+                        .fg(accent_color)
+                        .add_modifier(Modifier::BOLD),
+                    Style::default().fg(Color::Rgb(200, 200, 220)),
+                )
+            };
 
-        let header = Line::from(vec![
-            Span::styled(role_label, role_style),
-            Span::styled(" ─────────────────────────────────", Style::default().fg(border_color)),
-        ]);
+            let header = Line::from(vec![
+                Span::styled(role_label, role_style),
+                Span::styled(
+                    " ─────────────────────────────────",
+                    Style::default().fg(border_color),
+                ),
+            ]);
 
-        let mut lines = vec![header];
-        for line in msg.content.lines() {
-            lines.push(Line::from(vec![
-                Span::raw("    "),
-                Span::styled(line, content_style),
-            ]));
-        }
-        lines.push(Line::from(""));
+            let mut lines = vec![header];
+            for line in msg.content.lines() {
+                lines.push(Line::from(vec![
+                    Span::raw("    "),
+                    Span::styled(line, content_style),
+                ]));
+            }
+            lines.push(Line::from(""));
 
-        ListItem::new(lines)
-    }).collect();
+            ListItem::new(lines)
+        })
+        .collect();
 
     let history_block = Block::default()
         .borders(Borders::ALL)
-        .title(Span::styled(" 🤖 RustyAI Copilot ", Style::default().fg(accent_color).add_modifier(Modifier::BOLD)))
+        .title(Span::styled(
+            " 🤖 RustyAI Copilot ",
+            Style::default()
+                .fg(accent_color)
+                .add_modifier(Modifier::BOLD),
+        ))
         .border_style(Style::default().fg(accent_color))
         .bg(Color::Rgb(15, 15, 25));
 
@@ -69,7 +93,10 @@ pub fn render(f: &mut Frame, app: &mut App) {
     // 2. Render Input Area
     let input_block = Block::default()
         .borders(Borders::ALL)
-        .title(Span::styled(" 💬 Ask anything... (Enter to Send, Esc to Close) ", Style::default().fg(Color::Gray)))
+        .title(Span::styled(
+            " 💬 Ask anything... (Enter to Send, Esc to Close) ",
+            Style::default().fg(Color::Gray),
+        ))
         .border_style(Style::default().fg(Color::Blue))
         .bg(Color::Rgb(20, 20, 30));
 

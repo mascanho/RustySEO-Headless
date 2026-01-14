@@ -1,3 +1,4 @@
+use crate::models::App;
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
@@ -5,9 +6,15 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph},
 };
-use crate::models::App;
 
-pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block, accent_color: Color, border_color: Color) {
+pub fn render(
+    f: &mut Frame,
+    app: &mut App,
+    area: Rect,
+    content_block: Block,
+    accent_color: Color,
+    border_color: Color,
+) {
     let main_block = content_block.title(Span::styled(
         " 📚 Bookmarks ",
         Style::default().fg(Color::Yellow),
@@ -70,9 +77,6 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block, ac
     f.render_widget(input_p, input_area);
 
     if app.sidebar_visible && app.sidebar_tab == 4 {
-        f.set_cursor_position((
-            input_area.x + app.bookmark_cursor as u16,
-            input_area.y + 1,
-        ));
+        f.set_cursor_position((input_area.x + app.bookmark_cursor as u16, input_area.y + 1));
     }
 }
