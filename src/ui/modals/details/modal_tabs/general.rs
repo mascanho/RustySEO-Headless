@@ -1,17 +1,24 @@
 use std::fmt::format;
 
 use ratatui::{
+    Frame,
     layout::{Margin, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Paragraph, Wrap},
-    Frame,
 };
 
-pub fn render(f: &mut Frame, row_data: &[String], scroll: u16, area: Rect, block: Block) {
+pub fn render(
+    f: &mut Frame,
+    row_data: &[String],
+    canonicals: &[(String, String, Option<String>)],
+    scroll: u16,
+    area: Rect,
+    block: Block,
+) {
     let accent_color = Color::Rgb(80, 140, 255);
 
-    let content = vec![
+    let mut content = vec![
         // PAGE INFORMATION Section
         Line::from(Span::styled(
             "PAGE INFORMATION",
@@ -163,16 +170,70 @@ pub fn render(f: &mut Frame, row_data: &[String], scroll: u16, area: Rect, block
             ),
             Span::raw(&row_data[14]),
         ]),
-        Line::from(vec![
-            Span::styled(
-                "CANONICALS: ",
-                Style::default()
-                    .add_modifier(Modifier::BOLD)
-                    .fg(accent_color),
-            ),
-            Span::raw(&row_data[16]),
-        ]),
     ];
+
+    // CANONICAL URLs Section
+    content.push(Line::from(""));
+    content.push(Line::from(Span::styled(
+        "CANONICAL URLs",
+        Style::default()
+            .add_modifier(Modifier::BOLD)
+            .fg(Color::Cyan)
+            .add_modifier(Modifier::UNDERLINED),
+    )));
+    content.push(Line::from(""));
+
+    if canonicals.is_empty() {
+        content.push(Line::from(vec![Span::styled(
+            "No canonical URLs found on this page.",
+            Style::default().fg(Color::Gray),
+        )]));
+    } else {
+        let mut sorted_canonicals = canonicals.to_vec();
+        sorted_canonicals.sort_by(|a, b| {
+            let a_can = a.0 == "canonical";
+            let b_can = b.0 == "canonical";
+            b_can.cmp(&a_can)
+        });
+        let mut canonical_url = None;
+        let mut alternates = Vec::new();
+        for (rel, href, hreflang) in sorted_canonicals {
+            if rel == "canonical" {
+                canonical_url = Some(href);
+            } else {
+                alternates.push((href, hreflang));
+            }
+        }
+        if let Some(canonical) = canonical_url {
+            content.push(Line::from(vec![
+                Span::styled(
+                    "Canonical: ",
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::raw(canonical),
+            ]));
+        }
+        if !alternates.is_empty() {
+            content.push(Line::from(vec![Span::styled(
+                "Alternate Languages:",
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            )]));
+            for (href, hreflang) in alternates {
+                let lang = hreflang.unwrap_or("unknown".to_string());
+                content.push(Line::from(vec![
+                    Span::styled("  • ", Style::default().fg(Color::Cyan)),
+                    Span::styled(format!("{}: ", lang), Style::default().fg(Color::Yellow)),
+                    Span::raw(href),
+                ]));
+            }
+        }
+    }
+
+    let content = content;
 
     let paragraph = Paragraph::new(content)
         .block(block.title(Span::styled(
