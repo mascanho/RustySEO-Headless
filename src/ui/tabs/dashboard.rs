@@ -85,9 +85,9 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 // URL, Title, H1, Desc, H2
                 let content = c.as_str();
                 let char_count = content.chars().count();
-                if char_count > 50 {
+                if char_count > 60 {
                     let start = app.horizontal_scroll.min(char_count.saturating_sub(50));
-                    let end = (start + 50).min(char_count);
+                    let end = (start + 60).min(char_count);
                     let sliced: String = content.chars().skip(start).take(end - start).collect();
                     if start > 0 {
                         format!("…{}", sliced)
@@ -155,6 +155,15 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 } else {
                     "No".to_string()
                 };
+            }
+
+            // Indexability column logic
+            if j == 13 {
+                content = if content.contains("noindex") {
+                    "no".to_string()
+                } else {
+                    "yes".to_string()
+                }
             }
 
             let content = if j == 3 || j == 5 || j == 7 || j == 9 || j == 10 || j == 11 {
