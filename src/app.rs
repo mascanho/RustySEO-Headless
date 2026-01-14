@@ -1,5 +1,5 @@
-use fuzzy_matcher::FuzzyMatcher;
 use fuzzy_matcher::skim::SkimMatcherV2;
+use fuzzy_matcher::FuzzyMatcher;
 use std::sync::mpsc;
 
 use crate::models::{App, AppSettings};
@@ -18,7 +18,7 @@ pub enum AppState {
     CoreWebVitals,
     CustomSearch,
     Reports,
-    Chat,
+    Content,
 }
 
 impl Default for App {
@@ -130,6 +130,7 @@ impl App {
                 data.content_type.clone(),
                 data.canonicals.len().to_string(),
                 data.size.to_string(),
+                data.word_count.unwrap_or(0).to_string(),
             ];
             self.table_data.push(row);
             self.log(format!("Crawled: {}", data.url));
@@ -552,14 +553,14 @@ impl App {
             AppState::Keywords => AppState::CoreWebVitals,
             AppState::CoreWebVitals => AppState::CustomSearch,
             AppState::CustomSearch => AppState::Reports,
-            AppState::Reports => AppState::Chat,
-            AppState::Chat => AppState::Dashboard,
+            AppState::Reports => AppState::Content,
+            AppState::Content => AppState::Dashboard,
         }
     }
 
     pub fn previous_state(&mut self) {
         self.current_state = match self.current_state {
-            AppState::Dashboard => AppState::Chat,
+            AppState::Dashboard => AppState::Content,
             AppState::Crawl => AppState::Dashboard,
             AppState::Connectors => AppState::Crawl,
             AppState::Redirects => AppState::Connectors,
@@ -570,7 +571,7 @@ impl App {
             AppState::CoreWebVitals => AppState::Keywords,
             AppState::CustomSearch => AppState::CoreWebVitals,
             AppState::Reports => AppState::CustomSearch,
-            AppState::Chat => AppState::Reports,
+            AppState::Content => AppState::Reports,
         }
     }
 
@@ -587,7 +588,7 @@ impl App {
             AppState::CoreWebVitals => 8,
             AppState::CustomSearch => 9,
             AppState::Reports => 10,
-            AppState::Chat => 11,
+            AppState::Content => 11,
         }
     }
 

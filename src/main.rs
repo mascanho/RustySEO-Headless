@@ -599,7 +599,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                         8 => AppState::CoreWebVitals,
                                         9 => AppState::CustomSearch,
                                         10 => AppState::Reports,
-                                        11 => AppState::Chat,
+                                        11 => AppState::Content,
                                         _ => app.current_state,
                                     };
                                 }

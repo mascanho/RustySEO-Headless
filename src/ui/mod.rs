@@ -55,7 +55,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         "CWV",
         "CustomSearch",
         "Reports",
-        "Chat",
+        "Content",
     ];
     let tabs = Tabs::new(titles)
         .block(
@@ -98,7 +98,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
             f.render_widget(content, content_area);
         }
         AppState::Reports => tabs::reports::render(f, app, content_area),
-        AppState::Chat => tabs::chat::render(f, app, content_area),
+        AppState::Content => tabs::content::render(f, app, content_area),
     }
 
     // Render Footer
