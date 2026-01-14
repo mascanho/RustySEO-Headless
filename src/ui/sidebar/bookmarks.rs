@@ -1,10 +1,10 @@
 use crate::models::App;
 use ratatui::{
-    Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph, Tabs},
+    Frame,
 };
 
 pub fn render(
@@ -23,7 +23,7 @@ pub fn render(
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3),
+            Constraint::Length(2),
             Constraint::Min(0),
             Constraint::Length(2),
         ])
@@ -38,7 +38,7 @@ pub fn render(
     let tabs = Tabs::new(titles)
         .block(
             Block::default()
-                .borders(Borders::ALL)
+                .borders(Borders::NONE)
                 .border_style(Style::new().fg(Color::Rgb(50, 50, 50))),
         )
         .style(Style::default().fg(Color::Rgb(80, 80, 80)))
@@ -109,7 +109,6 @@ fn render_bookmarks_list(f: &mut Frame, app: &mut App, area: Rect, accent_color:
     let list = List::new(items)
         .block(
             Block::default()
-                .title(" Saved Bookmarks ")
                 // .borders(Borders::ALL)
                 .border_style(Style::default().fg(accent_color)),
         )
