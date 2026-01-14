@@ -3,10 +3,10 @@ use ratatui::{
     layout::{Margin, Rect},
     style::{Color, Style},
     text::{Line, Span},
-    widgets::{Block, Paragraph},
+    widgets::{Block, Paragraph, Wrap},
 };
 
-pub fn render(f: &mut Frame, headers: &[String], area: Rect, block: Block) {
+pub fn render(f: &mut Frame, headers: &[String], scroll: u16, area: Rect, block: Block) {
     let content = if headers.is_empty() {
         vec![Line::from(Span::raw("No headers captured."))]
     } else {
@@ -16,10 +16,13 @@ pub fn render(f: &mut Frame, headers: &[String], area: Rect, block: Block) {
             .collect::<Vec<_>>()
     };
 
-    let p = Paragraph::new(content).block(block.title(Span::styled(
-        "HTTP Response Headers ",
-        Style::default().fg(Color::Yellow),
-    )));
+    let p = Paragraph::new(content)
+        .block(block.title(Span::styled(
+            "HTTP Response Headers ",
+            Style::default().fg(Color::Yellow),
+        )))
+        .wrap(Wrap { trim: true })
+        .scroll((scroll as u16, 0));
 
     f.render_widget(p, area.inner(Margin::new(1, 0)));
 }

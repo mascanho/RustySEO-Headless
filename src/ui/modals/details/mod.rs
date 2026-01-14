@@ -136,6 +136,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         7 => modal_tabs::headers::render(
             f,
             &app.page_data[page_idx].headers.clone(),
+            app.detail_scroll,
             chunks[1],
             content_block,
         ),
