@@ -1,11 +1,11 @@
 use std::fmt::format;
 
 use ratatui::{
-    Frame,
     layout::{Margin, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Paragraph, Wrap},
+    Frame,
 };
 
 pub fn render(
@@ -51,6 +51,20 @@ pub fn render(
             ),
         ]),
         Line::from(""),
+        // META DESCRIPTION Section
+        Line::from(vec![
+            Span::styled(
+                "META DESCRIPTION",
+                Style::default()
+                    .add_modifier(Modifier::BOLD)
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::UNDERLINED),
+            ),
+            Span::styled(
+                format!(" ({} chars) ", row_data[7]),
+                Style::default().fg(Color::Yellow),
+            ),
+        ]),
         // HEADINGS Section
         Line::from(Span::styled(
             "HEADINGS",
@@ -99,20 +113,6 @@ pub fn render(
             Span::raw(" chars"),
         ]),
         Line::from(""),
-        // META DESCRIPTION Section
-        Line::from(vec![
-            Span::styled(
-                "META DESCRIPTION",
-                Style::default()
-                    .add_modifier(Modifier::BOLD)
-                    .fg(Color::Cyan)
-                    .add_modifier(Modifier::UNDERLINED),
-            ),
-            Span::styled(
-                format!(" ({} chars) ", row_data[7]),
-                Style::default().fg(Color::Yellow),
-            ),
-        ]),
         Line::from(""),
         Line::from(Span::raw(&row_data[4])),
         Line::from(""),
