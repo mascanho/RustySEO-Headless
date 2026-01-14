@@ -391,19 +391,6 @@ impl CrawlEngine {
         page_data.status = status;
         page_data.headers = headers;
 
-        // Store all original links as outlinks before filtering
-        page_data.outlinks = page_data
-            .anchor_links
-            .iter()
-            .filter_map(|(href, text)| {
-                if let Ok(abs_url) = base_url.join(href) {
-                    Some((abs_url.to_string(), text.clone()))
-                } else {
-                    Some((href.clone(), text.clone()))
-                }
-            })
-            .collect();
-
         // Filter and normalize links to stay on same domain
         let mut seen_urls = HashSet::new();
         page_data.anchor_links = page_data

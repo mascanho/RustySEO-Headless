@@ -17,7 +17,6 @@ pub struct PageData {
     pub language: String,
     pub indexability: String,
     pub anchor_links: Vec<(String, String)>,
-    pub outlinks: Vec<(String, String)>,
     pub images: Vec<(String, String)>,
     pub headings: Vec<(String, String)>,
     pub headers: Vec<String>,
@@ -83,15 +82,6 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         })
         .collect();
 
-    let outlinks: Vec<(String, String)> = document
-        .select(&Selector::parse("a[href]").unwrap())
-        .map(|e| {
-            let href = e.value().attr("href").unwrap().to_string();
-            let text = e.text().collect::<String>();
-            (href, text)
-        })
-        .collect();
-
     let images: Vec<(String, String)> = document
         .select(&Selector::parse("img[src]").unwrap())
         .map(|e| {
@@ -131,7 +121,6 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         language,
         indexability,
         anchor_links,
-        outlinks,
         images,
         headings,
         headers: vec![],

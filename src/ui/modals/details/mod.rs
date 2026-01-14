@@ -96,7 +96,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
     // Render Content based on tab
     let content_block = Block::default().bg(Color::Rgb(20, 20, 30));
     match app.detail_tab {
-        0 => modal_tabs::general::render(f, row_data, app.detail_scroll, chunks[1], content_block),
+        0 => modal_tabs::general::render(f, row_data, chunks[1], content_block),
         1 => modal_tabs::analysis::render(f, row_data, chunks[1], content_block),
         2 => modal_tabs::checklist::render(f, row_data, chunks[1], content_block),
         3 => modal_tabs::inlinks::render(
@@ -107,14 +107,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
             chunks[1],
             content_block,
         ),
-        4 => modal_tabs::outlinks::render(
-            f,
-            &app.page_data[page_idx].outlinks,
-            app.detail_horizontal_scroll,
-            &mut app.detail_table_state,
-            chunks[1],
-            content_block,
-        ),
+        4 => modal_tabs::outlinks::render(f, chunks[1], content_block),
         5 => modal_tabs::images::render(
             f,
             &app.page_data[page_idx].images,

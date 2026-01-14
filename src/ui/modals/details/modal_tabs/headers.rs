@@ -1,9 +1,9 @@
 use ratatui::{
-    Frame,
     layout::{Margin, Rect},
     style::{Color, Style},
     text::{Line, Span},
     widgets::{Block, Paragraph},
+    Frame,
 };
 
 pub fn render(f: &mut Frame, headers: &[String], area: Rect, block: Block) {
