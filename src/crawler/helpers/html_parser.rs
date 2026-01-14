@@ -24,6 +24,7 @@ pub struct PageData {
     pub schema: Vec<String>,
     pub content_type: String,
     pub canonicals: Vec<(String, String, Option<String>)>, // rel, href, hreflang
+    pub size: usize,
 }
 
 pub fn extract_page_elements(document: &Html) -> PageData {
@@ -137,6 +138,13 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         })
         .collect();
 
+    let size = document
+        .select(&Selector::parse("body").unwrap())
+        .next()
+        .map(|e| e.text().collect::<String>())
+        .unwrap_or("".into())
+        .len();
+
     PageData {
         id: 0,
         url: "".to_string(),
@@ -160,5 +168,6 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         schema,
         content_type,
         canonicals,
+        size,
     }
 }

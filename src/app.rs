@@ -1,5 +1,5 @@
-use fuzzy_matcher::FuzzyMatcher;
 use fuzzy_matcher::skim::SkimMatcherV2;
+use fuzzy_matcher::FuzzyMatcher;
 use std::sync::mpsc;
 
 use crate::models::{App, AppSettings};
@@ -129,6 +129,7 @@ impl App {
                 data.anchor_links.len().to_string(),
                 data.content_type.clone(),
                 data.canonicals.len().to_string(),
+                data.size.to_string(),
             ];
             self.table_data.push(row);
             self.log(format!("Crawled: {}", data.url));
