@@ -41,10 +41,11 @@ pub fn render(
                 .borders(Borders::ALL)
                 .border_style(Style::new().fg(Color::Rgb(50, 50, 50))),
         )
-        .style(Style::default().fg(Color::Rgb(50, 50, 50)))
+        .style(Style::default().fg(Color::Rgb(80, 80, 80)))
         .highlight_style(
             Style::default()
-                .fg(accent_color)
+                // .fg(accent_color)
+                .fg(Color::Green)
                 .add_modifier(Modifier::BOLD),
         )
         .select(app.bookmark_subview);
