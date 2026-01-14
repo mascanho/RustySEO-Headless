@@ -1,9 +1,9 @@
 use ratatui::{
-    Frame,
     layout::{Margin, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Paragraph, Wrap},
+    Frame,
 };
 use serde_json;
 
@@ -53,7 +53,7 @@ pub fn render(f: &mut Frame, schema: &[String], scroll: u16, area: Rect, block: 
             for line in lines {
                 content.push(Line::from(vec![
                     Span::raw("  "),
-                    Span::styled(line, Style::default().fg(Color::Rgb(180, 120, 255))),
+                    Span::styled(line, Style::default().fg(Color::Rgb(100, 120, 90))),
                 ]));
             }
             content.push(Line::from(""));
