@@ -127,6 +127,7 @@ impl App {
                 data.language.to_string(),
                 data.indexability.to_string(),
                 data.anchor_links.len().to_string(),
+                data.content_type.clone(),
             ];
             self.table_data.push(row);
             self.log(format!("Crawled: {}", data.url));

@@ -74,7 +74,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block, ac
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Rgb(50, 50, 70)))
         .title(Span::styled(
-            " 📑 TOTAL CRAWLED ",
+            " TOTAL CRAWLED ",
             Style::default().fg(Color::Cyan),
         ));
 
@@ -93,7 +93,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block, ac
     // 2. TECHNICAL HEALTH
     let tech_rows = vec![
         Row::new(vec![
-            Cell::from("  📱 Mobile Friendly"),
+            Cell::from("  Mobile Friendly"),
             Cell::from(format!(
                 "{}%",
                 if total_pages > 0 {
@@ -111,7 +111,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block, ac
             )),
         ]),
         Row::new(vec![
-            Cell::from("  🔍 Indexable"),
+            Cell::from("  Indexable"),
             Cell::from(format!(
                 "{}%",
                 if total_pages > 0 {
@@ -129,7 +129,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block, ac
             )),
         ]),
         Row::new(vec![
-            Cell::from("  🚀 Fast Load"),
+            Cell::from("  Fast Load"),
             Cell::from("85%").style(Style::default().fg(Color::Green)),
         ]),
     ];
@@ -142,7 +142,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block, ac
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Rgb(50, 50, 70)))
             .title(Span::styled(
-                " 🛠️ TECHNICAL HEALTH ",
+                " TECHNICAL HEALTH ",
                 Style::default().fg(Color::Green),
             )),
     );
@@ -151,7 +151,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block, ac
     // 3. CONTENT QUALITY
     let content_rows = vec![
         Row::new(vec![
-            Cell::from("  📝 Valid Titles"),
+            Cell::from("  Valid Titles"),
             Cell::from(format!(
                 "{}%",
                 if total_pages > 0 {
@@ -163,7 +163,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block, ac
             .style(Style::default().fg(Color::Yellow)),
         ]),
         Row::new(vec![
-            Cell::from("  📄 Valid Meta"),
+            Cell::from("  Valid Meta"),
             Cell::from(format!(
                 "{}%",
                 if total_pages > 0 {
@@ -175,7 +175,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block, ac
             .style(Style::default().fg(Color::Yellow)),
         ]),
         Row::new(vec![
-            Cell::from("  🏷️ Total Headings"),
+            Cell::from("  Total Headings"),
             Cell::from(total_headings.to_string()).style(Style::default().fg(Color::White)),
         ]),
     ];
@@ -188,7 +188,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block, ac
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Rgb(50, 50, 70)))
             .title(Span::styled(
-                " ✍️ CONTENT QUALITY ",
+                " CONTENT QUALITY ",
                 Style::default().fg(Color::Magenta),
             )),
     );
@@ -231,7 +231,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block, ac
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Rgb(50, 50, 70)))
             .title(Span::styled(
-                " 📡 STATUS CODES ",
+                " STATUS CODES ",
                 Style::default().fg(Color::Blue),
             )),
     );
@@ -257,7 +257,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block, ac
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Rgb(50, 50, 70)))
             .title(Span::styled(
-                " 🏷️ HEADINGS ",
+                " HEADINGS ",
                 Style::default().fg(Color::Yellow),
             )),
     );

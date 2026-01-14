@@ -1,3 +1,5 @@
+use std::fmt::format;
+
 use ratatui::{
     Frame,
     layout::{Margin, Rect},
@@ -29,6 +31,10 @@ pub fn render(f: &mut Frame, row_data: &[String], scroll: u16, area: Rect, block
             Span::raw(&row_data[1]),
         ]),
         Line::from(vec![
+            Span::styled(
+                format!("({} chars) ", row_data[3]),
+                Style::default().fg(Color::Yellow),
+            ),
             Span::styled(
                 "Title: ",
                 Style::default()
@@ -86,14 +92,20 @@ pub fn render(f: &mut Frame, row_data: &[String], scroll: u16, area: Rect, block
             Span::raw(" chars"),
         ]),
         Line::from(""),
-        // DESCRIPTION Section
-        Line::from(Span::styled(
-            "META DESCRIPTION",
-            Style::default()
-                .add_modifier(Modifier::BOLD)
-                .fg(Color::Cyan)
-                .add_modifier(Modifier::UNDERLINED),
-        )),
+        // META DESCRIPTION Section
+        Line::from(vec![
+            Span::styled(
+                format!("({} chars) ", row_data[7]),
+                Style::default().fg(Color::Yellow),
+            ),
+            Span::styled(
+                "META DESCRIPTION",
+                Style::default()
+                    .add_modifier(Modifier::BOLD)
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::UNDERLINED),
+            ),
+        ]),
         Line::from(""),
         Line::from(Span::raw(&row_data[6])),
         Line::from(""),
@@ -141,6 +153,15 @@ pub fn render(f: &mut Frame, row_data: &[String], scroll: u16, area: Rect, block
                     .fg(accent_color),
             ),
             Span::raw(&row_data[13]),
+        ]),
+        Line::from(vec![
+            Span::styled(
+                "Content Type: ",
+                Style::default()
+                    .add_modifier(Modifier::BOLD)
+                    .fg(accent_color),
+            ),
+            Span::raw(&row_data[14]),
         ]),
     ];
 

@@ -217,7 +217,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     }
                                 }
                                 KeyCode::Up => {
-                                    if key.modifiers.contains(KeyModifiers::CONTROL) {
+                                    if key.modifiers.contains(KeyModifiers::SHIFT) {
                                         // Ctrl+Up for modal table scrolling
                                         if app.detail_tab == 2
                                             || app.detail_tab == 3
@@ -239,7 +239,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     }
                                 }
                                 KeyCode::Down => {
-                                    if key.modifiers.contains(KeyModifiers::CONTROL) {
+                                    if key.modifiers.contains(KeyModifiers::SHIFT) {
                                         // Ctrl+Down for modal table scrolling
                                         if app.detail_tab == 3
                                             || app.detail_tab == 4

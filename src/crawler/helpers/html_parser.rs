@@ -22,6 +22,7 @@ pub struct PageData {
     pub headings: Vec<(String, String)>,
     pub headers: Vec<String>,
     pub schema: Vec<String>,
+    pub content_type: String,
 }
 
 pub fn extract_page_elements(document: &Html) -> PageData {
@@ -115,6 +116,15 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         .map(|e| e.text().collect::<String>())
         .collect();
 
+    let mut content_type = "text/html".to_string();
+    if let Some(ct) = document
+        .select(&Selector::parse("meta[http-equiv=content-type]").unwrap())
+        .next()
+        .and_then(|e| e.value().attr("content"))
+    {
+        content_type = ct.to_string();
+    }
+
     PageData {
         id: 0,
         url: "".to_string(),
@@ -136,5 +146,6 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         headings,
         headers: vec![],
         schema,
+        content_type,
     }
 }
