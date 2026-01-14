@@ -159,10 +159,16 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
             // Indexability column logic
             if j == 13 {
-                content = if content.contains("noindex") {
-                    "no".to_string()
+                if content.contains("noindex") {
+                    content = "Non-indexable".to_string();
+                    if !is_selected {
+                        cell_style = cell_style.fg(Color::Red);
+                    }
                 } else {
-                    "yes".to_string()
+                    content = "Indexable".to_string();
+                    if !is_selected {
+                        cell_style = cell_style.fg(Color::Green);
+                    }
                 }
             }
 

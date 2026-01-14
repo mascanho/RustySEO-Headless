@@ -1,11 +1,11 @@
 use std::fmt::format;
 
 use ratatui::{
+    Frame,
     layout::{Margin, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Paragraph, Wrap},
-    Frame,
 };
 
 pub fn render(f: &mut Frame, row_data: &[String], scroll: u16, area: Rect, block: Block) {
@@ -39,7 +39,7 @@ pub fn render(f: &mut Frame, row_data: &[String], scroll: u16, area: Rect, block
             ),
             Span::raw(&row_data[2]),
             Span::styled(
-                format!("({} chars) ", row_data[3]),
+                format!(" ({} chars) ", row_data[3]),
                 Style::default().fg(Color::Yellow),
             ),
         ]),
@@ -102,7 +102,7 @@ pub fn render(f: &mut Frame, row_data: &[String], scroll: u16, area: Rect, block
                     .add_modifier(Modifier::UNDERLINED),
             ),
             Span::styled(
-                format!("({} chars) ", row_data[7]),
+                format!(" ({} chars) ", row_data[7]),
                 Style::default().fg(Color::Yellow),
             ),
         ]),
