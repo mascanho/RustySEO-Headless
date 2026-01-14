@@ -4,11 +4,11 @@ use crossterm::{
         self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers, MouseEventKind,
     },
     execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{
-    Terminal,
     backend::{Backend, CrosstermBackend},
+    Terminal,
 };
 use std::{error::Error, io};
 
@@ -26,6 +26,7 @@ use crate::{
     cli::Cli,
     crawler::CrawlEngine,
     models::App,
+    settings::utils::open::edit_file,
     ui::{tabs::crawl, ui},
 };
 
@@ -258,7 +259,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                         // MODAL PRIORITY 2.8: Logs Console
                         if app.show_logs {
                             match key.code {
-                                KeyCode::Char('s') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                                KeyCode::Char('s')
+                                    if key.modifiers.contains(KeyModifiers::CONTROL) =>
+                                {
                                     app.show_log_search = true;
                                 }
                                 KeyCode::Char('q') | KeyCode::Esc | KeyCode::Char('L') => {
@@ -281,6 +284,12 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
 
                         // MODAL PRIORITY 3: Sidebar
                         if app.sidebar_visible {
+                            if app.sidebar_tab == 1 {
+                                if key.code == KeyCode::Char('E') {
+                                    edit_file();
+                                }
+                            }
+
                             if app.sidebar_tab == 4 {
                                 match key.code {
                                     KeyCode::Enter => {

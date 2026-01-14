@@ -1,7 +1,7 @@
 use std::sync::mpsc;
 use tracing::{Event, Subscriber};
 use tracing_subscriber::layer::Context;
-use tracing_subscriber::{Registry, prelude::*};
+use tracing_subscriber::{prelude::*, Registry};
 
 pub struct TuiLayer {
     sender: mpsc::Sender<String>,
@@ -94,7 +94,7 @@ impl<T: std::fmt::Debug> AppDebuggable for T {
 #[macro_export]
 macro_rules! tui_println {
     ($($arg:tt)*) => {
-        tracing::info!($($arg)*);
+        tracing::info!($($arg)*)
     };
 }
 
