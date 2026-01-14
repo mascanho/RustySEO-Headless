@@ -490,6 +490,7 @@ impl App {
 
         match self.detail_tab {
             3 => self.page_data[page_idx].anchor_links.len(),
+            4 => self.page_data[page_idx].outlinks.len(),
             5 => self.page_data[page_idx].images.len(),
             8 => self.page_data[page_idx].headings.len(),
             _ => 0,

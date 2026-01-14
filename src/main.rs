@@ -4,11 +4,11 @@ use crossterm::{
         self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers, MouseEventKind,
     },
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use ratatui::{
-    backend::{Backend, CrosstermBackend},
     Terminal,
+    backend::{Backend, CrosstermBackend},
 };
 use std::{error::Error, io};
 
@@ -186,6 +186,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 KeyCode::BackTab => app.previous_detail_tab(),
                                 KeyCode::Left => {
                                     if app.detail_tab == 3
+                                        || app.detail_tab == 4
                                         || app.detail_tab == 5
                                         || app.detail_tab == 8
                                     {
@@ -199,6 +200,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 }
                                 KeyCode::Right => {
                                     if app.detail_tab == 3
+                                        || app.detail_tab == 4
                                         || app.detail_tab == 5
                                         || app.detail_tab == 8
                                     {
@@ -207,6 +209,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 }
                                 KeyCode::Char('k') => {
                                     if app.detail_tab == 3
+                                        || app.detail_tab == 4
                                         || app.detail_tab == 5
                                         || app.detail_tab == 8
                                     {
@@ -260,6 +263,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     if key.modifiers.contains(KeyModifiers::CONTROL) {
                                         // Ctrl+Down for modal table scrolling
                                         if app.detail_tab == 3
+                                            || app.detail_tab == 4
                                             || app.detail_tab == 5
                                             || app.detail_tab == 8
                                         {
