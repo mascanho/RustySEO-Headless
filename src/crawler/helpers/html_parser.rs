@@ -1,5 +1,7 @@
 use scraper::{Html, Selector};
 
+use crate::crawler::helpers::word_count::{self, get_words};
+
 #[derive(Debug, Clone)]
 pub struct PageData {
     pub id: usize,
@@ -25,6 +27,7 @@ pub struct PageData {
     pub content_type: String,
     pub canonicals: Vec<(String, String, Option<String>)>, // rel, href, hreflang
     pub size: usize,
+    pub word_count: Option<usize>,
 }
 
 pub fn extract_page_elements(document: &Html) -> PageData {
@@ -145,6 +148,8 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         .unwrap_or("".into())
         .len();
 
+    let word_count = Some(get_words(document));
+
     PageData {
         id: 0,
         url: "".to_string(),
@@ -169,5 +174,6 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         content_type,
         canonicals,
         size,
+        word_count,
     }
 }

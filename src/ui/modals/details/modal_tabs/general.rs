@@ -1,11 +1,11 @@
 use std::fmt::format;
 
 use ratatui::{
+    Frame,
     layout::{Margin, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Paragraph, Wrap},
-    Frame,
 };
 
 pub fn render(

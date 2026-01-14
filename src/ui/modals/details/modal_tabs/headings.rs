@@ -1,9 +1,9 @@
 use ratatui::{
+    Frame,
     layout::{Constraint, Rect},
     style::{Color, Modifier, Style},
     text::Span,
     widgets::{Block, Cell, Row, Table, TableState},
-    Frame,
 };
 
 pub fn render(
