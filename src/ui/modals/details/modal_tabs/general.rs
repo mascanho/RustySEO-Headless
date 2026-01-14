@@ -1,11 +1,11 @@
 use std::fmt::format;
 
 use ratatui::{
-    Frame,
     layout::{Margin, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Paragraph, Wrap},
+    Frame,
 };
 
 pub fn render(f: &mut Frame, row_data: &[String], scroll: u16, area: Rect, block: Block) {
@@ -32,16 +32,16 @@ pub fn render(f: &mut Frame, row_data: &[String], scroll: u16, area: Rect, block
         ]),
         Line::from(vec![
             Span::styled(
-                format!("({} chars) ", row_data[3]),
-                Style::default().fg(Color::Yellow),
-            ),
-            Span::styled(
                 "Title: ",
                 Style::default()
                     .add_modifier(Modifier::BOLD)
                     .fg(accent_color),
             ),
             Span::raw(&row_data[2]),
+            Span::styled(
+                format!("({} chars) ", row_data[3]),
+                Style::default().fg(Color::Yellow),
+            ),
         ]),
         Line::from(""),
         // HEADINGS Section
@@ -95,15 +95,15 @@ pub fn render(f: &mut Frame, row_data: &[String], scroll: u16, area: Rect, block
         // META DESCRIPTION Section
         Line::from(vec![
             Span::styled(
-                format!("({} chars) ", row_data[7]),
-                Style::default().fg(Color::Yellow),
-            ),
-            Span::styled(
                 "META DESCRIPTION",
                 Style::default()
                     .add_modifier(Modifier::BOLD)
                     .fg(Color::Cyan)
                     .add_modifier(Modifier::UNDERLINED),
+            ),
+            Span::styled(
+                format!("({} chars) ", row_data[7]),
+                Style::default().fg(Color::Yellow),
             ),
         ]),
         Line::from(""),
