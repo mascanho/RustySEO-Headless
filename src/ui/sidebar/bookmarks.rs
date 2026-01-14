@@ -1,10 +1,10 @@
 use crate::models::App;
 use ratatui::{
-    Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph, Tabs},
+    Frame,
 };
 
 pub fn render(
@@ -36,8 +36,12 @@ pub fn render(
     // Render tab selector
     let titles = vec!["📚 Bookmarks", "⏰ Recent"];
     let tabs = Tabs::new(titles)
-        .block(Block::default().borders(Borders::ALL))
-        .style(Style::default().fg(Color::Gray))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::new().fg(Color::Rgb(50, 50, 50))),
+        )
+        .style(Style::default().fg(Color::Rgb(50, 50, 50)))
         .highlight_style(
             Style::default()
                 .fg(accent_color)
@@ -91,11 +95,11 @@ fn render_bookmarks_list(f: &mut Frame, app: &mut App, area: Rect, accent_color:
             };
 
             ListItem::new(Line::from(vec![
-                Span::styled("🌐 ", Style::default().fg(Color::Yellow)),
                 Span::styled(
                     format!("{:2}. ", i + 1),
                     Style::default().fg(Color::DarkGray),
                 ),
+                Span::styled("🌐 ", Style::default().fg(Color::Yellow)),
                 Span::styled(url, style),
             ]))
         })
@@ -105,7 +109,7 @@ fn render_bookmarks_list(f: &mut Frame, app: &mut App, area: Rect, accent_color:
         .block(
             Block::default()
                 .title(" Saved Bookmarks ")
-                .borders(Borders::ALL)
+                // .borders(Borders::ALL)
                 .border_style(Style::default().fg(accent_color)),
         )
         .style(Style::default().bg(Color::Rgb(20, 20, 30)));
@@ -170,7 +174,7 @@ fn render_bookmarks_input(f: &mut Frame, app: &mut App, input_area: Rect, border
         .borders(Borders::TOP)
         .border_style(Style::default().fg(border_color))
         .title(Span::styled(
-            " ➕ Add: Enter | Delete: D | Navigate: ↑↓ | Toggle: h ",
+            " ➕ Add: Enter | Delete: D | Navigate: ↑↓ | ",
             Style::default().fg(Color::Yellow),
         ));
 
