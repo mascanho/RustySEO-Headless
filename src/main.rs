@@ -205,7 +205,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                         app.detail_horizontal_scroll += 10;
                                     }
                                 }
-                                KeyCode::Char('k') | KeyCode::Up => {
+                                KeyCode::Char('k') => {
                                     if app.detail_tab == 3
                                         || app.detail_tab == 5
                                         || app.detail_tab == 8
@@ -220,7 +220,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                         app.previous_row();
                                     }
                                 }
-                                KeyCode::Char('j') | KeyCode::Down => {
+                                KeyCode::Char('j') => {
                                     if app.detail_tab == 3
                                         || app.detail_tab == 5
                                         || app.detail_tab == 8
@@ -230,6 +230,43 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     } else if [1, 2, 6, 7].contains(&app.detail_tab) {
                                         app.detail_scroll += 1;
                                     } else {
+                                        app.next_row();
+                                    }
+                                }
+                                KeyCode::Up => {
+                                    if key.modifiers.contains(KeyModifiers::CONTROL) {
+                                        // Ctrl+Up for modal table scrolling
+                                        if app.detail_tab == 3
+                                            || app.detail_tab == 5
+                                            || app.detail_tab == 8
+                                        {
+                                            let len = app.get_current_detail_len();
+                                            app.previous_detail_row(len);
+                                        } else if [0, 1, 2, 6, 7].contains(&app.detail_tab) {
+                                            if app.detail_scroll > 0 {
+                                                app.detail_scroll =
+                                                    app.detail_scroll.saturating_sub(1);
+                                            }
+                                        }
+                                    } else {
+                                        // Always scroll dashboard table when up arrow is pressed
+                                        app.previous_row();
+                                    }
+                                }
+                                KeyCode::Down => {
+                                    if key.modifiers.contains(KeyModifiers::CONTROL) {
+                                        // Ctrl+Down for modal table scrolling
+                                        if app.detail_tab == 3
+                                            || app.detail_tab == 5
+                                            || app.detail_tab == 8
+                                        {
+                                            let len = app.get_current_detail_len();
+                                            app.next_detail_row(len);
+                                        } else if [0, 1, 2, 6, 7].contains(&app.detail_tab) {
+                                            app.detail_scroll += 1;
+                                        }
+                                    } else {
+                                        // Always scroll dashboard table when down arrow is pressed
                                         app.next_row();
                                     }
                                 }

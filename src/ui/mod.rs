@@ -338,6 +338,18 @@ fn render_help_modal(f: &mut Frame) {
             Span::raw("Cycle Modal Tabs"),
         ]),
         Line::from(vec![
+            Span::styled(" ↑ / ↓   ", Style::default().fg(key_color)),
+            Span::raw("Navigate Dashboard"),
+        ]),
+        Line::from(vec![
+            Span::styled(" Ctrl+↑  ", Style::default().fg(key_color)),
+            Span::raw("Modal Table Up"),
+        ]),
+        Line::from(vec![
+            Span::styled(" Ctrl+↓  ", Style::default().fg(key_color)),
+            Span::raw("Modal Table Down"),
+        ]),
+        Line::from(vec![
             Span::styled(" Backsp  ", Style::default().fg(key_color)),
             Span::raw("Remove Bookmark"),
         ]),
