@@ -53,7 +53,7 @@ pub fn render(f: &mut Frame, schema: &[String], scroll: u16, area: Rect, block: 
             for line in lines {
                 content.push(Line::from(vec![
                     Span::raw("  "),
-                    Span::styled(line, Style::default().fg(Color::Rgb(100, 120, 90))),
+                    Span::styled(line, Style::default().fg(Color::Rgb(155, 176, 166))),
                 ]));
             }
             content.push(Line::from(""));
