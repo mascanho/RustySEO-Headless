@@ -1,9 +1,9 @@
 use ratatui::{
-    Frame,
-    layout::Rect,
+    layout::{Margin, Rect},
     style::{Color, Style},
     text::{Line, Span},
     widgets::{Block, Paragraph},
+    Frame,
 };
 
 pub fn render(f: &mut Frame, headers: &[String], area: Rect, block: Block) {
@@ -17,9 +17,9 @@ pub fn render(f: &mut Frame, headers: &[String], area: Rect, block: Block) {
     };
 
     let p = Paragraph::new(content).block(block.title(Span::styled(
-        " HTTP Response Headers ",
+        "HTTP Response Headers ",
         Style::default().fg(Color::Yellow),
     )));
 
-    f.render_widget(p, area);
+    f.render_widget(p, area.inner(Margin::new(1, 0)));
 }

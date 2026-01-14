@@ -1,9 +1,9 @@
 use ratatui::{
-    Frame,
-    layout::Rect,
+    layout::{Margin, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Paragraph, Wrap},
+    Frame,
 };
 
 pub fn render(f: &mut Frame, area: Rect, block: Block) {
@@ -65,9 +65,9 @@ pub fn render(f: &mut Frame, area: Rect, block: Block) {
 
     let p = Paragraph::new(content)
         .block(block.title(Span::styled(
-            " Outbound Link Structure ",
+            "Outbound Link Structure ",
             Style::default().fg(Color::Yellow),
         )))
         .wrap(Wrap { trim: true });
-    f.render_widget(p, area);
+    f.render_widget(p, area.inner(Margin::new(1, 0)));
 }

@@ -1,9 +1,9 @@
 use ratatui::{
+    Frame,
     layout::{Margin, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, List, ListItem},
-    Frame,
 };
 
 pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {

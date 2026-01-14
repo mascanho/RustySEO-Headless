@@ -1,9 +1,9 @@
 use ratatui::{
-    Frame,
-    layout::Rect,
+    layout::{Margin, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Paragraph, Wrap},
+    Frame,
 };
 use serde_json;
 
@@ -11,12 +11,12 @@ pub fn render(f: &mut Frame, schema: &[String], scroll: u16, area: Rect, block: 
     let accent_color = Color::Rgb(80, 140, 255);
 
     let mut content = vec![
-        Line::from(vec![Span::styled(
-            " 📋 Schema Markup ",
-            Style::default()
-                .add_modifier(Modifier::BOLD)
-                .fg(accent_color),
-        )]),
+        // Line::from(vec![Span::styled(
+        //     "Schema Markup ",
+        //     Style::default()
+        //         .add_modifier(Modifier::BOLD)
+        //         .fg(accent_color),
+        // )]),
         Line::from(""),
     ];
 
@@ -67,5 +67,5 @@ pub fn render(f: &mut Frame, schema: &[String], scroll: u16, area: Rect, block: 
         )))
         .wrap(Wrap { trim: true })
         .scroll((scroll as u16, 0));
-    f.render_widget(p, area);
+    f.render_widget(p, area.inner(Margin::new(1, 0)));
 }
