@@ -1,9 +1,9 @@
 use ratatui::{
-    Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Borders, Gauge, Paragraph},
+    Frame,
 };
 
 use crate::app::AppState;
@@ -79,10 +79,26 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 .add_modifier(Modifier::BOLD),
         ),
         Span::styled(" | ", Style::default().fg(border_color)),
+        if app
+            .settings
+            .as_ref()
+            .map(|s| s.crawler.enable_javascript)
+            .unwrap_or(false)
+        {
+            Span::styled(
+                " ⚡ JS: ON ",
+                Style::default()
+                    .fg(Color::Green)
+                    .add_modifier(Modifier::BOLD),
+            )
+        } else {
+            Span::styled(" 💤 JS: OFF ", Style::default().fg(Color::Gray))
+        },
+        Span::styled(" | ", Style::default().fg(border_color)),
         if app.current_state == AppState::Dashboard {
             if app.show_search {
                 Span::styled(
-                    " 🔍 SEARCHING... ",
+                    " 🔍 FINDING... ",
                     Style::default()
                         .fg(Color::Rgb(255, 170, 0))
                         .add_modifier(Modifier::BOLD)
@@ -96,7 +112,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                         .add_modifier(Modifier::BOLD),
                 )
             } else {
-                Span::styled(" 🔍 SEARCH(Ctrl+S) ", Style::default().fg(Color::DarkGray))
+                Span::styled(" 🔍 FIND(Ctrl+F) ", Style::default().fg(Color::DarkGray))
             }
         } else {
             Span::raw("")
