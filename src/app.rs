@@ -656,12 +656,18 @@ impl App {
             .as_ref()
             .map(|s| s.crawler.concurrency)
             .unwrap_or(10);
+        let enable_javascript = self
+            .settings
+            .as_ref()
+            .map(|s| s.crawler.enable_javascript)
+            .unwrap_or(false);
 
         tokio::task::spawn(async move {
             let engine = crate::crawler::CrawlEngine::new()
                 .await
                 .with_max_pages(max_pages)
-                .with_concurrency(concurrency);
+                .with_concurrency(concurrency)
+                .with_javascript(enable_javascript);
 
             let (tokio_tx, mut tokio_rx) = tokio::sync::mpsc::channel(100);
             let engine_clone = engine.clone();

@@ -6,6 +6,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use tokio::sync::{Mutex, Semaphore, mpsc};
+use headless_chrome::{Browser, LaunchOptions};
 use tokio::time::{Duration, sleep};
 use url::Url;
 
@@ -14,7 +15,7 @@ use crate::crawler::helpers::{
     user_agents::user_agents,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct CrawlEngine {
     client: Client,
     visited: Arc<Mutex<HashSet<String>>>,
@@ -24,6 +25,25 @@ pub struct CrawlEngine {
     concurrency_limit: usize,
     semaphore: Arc<Semaphore>,
     stats: crate::crawler::stats::CrawlStats,
+    enable_javascript: bool,
+    browser: Option<Arc<Browser>>,
+}
+
+impl std::fmt::Debug for CrawlEngine {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CrawlEngine")
+            .field("client", &self.client)
+            .field("visited", &self.visited)
+            .field("success_count", &self.success_count)
+            .field("max_pages", &self.max_pages)
+            .field("user_agents", &self.user_agents)
+            .field("concurrency_limit", &self.concurrency_limit)
+            .field("semaphore", &self.semaphore)
+            .field("stats", &self.stats)
+            .field("enable_javascript", &self.enable_javascript)
+            .field("browser", &self.browser.is_some())
+            .finish()
+    }
 }
 
 impl CrawlEngine {
@@ -51,7 +71,24 @@ impl CrawlEngine {
             concurrency_limit,
             semaphore: Arc::new(Semaphore::new(concurrency_limit)),
             stats: crate::crawler::stats::CrawlStats::new(),
+            enable_javascript: false,
+            browser: None,
         }
+    }
+
+    pub fn with_javascript(mut self, enable: bool) -> Self {
+        self.enable_javascript = enable;
+        if enable {
+             let options = LaunchOptions {
+                headless: true,
+                ..Default::default()
+            };
+            match Browser::new(options) {
+                Ok(b) => self.browser = Some(Arc::new(b)),
+                Err(e) => tracing::error!("Failed to launch browser: {}", e),
+            }
+        }
+        self
     }
 
     /// Sets the maximum number of pages to crawl
@@ -310,6 +347,13 @@ impl CrawlEngine {
         // Acquire semaphore permit
         let _permit = self.semaphore.acquire().await.map_err(|e| e.to_string())?;
 
+        // Logic split for JS crawling
+        if self.enable_javascript {
+            if let Some(ref browser) = self.browser {
+                return self.fetch_js(url, base_url, browser.clone()).await;
+            }
+        }
+
         let user_agent = self.pick_random_user_agent();
         tracing::debug!("[UA] Using agent: {} for {}", user_agent, url);
 
@@ -452,4 +496,82 @@ impl CrawlEngine {
             self.user_agents[idx].clone()
         }
     }
+
+    async fn fetch_js(
+        &self,
+        url: &str,
+        base_url: &Url,
+        browser: Arc<Browser>,
+    ) -> Result<PageData, String> {
+        tracing::debug!("[JS-FETCH] Navigating to {}", url);
+        
+        let url_str = url.to_string();
+        let browser = browser.clone();
+        
+        // Blocking interaction with headless_chrome
+        let (html_content, status) = tokio::task::spawn_blocking(move || {
+            let tab = browser.new_tab().map_err(|e| format!("Tab creation failed: {}", e))?;
+            
+            // Set User Agent? (Headless chrome might have default, or we can set it)
+            // tab.set_user_agent(...) 
+            
+            tab.navigate_to(&url_str).map_err(|e| format!("Navigation failed: {}", e))?;
+            tab.wait_until_navigated().map_err(|e| format!("Wait failed: {}", e))?;
+            
+            // Wait extra time for JS to render?
+            // std::thread::sleep(Duration::from_millis(1000)); 
+            
+            let content = tab.get_content().map_err(|e| format!("Content fetch failed: {}", e))?;
+            
+            Ok::<(String, String), String>((content, "200 OK (JS)".to_string()))
+        }).await.map_err(|e| e.to_string())??;
+
+        let document = Html::parse_document(&html_content);
+        let mut page_data = extract_page_elements(&document);
+        page_data.url = url.to_string();
+        page_data.status = status;
+        page_data.headers = vec!["Requested-Mode: JavaScript".to_string()];
+
+        // Same Link Processing Logic
+        // Store all original links as outlinks before filtering
+        page_data.outlinks = page_data
+            .anchor_links
+            .iter()
+            .filter_map(|(href, text)| {
+                if let Ok(abs_url) = base_url.join(href) {
+                     Some((abs_url.to_string(), text.clone()))
+                } else {
+                     Some((href.clone(), text.clone()))
+                }
+            })
+            .collect();
+
+         // Filter and normalize links...
+         let mut seen_urls = HashSet::new();
+         page_data.anchor_links = page_data
+            .anchor_links
+            .into_iter()
+            .filter_map(|(href, text)| {
+                 if let Ok(mut abs_url) = base_url.join(&href) {
+                    abs_url.set_fragment(None);
+                    if abs_url.domain() == base_url.domain() {
+                        let url_str = abs_url.to_string();
+                         if seen_urls.insert(url_str.clone()) {
+                            return Some((url_str, text));
+                        }
+                    }
+                 }
+                 None
+            })
+            .collect();
+            
+         tracing::info!(
+            "[JS-LINKS] Found {} unique same-domain links on {}",
+            page_data.anchor_links.len(),
+            url
+        );
+        
+        Ok(page_data)
+    }
+
 }

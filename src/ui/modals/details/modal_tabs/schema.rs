@@ -8,7 +8,7 @@ use ratatui::{
 use serde_json;
 
 pub fn render(f: &mut Frame, schema: &[String], scroll: u16, area: Rect, block: Block) {
-    let accent_color = Color::Rgb(80, 140, 255);
+    let _accent_color = Color::Rgb(80, 140, 255);
 
     let mut content = vec![
         // Line::from(vec![Span::styled(

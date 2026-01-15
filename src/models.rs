@@ -21,6 +21,8 @@ pub struct CrawlerConfig {
     pub stay_on_domain: bool,
     pub follow_redirects: bool,
     pub timeout_seconds: u64,
+    #[serde(default)]
+    pub enable_javascript: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -85,6 +87,7 @@ impl Default for AppSettings {
                 stay_on_domain: true,
                 follow_redirects: true,
                 timeout_seconds: 15,
+                enable_javascript: false,
             },
             ui: UiConfig {
                 theme: "Oceanic".to_string(),

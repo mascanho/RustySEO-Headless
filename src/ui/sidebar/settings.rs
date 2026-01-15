@@ -79,6 +79,21 @@ pub fn render(
                     },
                 )),
             ]),
+            Row::new(vec![
+                Cell::from("  JavaScript"),
+                Cell::from(if settings.crawler.enable_javascript {
+                    " ENABLED "
+                } else {
+                    " DISABLED "
+                })
+                .style(Style::default().fg(Color::Black).bg(
+                    if settings.crawler.enable_javascript {
+                        Color::Green
+                    } else {
+                        Color::Gray
+                    },
+                )),
+            ]),
         ];
         let engine_table = Table::new(
             engine_rows,

@@ -9,7 +9,7 @@ use ratatui::{
 use crate::models::App;
 
 pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
-    let accent_color = Color::Rgb(80, 140, 255);
+    let _accent_color = Color::Rgb(80, 140, 255);
     let border_color = Color::Rgb(40, 45, 60);
 
     let block = Block::default()
