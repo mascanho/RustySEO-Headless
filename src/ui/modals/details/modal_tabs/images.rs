@@ -8,7 +8,7 @@ use ratatui::{
 
 pub fn render(
     f: &mut Frame,
-    images: &[(String, String)],
+    images: &[crate::crawler::helpers::html_parser::ImageInfo],
     horizontal_scroll: usize,
     table_state: &mut TableState,
     area: Rect,
@@ -16,7 +16,7 @@ pub fn render(
 ) {
     let accent_color = Color::Rgb(80, 140, 255);
 
-    let header_titles = ["#", "Image Src", "Alt Text"];
+    let header_titles = ["#", "Image Src", "Alt Text", "Size"];
 
     let header = Row::new(header_titles.iter().map(|h| {
         Cell::from(format!(" {} ", h)).style(
@@ -28,7 +28,7 @@ pub fn render(
     }))
     .height(1);
 
-    let rows = images.iter().enumerate().map(|(i, (src, alt))| {
+    let rows = images.iter().enumerate().map(|(i, image_info)| {
         let is_selected = table_state.selected() == Some(i);
 
         let mut row_style = if i % 2 == 0 {
@@ -44,7 +44,48 @@ pub fn render(
                 .add_modifier(Modifier::BOLD);
         }
 
-        let displayed_data = [(i + 1).to_string(), src.clone(), alt.clone()];
+        let size_text = if image_info.size_formatted.contains("KB") {
+            let kb_value = image_info
+                .size_formatted
+                .replace("~", "")
+                .replace("KB", "")
+                .trim()
+                .parse::<f64>()
+                .unwrap_or(0.0);
+
+            if kb_value > 500.0 {
+                format!(
+                    "{}{}KB",
+                    if is_selected { "" } else { "🔴 " },
+                    image_info.size_formatted.replace("~KB", "")
+                )
+            } else if kb_value > 100.0 {
+                format!(
+                    "{}{}KB",
+                    if is_selected { "" } else { "🟡 " },
+                    image_info.size_formatted.replace("~KB", "")
+                )
+            } else {
+                format!(
+                    "{}{}KB",
+                    if is_selected { "" } else { "🟢 " },
+                    image_info.size_formatted.replace("~KB", "")
+                )
+            }
+        } else {
+            format!(
+                "{}{}",
+                if is_selected { "" } else { "⚪ " },
+                image_info.size_formatted
+            )
+        };
+
+        let displayed_data = [
+            (i + 1).to_string(),
+            image_info.src.clone(),
+            image_info.alt.clone(),
+            size_text,
+        ];
 
         let cells = displayed_data.iter().enumerate().map(|(j, c)| {
             let content = if j == 1 {
@@ -94,9 +135,10 @@ pub fn render(
     });
 
     let widths = [
-        Constraint::Length(4), // #
-        Constraint::Min(50),   // Image Src
-        Constraint::Min(30),   // Alt Text
+        Constraint::Length(4),  // #
+        Constraint::Min(45),    // Image Src
+        Constraint::Min(25),    // Alt Text
+        Constraint::Length(10), // Size
     ];
 
     let scroll_indicator = if horizontal_scroll > 0 {

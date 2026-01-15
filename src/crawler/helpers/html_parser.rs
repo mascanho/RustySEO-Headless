@@ -1,6 +1,15 @@
 use scraper::{Html, Selector};
+use url::Url;
 
 use crate::crawler::helpers::word_count::{self, get_words};
+
+#[derive(Debug, Clone)]
+pub struct ImageInfo {
+    pub src: String,
+    pub alt: String,
+    pub size_bytes: Option<u64>,
+    pub size_formatted: String,
+}
 
 #[derive(Debug, Clone)]
 pub struct PageData {
@@ -20,7 +29,7 @@ pub struct PageData {
     pub indexability: String,
     pub anchor_links: Vec<(String, String)>,
     pub outlinks: Vec<(String, String)>,
-    pub images: Vec<(String, String)>,
+    pub images: Vec<ImageInfo>,
     pub headings: Vec<(String, String)>,
     pub headers: Vec<String>,
     pub schema: Vec<String>,
@@ -98,12 +107,21 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         })
         .collect();
 
-    let images: Vec<(String, String)> = document
+    let images: Vec<ImageInfo> = document
         .select(&Selector::parse("img[src]").unwrap())
         .map(|e| {
             let src = e.value().attr("src").unwrap().to_string();
             let alt = e.value().attr("alt").unwrap_or("").to_string();
-            (src, alt)
+
+            // Try to get image size non-blocking
+            let (size_bytes, size_formatted) = get_image_size_fast(&src);
+
+            ImageInfo {
+                src,
+                alt,
+                size_bytes,
+                size_formatted,
+            }
         })
         .collect();
 
@@ -176,4 +194,105 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         size,
         word_count,
     }
+}
+
+/// Fast, non-blocking image size detection
+/// Returns (size_bytes, formatted_size) where formatted_size is human-readable
+fn get_image_size_fast(src: &str) -> (Option<u64>, String) {
+    // Skip data URLs and invalid URLs
+    if src.starts_with("data:") || src.is_empty() {
+        return (None, "Data URI".to_string());
+    }
+
+    // Try to extract size from URL parameters first (common CDN pattern)
+    if let Some(size_hint) = extract_size_from_url_params(src) {
+        return size_hint;
+    }
+
+    // Extract size hints from filename patterns
+    if let Some(size_hint) = extract_size_from_filename(src) {
+        return size_hint;
+    }
+
+    // For other images, return Unknown
+    (None, "Unknown".to_string())
+}
+
+/// Extract size information from common URL patterns like ?width=800&height=600
+fn extract_size_from_url_params(src: &str) -> Option<(Option<u64>, String)> {
+    if let Ok(url) = Url::parse(src) {
+        let mut width = None;
+        let mut height = None;
+
+        for (key, value) in url.query_pairs() {
+            match key.to_lowercase().as_str() {
+                "w" | "width" => {
+                    if let Ok(w) = value.parse::<u32>() {
+                        width = Some(w);
+                    }
+                }
+                "h" | "height" => {
+                    if let Ok(h) = value.parse::<u32>() {
+                        height = Some(h);
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        if let (Some(w), Some(h)) = (width, height) {
+            // Rough estimation based on image type and dimensions
+            let estimated_bytes = estimate_image_size(w, h, src);
+            return Some((
+                Some(estimated_bytes),
+                format!("~{}KB", estimated_bytes / 1024),
+            ));
+        }
+    }
+
+    None
+}
+
+/// Extract size information from filename patterns like "image-800x600.jpg"
+fn extract_size_from_filename(src: &str) -> Option<(Option<u64>, String)> {
+    // Look for patterns like "800x600", "800_600", "-800x600-" in filename
+    let re = regex::Regex::new(r"(\d+)[xX_](\d+)").ok()?;
+
+    if let Some(captures) = re.captures(src) {
+        if let (Some(width), Some(height)) = (
+            captures.get(1).and_then(|m| m.as_str().parse::<u32>().ok()),
+            captures.get(2).and_then(|m| m.as_str().parse::<u32>().ok()),
+        ) {
+            // Validate reasonable image dimensions
+            if width > 10 && width < 10000 && height > 10 && height < 10000 {
+                let estimated_bytes = estimate_image_size(width, height, src);
+                return Some((
+                    Some(estimated_bytes),
+                    format!("~{}KB", estimated_bytes / 1024),
+                ));
+            }
+        }
+    }
+
+    None
+}
+
+/// Estimate image size based on dimensions and file type
+fn estimate_image_size(width: u32, height: u32, src: &str) -> u64 {
+    let pixels = width as u64 * height as u64;
+
+    // Different compression ratios for different formats
+    let bytes_per_pixel = if src.to_lowercase().contains(".png") {
+        4.0 // PNG: less compression
+    } else if src.to_lowercase().contains(".jpg") || src.to_lowercase().contains(".jpeg") {
+        0.5 // JPEG: good compression
+    } else if src.to_lowercase().contains(".webp") {
+        0.6 // WebP: moderate compression
+    } else if src.to_lowercase().contains(".gif") {
+        1.0 // GIF: varies, moderate compression
+    } else {
+        1.0 // Default estimate
+    };
+
+    ((pixels as f64 * bytes_per_pixel) / 1024.0).max(1.0) as u64 * 1024 // Ensure at least 1KB
 }
