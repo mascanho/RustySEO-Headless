@@ -82,12 +82,16 @@ impl Default for App {
             show_log_search: false,
             log_search_query: String::new(),
             filtered_logs_data: vec![],
+            last_settings_mtime: None,
         }
     }
 }
 
 impl App {
     pub fn on_tick(&mut self) {
+        // 0. Check if settings file has been modified
+        self.reload_settings_if_changed();
+
         // 1. Collect results from background crawler thread
         let mut results = Vec::new();
         let mut crawl_finished = false;
@@ -628,6 +632,9 @@ impl App {
             return;
         }
 
+        // Reload settings before starting crawl to get latest values
+        self.settings = Some(crate::models::AppSettings::load());
+
         self.page_data.clear();
         self.table_data.clear();
         self.table_state.select(None); // Reset table selection when data is cleared
@@ -828,6 +835,39 @@ impl App {
                 .select(Some(self.filtered_logs_data.len().saturating_sub(1)));
         } else if self.filtered_logs_data.is_empty() {
             self.logs_state.select(None);
+        }
+    }
+
+    pub fn reload_settings_if_changed(&mut self) {
+        let settings_path = AppSettings::path();
+
+        // Get file modification time - cheap operation, no file read
+        if let Ok(metadata) = std::fs::metadata(&settings_path) {
+            if let Ok(mtime) = metadata.modified() {
+                // Only reload if file was modified since last check
+                if self
+                    .last_settings_mtime
+                    .map_or(true, |last_mtime| mtime > last_mtime)
+                {
+                    let current_settings = AppSettings::load();
+
+                    // Only update if settings actually changed
+                    if self.settings.as_ref().map_or(true, |stored| {
+                        // Simple field comparison for most common changes
+                        stored.crawler.max_pages != current_settings.crawler.max_pages
+                            || stored.crawler.concurrency != current_settings.crawler.concurrency
+                            || stored.crawler.stay_on_domain
+                                != current_settings.crawler.stay_on_domain
+                            || stored.ui.theme != current_settings.ui.theme
+                            || stored.ui.refresh_rate_ms != current_settings.ui.refresh_rate_ms
+                    }) {
+                        self.settings = Some(current_settings);
+                        self.log("Settings reloaded from file");
+                    }
+
+                    self.last_settings_mtime = Some(mtime);
+                }
+            }
         }
     }
 }

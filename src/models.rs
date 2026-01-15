@@ -197,4 +197,5 @@ pub struct App {
     pub show_log_search: bool,
     pub log_search_query: String,
     pub filtered_logs_data: Vec<String>,
+    pub last_settings_mtime: Option<std::time::SystemTime>,
 }
