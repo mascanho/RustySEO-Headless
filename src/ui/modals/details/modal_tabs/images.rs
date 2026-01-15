@@ -8,7 +8,7 @@ use ratatui::{
 
 pub fn render(
     f: &mut Frame,
-    images: &[crate::crawler::helpers::html_parser::ImageInfo],
+    images: &[crate::crawler::helpers::image_utils::ImageInfo],
     horizontal_scroll: usize,
     table_state: &mut TableState,
     area: Rect,
