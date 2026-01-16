@@ -87,6 +87,8 @@ impl Default for App {
             last_settings_mtime: None,
             page_size: 100,
             current_page: 0,
+            last_search_time: None,
+            last_log_search_time: None,
         }
     }
 }
@@ -156,6 +158,20 @@ impl App {
             self.crawl_receiver = None;
             self.crawl_progress = 1.0;
             self.log("SYSTEM - Crawl finished successfully.");
+        }
+
+        // Debounce search filtering
+        if let Some(last_time) = self.last_search_time {
+            if last_time.elapsed() > std::time::Duration::from_millis(300) {
+                self.apply_filter();
+                self.last_search_time = None;
+            }
+        }
+        if let Some(last_time) = self.last_log_search_time {
+            if last_time.elapsed() > std::time::Duration::from_millis(300) {
+                self.apply_log_filter();
+                self.last_log_search_time = None;
+            }
         }
 
         if self.input_url.is_empty() {

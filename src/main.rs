@@ -91,14 +91,15 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                         match key.code {
                             KeyCode::Enter | KeyCode::Esc => {
                                 app.show_search = false;
+                                app.apply_filter();
                             }
                             KeyCode::Char(c) => {
                                 app.search_query.push(c);
-                                app.apply_filter();
+                                app.last_search_time = Some(std::time::Instant::now());
                             }
                             KeyCode::Backspace => {
                                 app.search_query.pop();
-                                app.apply_filter();
+                                app.last_search_time = Some(std::time::Instant::now());
                             }
                             _ => {}
                         }
@@ -106,14 +107,15 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                         match key.code {
                             KeyCode::Enter | KeyCode::Esc => {
                                 app.show_log_search = false;
+                                app.apply_log_filter();
                             }
                             KeyCode::Char(c) => {
                                 app.log_search_query.push(c);
-                                app.apply_log_filter();
+                                app.last_log_search_time = Some(std::time::Instant::now());
                             }
                             KeyCode::Backspace => {
                                 app.log_search_query.pop();
-                                app.apply_log_filter();
+                                app.last_log_search_time = Some(std::time::Instant::now());
                             }
                             _ => {}
                         }

@@ -208,4 +208,6 @@ pub struct App {
     pub last_settings_mtime: Option<std::time::SystemTime>,
     pub page_size: usize,
     pub current_page: usize,
+    pub last_search_time: Option<std::time::Instant>,
+    pub last_log_search_time: Option<std::time::Instant>,
 }
