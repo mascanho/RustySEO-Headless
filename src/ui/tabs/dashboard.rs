@@ -223,9 +223,12 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
         Row::new(cells).style(row_style).height(1)
     });
+    
+    // Calculate dynamic ID width based on total items
+    let max_id_width = app.full_filtered_table_data.len().to_string().len().max(2) as u16 + 2;
 
     let widths = [
-        Constraint::Length(4),  // ID
+        Constraint::Length(max_id_width),  // ID
         Constraint::Min(55),    // URL
         Constraint::Length(20), // Title
         Constraint::Length(5),  // Title Len

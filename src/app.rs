@@ -712,6 +712,9 @@ impl App {
             .unwrap_or(false);
 
         tokio::task::spawn(async move {
+            // Save to recent crawls
+            crate::settings::utils::create::add_recent_entry(target_url.clone()).await;
+
             let engine = crate::crawler::CrawlEngine::new()
                 .await
                 .with_max_pages(max_pages)
