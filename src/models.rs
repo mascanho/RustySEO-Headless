@@ -210,4 +210,5 @@ pub struct App {
     pub current_page: usize,
     pub last_search_time: Option<std::time::Instant>,
     pub last_log_search_time: Option<std::time::Instant>,
+    pub recent_crawls: Result<Vec<String>, Box<dyn std::error::Error>>,
 }

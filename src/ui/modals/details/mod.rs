@@ -73,11 +73,12 @@ pub fn render(f: &mut Frame, app: &mut App) {
         .block(
             Block::default()
                 .title(Span::styled(
-                    format!(" Page Details"),
+                    format!("🔗 {}", row_data[1]),
                     Style::default()
                         .fg(Color::Yellow)
                         .bold()
-                        .add_modifier(Modifier::BOLD),
+                        .add_modifier(Modifier::ITALIC)
+                        .add_modifier(Modifier::RAPID_BLINK),
                 ))
                 .bg(Color::Rgb(15, 15, 25)),
         )
@@ -187,28 +188,20 @@ pub fn render(f: &mut Frame, app: &mut App) {
         ])
         .split(chunks[2]);
 
-    let url_line = Line::from(vec![
-        Span::styled(" 🔗 ", Style::default().fg(Color::Yellow)),
-        Span::styled(
-            url,
-            Style::default()
-                .fg(Color::Rgb(180, 150, 255))
-                .add_modifier(Modifier::ITALIC),
-        ),
-    ]);
-
     let status_line = Line::from(vec![
-        Span::styled("⚡ Status: ", Style::default().fg(Color::Yellow)),
-        Span::styled(status, Style::default().fg(status_color).bold()),
+        Span::styled("Status: ", Style::default().fg(Color::Yellow)),
+        Span::styled(
+            status,
+            Style::default()
+                .bg(Color::Rgb(10, 10, 20))
+                .fg(status_color)
+                .bold(),
+        ),
         Span::raw(" "),
     ]);
 
-    let url_p = Paragraph::new(url_line)
-        .block(Block::default().bg(Color::Black))
-        .alignment(Alignment::Left);
-
     let status_p = Paragraph::new(status_line)
-        .block(Block::default().bg(Color::Black))
+        .block(Block::default().bg(Color::Rgb(10, 10, 20)))
         .alignment(Alignment::Right);
 
     // File Size
@@ -233,10 +226,9 @@ pub fn render(f: &mut Frame, app: &mut App) {
     ]);
 
     let file_size_p = Paragraph::new(file_size_line)
-        .block(Block::default().bg(Color::Rgb(128, 0, 128))) // Purple
+        .block(Block::default().bg(Color::Rgb(10, 10, 20))) // Purple
         .alignment(Alignment::Center);
 
-    f.render_widget(url_p, footer_chunks[0]);
     f.render_widget(status_p, footer_chunks[1]);
     f.render_widget(file_size_p, footer_chunks[2]);
 

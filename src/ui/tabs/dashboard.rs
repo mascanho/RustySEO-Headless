@@ -223,25 +223,25 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
         Row::new(cells).style(row_style).height(1)
     });
-    
+
     // Calculate dynamic ID width based on total items
     let max_id_width = app.full_filtered_table_data.len().to_string().len().max(2) as u16 + 2;
 
     let widths = [
-        Constraint::Length(max_id_width),  // ID
-        Constraint::Min(55),    // URL
-        Constraint::Length(20), // Title
-        Constraint::Length(5),  // Title Len
-        Constraint::Length(20), // Desc
-        Constraint::Length(5),  // Desc Len
-        Constraint::Length(20), // H1
-        Constraint::Length(7),  // H1 Len
-        Constraint::Length(15), // H2
-        Constraint::Length(7),  // H2 Len
-        Constraint::Length(8),  // Status
-        Constraint::Length(8),  // Mobile
-        Constraint::Length(6),  // Lang
-        Constraint::Min(8),     // Indexable
+        Constraint::Length(max_id_width), // ID
+        Constraint::Min(55),              // URL
+        Constraint::Length(20),           // Title
+        Constraint::Length(5),            // Title Len
+        Constraint::Length(20),           // Desc
+        Constraint::Length(5),            // Desc Len
+        Constraint::Length(20),           // H1
+        Constraint::Length(7),            // H1 Len
+        Constraint::Length(15),           // H2
+        Constraint::Length(7),            // H2 Len
+        Constraint::Length(8),            // Status
+        Constraint::Length(8),            // Mobile
+        Constraint::Length(6),            // Lang
+        Constraint::Min(8),               // Indexable
     ];
 
     let total_pages = (app.full_filtered_table_data.len() + app.page_size - 1) / app.page_size;

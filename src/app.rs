@@ -4,6 +4,7 @@ use std::sync::mpsc;
 
 use crate::crawler::CrawlMessage;
 use crate::models::{App, AppSettings};
+use crate::settings::utils::read::recent_crawls;
 use crate::ui::modals::dashboard_menu;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -90,6 +91,7 @@ impl Default for App {
             current_page: 0,
             last_search_time: None,
             last_log_search_time: None,
+            recent_crawls: recent_crawls(),
         }
     }
 }

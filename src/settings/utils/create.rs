@@ -2,6 +2,7 @@ use directories::ProjectDirs;
 use std::fs;
 use std::io::Write;
 use std::str::FromStr;
+use tracing_subscriber::fmt::format;
 
 use crate::models::AppSettings;
 use crate::{settings, tui_println};
@@ -87,17 +88,13 @@ pub async fn add_recent_entry(url: String) {
         .domain(domain_str.as_bytes())
         .map(|d| String::from_utf8_lossy(d.as_bytes()).to_string())
         .unwrap_or_else(|| domain_str.to_string());
-
-    tui_println!("Parsed domain_str: {}", domain_str);
-    tui_println!("Root domain: {}", &root_domain);
+    let prefixed_domain = format!("https://{}", &root_domain);
 
     tokio::task::spawn_blocking(move || {
         let project_dirs =
             directories::ProjectDirs::from("", "", "rustyseo").expect("Failed to get project dirs");
 
         let recent_crawls_path = project_dirs.data_dir().join("recent-crawls.json");
-
-        tui_println!("Recent crawls path: {}", recent_crawls_path.display());
 
         let mut recent_crawls: Vec<String> = if recent_crawls_path.exists() {
             let content = std::fs::read_to_string(&recent_crawls_path);
@@ -119,8 +116,8 @@ pub async fn add_recent_entry(url: String) {
             Vec::new()
         };
 
-        if !recent_crawls.contains(&root_domain) {
-            recent_crawls.insert(0, root_domain.clone());
+        if !recent_crawls.contains(&prefixed_domain) {
+            recent_crawls.insert(0, prefixed_domain.clone());
             if recent_crawls.len() > 20 {
                 recent_crawls.pop();
             }
