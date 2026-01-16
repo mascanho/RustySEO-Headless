@@ -240,18 +240,23 @@ impl App {
     }
 
     pub fn next_row(&mut self) {
-        let len = if self.search_query.is_empty() {
-            self.table_data.len()
-        } else {
-            self.filtered_table_data.len()
-        };
+        let len = self.filtered_table_data.len();
         if len == 0 {
             return;
         }
         let i = match self.table_state.selected() {
             Some(i) => {
                 if i >= len - 1 {
-                    0
+                    // Check if we can move to next page
+                    let total_pages =
+                        (self.full_filtered_table_data.len() + self.page_size - 1) / self.page_size;
+                    if self.current_page + 1 < total_pages {
+                        self.current_page += 1;
+                        self.apply_pagination();
+                        0 // Select first row of new page
+                    } else {
+                        len - 1 // Stay at last row of current page
+                    }
                 } else {
                     i + 1
                 }
@@ -262,18 +267,21 @@ impl App {
     }
 
     pub fn previous_row(&mut self) {
-        let len = if self.search_query.is_empty() {
-            self.table_data.len()
-        } else {
-            self.filtered_table_data.len()
-        };
+        let len = self.filtered_table_data.len();
         if len == 0 {
             return;
         }
         let i = match self.table_state.selected() {
             Some(i) => {
                 if i == 0 {
-                    len - 1
+                    // Check if we can move to previous page
+                    if self.current_page > 0 {
+                        self.current_page -= 1;
+                        self.apply_pagination();
+                        self.filtered_table_data.len() - 1 // Select last row of new page
+                    } else {
+                        0 // Stay at first row of current page
+                    }
                 } else {
                     i - 1
                 }
@@ -565,14 +573,27 @@ impl App {
         }
         let row_data = &self.full_filtered_table_data[full_idx];
         let original_id = row_data[0].parse::<usize>().unwrap_or(1);
-        let page_data = crate::db::load_page_data(original_id);
 
-        match self.detail_tab {
-            3 => page_data.anchor_links.len(),
-            4 => page_data.outlinks.len(),
-            5 => page_data.images.len(),
-            8 => page_data.headings.len(),
-            _ => 0,
+        // Try to find page data in memory first
+        if let Some(page_data) = self.page_data.iter().find(|pd| pd.id == original_id) {
+            match self.detail_tab {
+                3 => page_data.anchor_links.len(),
+                4 => page_data.outlinks.len(),
+                5 => page_data.images.len(),
+                8 => page_data.headings.len(),
+                _ => 0,
+            }
+        } else if let Some(page_data) = crate::db::load_page_data(original_id) {
+            // Fall back to database if not in memory
+            match self.detail_tab {
+                3 => page_data.anchor_links.len(),
+                4 => page_data.outlinks.len(),
+                5 => page_data.images.len(),
+                8 => page_data.headings.len(),
+                _ => 0,
+            }
+        } else {
+            0
         }
     }
 

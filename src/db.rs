@@ -91,14 +91,14 @@ pub fn save_page_data(page_data: &PageData) -> SqliteResult<()> {
     Ok(())
 }
 
-pub fn load_page_data(id: usize) -> PageData {
-    let conn = Connection::open(get_db_path()).unwrap();
+pub fn load_page_data(id: usize) -> Option<PageData> {
+    let conn = Connection::open(get_db_path()).ok()?;
     let data: String = conn
         .query_row("SELECT data FROM pages WHERE id = ?1", params![id], |row| {
             row.get(0)
         })
-        .unwrap();
-    serde_json::from_str(&data).unwrap()
+        .ok()?;
+    serde_json::from_str(&data).ok()
 }
 
 pub fn load_all_page_data() -> Vec<PageData> {
