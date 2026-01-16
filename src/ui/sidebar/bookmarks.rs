@@ -100,7 +100,7 @@ fn render_bookmarks_list(f: &mut Frame, app: &mut App, area: Rect, accent_color:
                     format!("{:2}. ", i + 1),
                     Style::default().fg(Color::DarkGray),
                 ),
-                Span::styled("🌐 ", Style::default().fg(Color::Yellow)),
+                Span::styled("📘 ", Style::default().fg(Color::Yellow)),
                 Span::styled(url, style),
             ]))
         })
