@@ -236,6 +236,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                                     app.detail_scroll.saturating_sub(1);
                                             }
                                         }
+                                    } else if app.current_state == AppState::Dashboard {
+                                        app.previous_row();
                                     }
                                 }
                                 KeyCode::Down => {
@@ -251,6 +253,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                         } else if [0, 1, 2, 6, 7].contains(&app.detail_tab) {
                                             app.detail_scroll += 1;
                                         }
+                                    } else if app.current_state == AppState::Dashboard {
+                                        app.next_row();
                                     }
                                 }
                                 _ => {}
