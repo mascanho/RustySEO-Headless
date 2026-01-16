@@ -56,6 +56,7 @@ impl Default for App {
             logs_horizontal_scroll: 0,
             connectors_data: vec![],
             tab_rect: None,
+            table_rect: None,
             sidebar_tab_rect: None,
             keyword_rects: vec![],
             show_help: false,

@@ -635,6 +635,26 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 _ => {}
                             }
                         }
+                    } else if matches!(
+                        mouse.kind,
+                        MouseEventKind::ScrollUp | MouseEventKind::ScrollDown
+                    ) {
+                        // Handle mouse wheel scrolling on dashboard table
+                        if app.current_state == AppState::Dashboard {
+                            if let Some(rect) = app.table_rect {
+                                if mouse.column >= rect.x
+                                    && mouse.column < rect.x + rect.width
+                                    && mouse.row >= rect.y
+                                    && mouse.row < rect.y + rect.height
+                                {
+                                    match mouse.kind {
+                                        MouseEventKind::ScrollUp => app.previous_row(),
+                                        MouseEventKind::ScrollDown => app.next_row(),
+                                        _ => {}
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
                 _ => {}

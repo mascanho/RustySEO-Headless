@@ -173,6 +173,7 @@ pub struct App {
     pub logs_horizontal_scroll: usize,
     pub connectors_data: Vec<(String, bool)>,
     pub tab_rect: Option<ratatui::layout::Rect>,
+    pub table_rect: Option<ratatui::layout::Rect>,
     pub sidebar_tab_rect: Option<ratatui::layout::Rect>,
     pub keyword_rects: Vec<(String, ratatui::layout::Rect)>,
     pub show_help: bool,

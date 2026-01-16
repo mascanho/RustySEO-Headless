@@ -9,6 +9,7 @@ use ratatui::{
 use crate::models::App;
 
 pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
+    app.table_rect = Some(area);
     let accent_color = Color::Rgb(80, 140, 255);
     let border_color = Color::Rgb(40, 45, 60);
 
