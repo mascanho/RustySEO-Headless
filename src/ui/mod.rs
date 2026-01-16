@@ -257,12 +257,33 @@ fn render_help_modal(f: &mut Frame) {
             Span::raw("Toggle System Logs"),
         ]),
         Line::from(vec![
-            Span::styled(" Ctrl+s  ", Style::default().fg(Color::Rgb(255, 170, 0))),
+            Span::styled(" Ctrl+f  ", Style::default().fg(Color::Rgb(255, 170, 0))),
             Span::raw("Search Dashboard/Logs"),
         ]),
         Line::from(vec![
             Span::styled(" [ / ]   ", Style::default().fg(key_color)),
-            Span::raw("Resize Log Console"),
+            Span::raw("Previous/Next Page"),
+        ]),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "── LOGS CONSOLE ──",
+            Style::default().fg(header_color).bold(),
+        )]),
+        Line::from(vec![
+            Span::styled(" q/Esc/L ", Style::default().fg(key_color)),
+            Span::raw("Close Logs"),
+        ]),
+        Line::from(vec![
+            Span::styled(" k/↑ j/↓ ", Style::default().fg(key_color)),
+            Span::raw("Navigate Logs"),
+        ]),
+        Line::from(vec![
+            Span::styled(" t/G     ", Style::default().fg(key_color)),
+            Span::raw("Top/Bottom Log"),
+        ]),
+        Line::from(vec![
+            Span::styled(" [ / ]   ", Style::default().fg(key_color)),
+            Span::raw("Resize Console"),
         ]),
     ];
 
@@ -298,23 +319,27 @@ fn render_help_modal(f: &mut Frame) {
             Style::default().fg(header_color).bold(),
         )]),
         Line::from(vec![
-            Span::styled(" h / ←   ", Style::default().fg(key_color)),
+            Span::styled(" q/Esc   ", Style::default().fg(key_color)),
+            Span::raw("Close Details"),
+        ]),
+        Line::from(vec![
+            Span::styled(" h/← Tab ", Style::default().fg(key_color)),
             Span::raw("Previous Tab"),
         ]),
         Line::from(vec![
-            Span::styled(" l / →   ", Style::default().fg(key_color)),
+            Span::styled(" l/→ Sh+Tab", Style::default().fg(key_color)),
             Span::raw("Next Tab"),
         ]),
         Line::from(vec![
-            Span::styled(" Tab/Sh+Tab", Style::default().fg(key_color)),
-            Span::raw("Cycle Tabs"),
+            Span::styled(" k/j     ", Style::default().fg(key_color)),
+            Span::raw("Navigate Tables"),
         ]),
         Line::from(vec![
-            Span::styled(" k / j   ", Style::default().fg(key_color)),
-            Span::raw("Table Nav (In/Out/Img/H)"),
+            Span::styled(" ↑/↓     ", Style::default().fg(key_color)),
+            Span::raw("Scroll Dashboard Table"),
         ]),
         Line::from(vec![
-            Span::styled(" Shift+↑/↓", Style::default().fg(key_color)),
+            Span::styled(" Sh+↑/↓  ", Style::default().fg(key_color)),
             Span::raw("Navigate Tab Content"),
         ]),
         Line::from(""),
@@ -329,6 +354,40 @@ fn render_help_modal(f: &mut Frame) {
         Line::from(vec![
             Span::styled(" Esc     ", Style::default().fg(key_color)),
             Span::raw("Clear / Close Search"),
+        ]),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "── AI CHAT MODAL ──",
+            Style::default().fg(header_color).bold(),
+        )]),
+        Line::from(vec![
+            Span::styled(" q/Esc   ", Style::default().fg(key_color)),
+            Span::raw("Close AI Chat"),
+        ]),
+        Line::from(vec![
+            Span::styled(" Enter   ", Style::default().fg(key_color)),
+            Span::raw("Send Message"),
+        ]),
+        Line::from(vec![
+            Span::styled(" Backsp  ", Style::default().fg(key_color)),
+            Span::raw("Delete Character"),
+        ]),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "── DASHBOARD MENU ──",
+            Style::default().fg(header_color).bold(),
+        )]),
+        Line::from(vec![
+            Span::styled(" q/Esc   ", Style::default().fg(key_color)),
+            Span::raw("Close Menu"),
+        ]),
+        Line::from(vec![
+            Span::styled(" k/↑ j/↓ ", Style::default().fg(key_color)),
+            Span::raw("Navigate Items"),
+        ]),
+        Line::from(vec![
+            Span::styled(" Enter   ", Style::default().fg(key_color)),
+            Span::raw("Execute Action"),
         ]),
     ];
 
@@ -368,12 +427,12 @@ fn render_help_modal(f: &mut Frame) {
             Span::raw("Close Sidebar"),
         ]),
         Line::from(vec![
-            Span::styled(" k / ↑   ", Style::default().fg(key_color)),
-            Span::raw("Previous Sidebar Tab"),
+            Span::styled(" k/↑ j/↓ ", Style::default().fg(key_color)),
+            Span::raw("Navigate Tabs"),
         ]),
         Line::from(vec![
-            Span::styled(" j / ↓   ", Style::default().fg(key_color)),
-            Span::raw("Next Sidebar Tab"),
+            Span::styled(" Tab/Sh+Tab", Style::default().fg(key_color)),
+            Span::raw("Cycle Tabs"),
         ]),
         Line::from(""),
         Line::from(vec![Span::styled(
@@ -381,12 +440,20 @@ fn render_help_modal(f: &mut Frame) {
             Style::default().fg(header_color).bold(),
         )]),
         Line::from(vec![
-            Span::styled(" ← / →   ", Style::default().fg(key_color)),
-            Span::raw("Navigate Bookmark Tabs"),
+            Span::styled(" ←/→     ", Style::default().fg(key_color)),
+            Span::raw("Navigate Tabs"),
+        ]),
+        Line::from(vec![
+            Span::styled(" ↑/↓     ", Style::default().fg(key_color)),
+            Span::raw("Navigate Items"),
         ]),
         Line::from(vec![
             Span::styled(" Enter   ", Style::default().fg(key_color)),
             Span::raw("Add/Crawl Selection"),
+        ]),
+        Line::from(vec![
+            Span::styled(" Esc     ", Style::default().fg(key_color)),
+            Span::raw("Clear/Close"),
         ]),
         Line::from(vec![
             Span::styled(" D       ", Style::default().fg(key_color)),
@@ -394,7 +461,7 @@ fn render_help_modal(f: &mut Frame) {
         ]),
         Line::from(vec![
             Span::styled(" Backsp  ", Style::default().fg(key_color)),
-            Span::raw("Delete Input Char"),
+            Span::raw("Delete Character"),
         ]),
         Line::from(""),
         Line::from(vec![Span::styled(
@@ -404,6 +471,44 @@ fn render_help_modal(f: &mut Frame) {
         Line::from(vec![
             Span::styled(" E       ", Style::default().fg(key_color)),
             Span::raw("Edit Settings File"),
+        ]),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "── INPUT MODE ──",
+            Style::default().fg(header_color).bold(),
+        )]),
+        Line::from(vec![
+            Span::styled(" Enter   ", Style::default().fg(key_color)),
+            Span::raw("Submit URL"),
+        ]),
+        Line::from(vec![
+            Span::styled(" Esc     ", Style::default().fg(key_color)),
+            Span::raw("Cancel Input"),
+        ]),
+        Line::from(vec![
+            Span::styled(" ←/→     ", Style::default().fg(key_color)),
+            Span::raw("Scroll Text"),
+        ]),
+        Line::from(vec![
+            Span::styled(" Backsp  ", Style::default().fg(key_color)),
+            Span::raw("Delete Character"),
+        ]),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "── DASHBOARD MENU ──",
+            Style::default().fg(header_color).bold(),
+        )]),
+        Line::from(vec![
+            Span::styled(" q/Esc   ", Style::default().fg(key_color)),
+            Span::raw("Close Menu"),
+        ]),
+        Line::from(vec![
+            Span::styled(" k/↑ j/↓ ", Style::default().fg(key_color)),
+            Span::raw("Navigate Items"),
+        ]),
+        Line::from(vec![
+            Span::styled(" Enter   ", Style::default().fg(key_color)),
+            Span::raw("Execute Action"),
         ]),
     ];
 
