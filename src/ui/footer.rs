@@ -95,6 +95,20 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             Span::styled(" 💤 JS: OFF ", Style::default().fg(Color::Gray))
         },
         Span::styled(" | ", Style::default().fg(border_color)),
+        // MAX PAGES
+        Span::styled("Max Pages: ", Style::default().fg(Color::Gray)),
+        Span::styled(
+            format!(
+                "{}",
+                app.settings
+                    .as_ref()
+                    .map(|s| s.crawler.max_pages)
+                    .unwrap_or(0)
+            ),
+            Style::default().fg(Color::Rgb(200, 100, 255)),
+        ),
+        // FINDING
+        Span::styled(" | ", Style::default().fg(border_color)),
         if app.current_state == AppState::Dashboard {
             if app.show_search {
                 Span::styled(
