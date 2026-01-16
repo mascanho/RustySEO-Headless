@@ -22,12 +22,8 @@ pub mod settings;
 pub mod ui;
 
 use crate::{
-    app::AppState,
-    cli::Cli,
-    crawler::CrawlEngine,
-    models::App,
-    settings::utils::open::edit_file,
-    ui::{tabs::crawl, ui},
+    app::AppState, cli::Cli, crawler::CrawlEngine, models::App, settings::utils::open::edit_file,
+    ui::ui,
 };
 
 #[tokio::main]
@@ -513,6 +509,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     }
                                 }
                             }
+
+                            KeyCode::Char(']') => app.next_page(),
+                            KeyCode::Char('[') => app.previous_page(),
 
                             // Quick jumps
                             KeyCode::Char('g') => app.set_sidebar_tab(0),

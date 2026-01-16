@@ -1,7 +1,6 @@
 use directories::ProjectDirs;
 use std::fs;
 use std::io::Write;
-use std::path::Path;
 
 pub async fn create_settings_file() -> ProjectDirs {
     let project_dirs = ProjectDirs::from("", "", "rustyseo").unwrap();

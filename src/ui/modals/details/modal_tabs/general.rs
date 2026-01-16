@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 use ratatui::{
     Frame,
     layout::{Margin, Rect},

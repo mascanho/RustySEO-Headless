@@ -1,6 +1,6 @@
-use crate::{app::AppState, crawler::PageData, settings};
+use crate::{app::AppState, crawler::PageData};
 
-use std::sync::mpsc::{self, Receiver};
+use std::sync::mpsc::Receiver;
 
 use serde::{Deserialize, Serialize};
 
@@ -23,6 +23,8 @@ pub struct CrawlerConfig {
     pub timeout_seconds: u64,
     #[serde(default)]
     pub enable_javascript: bool,
+    #[serde(default)]
+    pub max_memory_pages: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -88,6 +90,7 @@ impl Default for AppSettings {
                 follow_redirects: true,
                 timeout_seconds: 15,
                 enable_javascript: false,
+                max_memory_pages: 1000,
             },
             ui: UiConfig {
                 theme: "Oceanic".to_string(),
@@ -162,6 +165,7 @@ pub struct App {
     pub last_crawled_index: usize,
     pub table_data: Vec<Vec<String>>,
     pub page_data: Vec<crate::crawler::PageData>,
+    pub total_pages: usize,
     pub table_state: ratatui::widgets::TableState,
     pub horizontal_scroll: usize,
     pub logs_data: Vec<String>,
@@ -197,8 +201,11 @@ pub struct App {
     pub show_search: bool,
     pub search_query: String,
     pub filtered_table_data: Vec<Vec<String>>,
+    pub full_filtered_table_data: Vec<Vec<String>>,
     pub show_log_search: bool,
     pub log_search_query: String,
     pub filtered_logs_data: Vec<String>,
     pub last_settings_mtime: Option<std::time::SystemTime>,
+    pub page_size: usize,
+    pub current_page: usize,
 }

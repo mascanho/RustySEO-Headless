@@ -1,3 +1,4 @@
+use headless_chrome::{Browser, LaunchOptions};
 use rand::Rng;
 use rand::rng;
 use reqwest::Client;
@@ -6,7 +7,6 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use tokio::sync::{Mutex, Semaphore, mpsc};
-use headless_chrome::{Browser, LaunchOptions};
 use tokio::time::{Duration, sleep};
 use url::Url;
 
@@ -79,7 +79,7 @@ impl CrawlEngine {
     pub fn with_javascript(mut self, enable: bool) -> Self {
         self.enable_javascript = enable;
         if enable {
-             let options = LaunchOptions {
+            let options = LaunchOptions {
                 headless: true,
                 ..Default::default()
             };
@@ -504,27 +504,35 @@ impl CrawlEngine {
         browser: Arc<Browser>,
     ) -> Result<PageData, String> {
         tracing::debug!("[JS-FETCH] Navigating to {}", url);
-        
+
         let url_str = url.to_string();
         let browser = browser.clone();
-        
+
         // Blocking interaction with headless_chrome
         let (html_content, status) = tokio::task::spawn_blocking(move || {
-            let tab = browser.new_tab().map_err(|e| format!("Tab creation failed: {}", e))?;
-            
+            let tab = browser
+                .new_tab()
+                .map_err(|e| format!("Tab creation failed: {}", e))?;
+
             // Set User Agent? (Headless chrome might have default, or we can set it)
-            // tab.set_user_agent(...) 
-            
-            tab.navigate_to(&url_str).map_err(|e| format!("Navigation failed: {}", e))?;
-            tab.wait_until_navigated().map_err(|e| format!("Wait failed: {}", e))?;
-            
+            // tab.set_user_agent(...)
+
+            tab.navigate_to(&url_str)
+                .map_err(|e| format!("Navigation failed: {}", e))?;
+            tab.wait_until_navigated()
+                .map_err(|e| format!("Wait failed: {}", e))?;
+
             // Wait extra time for JS to render?
-            // std::thread::sleep(Duration::from_millis(1000)); 
-            
-            let content = tab.get_content().map_err(|e| format!("Content fetch failed: {}", e))?;
-            
+            // std::thread::sleep(Duration::from_millis(1000));
+
+            let content = tab
+                .get_content()
+                .map_err(|e| format!("Content fetch failed: {}", e))?;
+
             Ok::<(String, String), String>((content, "200 OK (JS)".to_string()))
-        }).await.map_err(|e| e.to_string())??;
+        })
+        .await
+        .map_err(|e| e.to_string())??;
 
         let document = Html::parse_document(&html_content);
         let mut page_data = extract_page_elements(&document);
@@ -539,39 +547,38 @@ impl CrawlEngine {
             .iter()
             .filter_map(|(href, text)| {
                 if let Ok(abs_url) = base_url.join(href) {
-                     Some((abs_url.to_string(), text.clone()))
+                    Some((abs_url.to_string(), text.clone()))
                 } else {
-                     Some((href.clone(), text.clone()))
+                    Some((href.clone(), text.clone()))
                 }
             })
             .collect();
 
-         // Filter and normalize links...
-         let mut seen_urls = HashSet::new();
-         page_data.anchor_links = page_data
+        // Filter and normalize links...
+        let mut seen_urls = HashSet::new();
+        page_data.anchor_links = page_data
             .anchor_links
             .into_iter()
             .filter_map(|(href, text)| {
-                 if let Ok(mut abs_url) = base_url.join(&href) {
+                if let Ok(mut abs_url) = base_url.join(&href) {
                     abs_url.set_fragment(None);
                     if abs_url.domain() == base_url.domain() {
                         let url_str = abs_url.to_string();
-                         if seen_urls.insert(url_str.clone()) {
+                        if seen_urls.insert(url_str.clone()) {
                             return Some((url_str, text));
                         }
                     }
-                 }
-                 None
+                }
+                None
             })
             .collect();
-            
-         tracing::info!(
+
+        tracing::info!(
             "[JS-LINKS] Found {} unique same-domain links on {}",
             page_data.anchor_links.len(),
             url
         );
-        
+
         Ok(page_data)
     }
-
 }

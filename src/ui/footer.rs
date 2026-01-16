@@ -1,9 +1,9 @@
 use ratatui::{
+    Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Borders, Gauge, Paragraph},
-    Frame,
 };
 
 use crate::app::AppState;
@@ -63,7 +63,16 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         ),
         Span::styled(" | ", Style::default().fg(border_color)),
         Span::styled(
-            format!(" 🔗 URLs: {} ", app.table_data.len()),
+            {
+                let total_filtered = app.full_filtered_table_data.len();
+                let total_pages = (total_filtered + app.page_size - 1) / app.page_size;
+                format!(
+                    " 🔗 URLs: {} (page {}/{}) ",
+                    total_filtered,
+                    app.current_page + 1,
+                    total_pages
+                )
+            },
             Style::default().fg(Color::Green),
         ),
         Span::styled(" | ", Style::default().fg(border_color)),

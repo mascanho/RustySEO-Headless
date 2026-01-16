@@ -22,5 +22,6 @@ fuzzy-matcher = "0.3.7"
 chrono = "0.4.42"
 anyhow = "1.0.100"
 regex = "1.10"
-headless_chrome = { version = "1.0", features = ["fetch"] }
-rig-core = "0.0.6"
+ headless_chrome = { version = "1.0", features = ["fetch"] }
+ rig-core = "0.0.6"
+ rusqlite = { version = "0.32", features = ["bundled"] }

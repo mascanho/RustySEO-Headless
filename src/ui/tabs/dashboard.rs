@@ -63,21 +63,23 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 .add_modifier(Modifier::BOLD);
         }
 
+        let start = app.current_page * app.page_size;
+        let full_idx = start + i;
         let displayed_data = vec![
-            (i + 1).to_string(), // Sequential ID
-            data[1].clone(),     // URL
-            data[2].clone(),     // Title
-            data[3].clone(),     // Title Len
-            data[6].clone(),     // Desc
-            data[7].clone(),     // Desc Len
-            data[4].clone(),     // H1
-            data[5].clone(),     // H1 Len
-            data[8].clone(),     // H2
-            data[9].clone(),     // H2 Len
-            data[10].clone(),    // Status
-            data[11].clone(),    // Mobile
-            data[12].clone(),    // Language
-            data[13].clone(),    // Indexability
+            (full_idx + 1).to_string(), // Sequential ID
+            data[1].clone(),            // URL
+            data[2].clone(),            // Title
+            data[3].clone(),            // Title Len
+            data[6].clone(),            // Desc
+            data[7].clone(),            // Desc Len
+            data[4].clone(),            // H1
+            data[5].clone(),            // H1 Len
+            data[8].clone(),            // H2
+            data[9].clone(),            // H2 Len
+            data[10].clone(),           // Status
+            data[11].clone(),           // Mobile
+            data[12].clone(),           // Language
+            data[13].clone(),           // Indexability
         ];
 
         let cells = displayed_data.iter().enumerate().map(|(j, c)| {
@@ -239,6 +241,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         Constraint::Min(8),     // Indexable
     ];
 
+    let total_pages = (app.full_filtered_table_data.len() + app.page_size - 1) / app.page_size;
     let scroll_indicator = if app.horizontal_scroll > 0 {
         format!(" [Scroll: {}] ", app.horizontal_scroll)
     } else {
@@ -251,7 +254,12 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             Block::default()
                 .borders(Borders::ALL)
                 .title(Span::styled(
-                    format!(" 📊 SEO Audit Dashboard{} ", scroll_indicator),
+                    format!(
+                        " 📊 SEO Audit Dashboard (Page {}/{}) {} ",
+                        app.current_page + 1,
+                        total_pages,
+                        scroll_indicator
+                    ),
                     Style::default()
                         .fg(Color::Yellow)
                         .add_modifier(Modifier::BOLD),

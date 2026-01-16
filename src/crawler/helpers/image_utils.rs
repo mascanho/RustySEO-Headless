@@ -1,7 +1,7 @@
 use url::Url;
 
 /// Image information extracted from HTML elements
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ImageInfo {
     pub src: String,
     pub alt: String,

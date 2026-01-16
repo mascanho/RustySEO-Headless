@@ -50,10 +50,12 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 .add_modifier(Modifier::BOLD);
         }
 
+        let start = app.current_page * app.page_size;
+        let full_idx = start + i;
         let displayed_data = vec![
-            (i + 1).to_string(), // Sequential ID
-            data[1].clone(),     // URL
-            data[18].clone(),    // Word Count
+            (full_idx + 1).to_string(), // Sequential ID
+            data[1].clone(),            // URL
+            data[18].clone(),           // Word Count
         ];
 
         let cells = displayed_data.iter().enumerate().map(|(j, c)| {
@@ -217,6 +219,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         Constraint::Length(10), // Canonicals
     ];
 
+    let total_pages = (app.full_filtered_table_data.len() + app.page_size - 1) / app.page_size;
     let scroll_indicator = if app.horizontal_scroll > 0 {
         format!(" [Scroll: {}] ", app.horizontal_scroll)
     } else {
@@ -229,7 +232,12 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             Block::default()
                 .borders(Borders::ALL)
                 .title(Span::styled(
-                    format!(" 📄 Content Dashboard{} ", scroll_indicator),
+                    format!(
+                        " 📄 Content Dashboard (Page {}/{}) {} ",
+                        app.current_page + 1,
+                        total_pages,
+                        scroll_indicator
+                    ),
                     Style::default()
                         .fg(Color::Yellow)
                         .add_modifier(Modifier::BOLD),

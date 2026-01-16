@@ -27,28 +27,52 @@ pub fn render(f: &mut Frame, _app: &mut App, area: Rect, content_block: Block) {
         ])),
         ListItem::new(Line::from(vec![
             Span::styled(
-                if _app.settings.as_ref().map(|s| s.crawler.enable_javascript).unwrap_or(false) {
+                if _app
+                    .settings
+                    .as_ref()
+                    .map(|s| s.crawler.enable_javascript)
+                    .unwrap_or(false)
+                {
                     " ⚡ "
                 } else {
                     " 💤 "
                 },
-                Style::default().fg(if _app.settings.as_ref().map(|s| s.crawler.enable_javascript).unwrap_or(false) {
-                    Color::Green
-                } else {
-                    Color::Gray
-                }),
+                Style::default().fg(
+                    if _app
+                        .settings
+                        .as_ref()
+                        .map(|s| s.crawler.enable_javascript)
+                        .unwrap_or(false)
+                    {
+                        Color::Green
+                    } else {
+                        Color::Gray
+                    },
+                ),
             ),
             Span::styled(
-                if _app.settings.as_ref().map(|s| s.crawler.enable_javascript).unwrap_or(false) {
+                if _app
+                    .settings
+                    .as_ref()
+                    .map(|s| s.crawler.enable_javascript)
+                    .unwrap_or(false)
+                {
                     "JS MODE: ON"
                 } else {
                     "JS MODE: OFF"
                 },
-                Style::default().add_modifier(if _app.settings.as_ref().map(|s| s.crawler.enable_javascript).unwrap_or(false) {
-                    Modifier::BOLD
-                } else {
-                    Modifier::empty()
-                }),
+                Style::default().add_modifier(
+                    if _app
+                        .settings
+                        .as_ref()
+                        .map(|s| s.crawler.enable_javascript)
+                        .unwrap_or(false)
+                    {
+                        Modifier::BOLD
+                    } else {
+                        Modifier::empty()
+                    },
+                ),
             ),
         ])),
     ];

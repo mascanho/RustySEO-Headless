@@ -40,6 +40,7 @@ impl Default for App {
             last_crawled_index: 0,
             table_data,
             page_data,
+            total_pages: 0,
             table_state,
             horizontal_scroll: 0,
             logs_data: vec!["System Initialized - Ready for Crawl".to_string()],
@@ -79,19 +80,19 @@ impl Default for App {
             show_search: false,
             search_query: String::new(),
             filtered_table_data: Vec::new(),
+            full_filtered_table_data: Vec::new(),
             show_log_search: false,
             log_search_query: String::new(),
             filtered_logs_data: vec![],
             last_settings_mtime: None,
+            page_size: 100,
+            current_page: 0,
         }
     }
 }
 
 impl App {
     pub fn on_tick(&mut self) {
-        // 0. Check if settings file has been modified
-        self.reload_settings_if_changed();
-
         // 1. Collect results from background crawler thread
         let mut results = Vec::new();
         let mut crawl_finished = false;
@@ -179,6 +180,22 @@ impl App {
 
         for log in tracing_logs {
             self.log(log);
+        }
+    }
+
+    pub fn next_page(&mut self) {
+        let total_pages =
+            (self.full_filtered_table_data.len() + self.page_size - 1) / self.page_size;
+        if self.current_page + 1 < total_pages {
+            self.current_page += 1;
+            self.apply_pagination();
+        }
+    }
+
+    pub fn previous_page(&mut self) {
+        if self.current_page > 0 {
+            self.current_page -= 1;
+            self.apply_pagination();
         }
     }
 
@@ -526,21 +543,19 @@ impl App {
 
     pub fn get_current_detail_len(&self) -> usize {
         let selected_idx = self.table_state.selected().unwrap_or(0);
-        if selected_idx >= self.filtered_table_data.len() {
+        let full_idx = self.current_page * self.page_size + selected_idx;
+        if full_idx >= self.full_filtered_table_data.len() {
             return 0;
         }
-        let row_data = &self.filtered_table_data[selected_idx];
+        let row_data = &self.full_filtered_table_data[full_idx];
         let original_id = row_data[0].parse::<usize>().unwrap_or(1);
-        let page_idx = original_id.saturating_sub(1);
-        if page_idx >= self.page_data.len() {
-            return 0;
-        }
+        let page_data = crate::db::load_page_data(original_id);
 
         match self.detail_tab {
-            3 => self.page_data[page_idx].anchor_links.len(),
-            4 => self.page_data[page_idx].outlinks.len(),
-            5 => self.page_data[page_idx].images.len(),
-            8 => self.page_data[page_idx].headings.len(),
+            3 => page_data.anchor_links.len(),
+            4 => page_data.outlinks.len(),
+            5 => page_data.images.len(),
+            8 => page_data.headings.len(),
             _ => 0,
         }
     }
@@ -778,60 +793,45 @@ impl App {
 
     pub fn apply_filter(&mut self) {
         if self.search_query.is_empty() {
-            self.filtered_table_data = self.table_data.clone();
-            return;
-        }
-
-        let matcher = SkimMatcherV2::default();
-        let mut scored_data: Vec<(i64, Vec<String>)> = self
-            .table_data
-            .iter()
-            .filter_map(|row| {
-                // Search across multiple columns (URL, Title, Description)
+            self.full_filtered_table_data = self.table_data.clone();
+        } else {
+            let matcher = SkimMatcherV2::default();
+            let mut scored_data = Vec::new();
+            for row in &self.table_data {
                 let search_blob = format!("{} {} {}", row[1], row[2], row[6]);
-                matcher
-                    .fuzzy_match(&search_blob, &self.search_query)
-                    .map(|score| (score, row.clone()))
-            })
-            .collect();
-
-        // Sort by score descending
-        scored_data.sort_by(|a, b| b.0.cmp(&a.0));
-        self.filtered_table_data = scored_data.into_iter().map(|(_, row)| row).collect();
-
-        // Reset selection if it's out of bounds
-        if let Some(selected) = self.table_state.selected() {
-            if selected >= self.filtered_table_data.len() {
-                if self.filtered_table_data.is_empty() {
-                    self.table_state.select(None);
-                } else {
-                    self.table_state.select(Some(0));
+                if let Some(score) = matcher.fuzzy_match(&search_blob, &self.search_query) {
+                    scored_data.push((score, row.clone()));
                 }
             }
+            scored_data.sort_by(|a, b| b.0.cmp(&a.0));
+            self.full_filtered_table_data = scored_data.into_iter().map(|(_, row)| row).collect();
         }
+
+        // Reset page if out of bounds after filtering
+        let total_pages =
+            (self.full_filtered_table_data.len() + self.page_size - 1) / self.page_size;
+        if self.current_page >= total_pages {
+            self.current_page = total_pages.saturating_sub(1);
+        }
+
+        // Apply pagination
+        self.apply_pagination();
     }
 
     pub fn apply_log_filter(&mut self) {
         if self.log_search_query.is_empty() {
             self.filtered_logs_data = self.logs_data.clone();
-            return;
+        } else {
+            let matcher = SkimMatcherV2::default();
+            let mut matches = Vec::new();
+            for log in &self.logs_data {
+                if let Some(score) = matcher.fuzzy_match(log, &self.log_search_query) {
+                    matches.push((score, log.clone()));
+                }
+            }
+            matches.sort_by(|a, b| b.0.cmp(&a.0));
+            self.filtered_logs_data = matches.into_iter().map(|(_, log)| log).collect();
         }
-
-        let matcher = fuzzy_matcher::skim::SkimMatcherV2::default();
-        let mut matches: Vec<(i64, String)> = self
-            .logs_data
-            .iter()
-            .filter_map(|log| {
-                matcher
-                    .fuzzy_match(log, &self.log_search_query)
-                    .map(|score| (score, log.clone()))
-            })
-            .collect();
-
-        // Sort by score descending
-        matches.sort_by(|a, b| b.0.cmp(&a.0));
-
-        self.filtered_logs_data = matches.into_iter().map(|(_, log)| log).collect();
 
         // Adjust selection if it's out of bounds
         let current_selected = self.logs_state.selected().unwrap_or(0);
@@ -841,6 +841,24 @@ impl App {
                 .select(Some(self.filtered_logs_data.len().saturating_sub(1)));
         } else if self.filtered_logs_data.is_empty() {
             self.logs_state.select(None);
+        }
+    }
+
+    pub fn apply_pagination(&mut self) {
+        let start = self.current_page * self.page_size;
+        let end = (start + self.page_size).min(self.full_filtered_table_data.len());
+        self.filtered_table_data = self.full_filtered_table_data[start..end].to_vec();
+
+        // Adjust selection
+        if let Some(selected) = self.table_state.selected() {
+            if selected >= self.filtered_table_data.len() {
+                if self.filtered_table_data.is_empty() {
+                    self.table_state.select(None);
+                } else {
+                    self.table_state
+                        .select(Some(self.filtered_table_data.len() - 1));
+                }
+            }
         }
     }
 
@@ -858,15 +876,15 @@ impl App {
                     let current_settings = AppSettings::load();
 
                     // Only update if settings actually changed
-                    if self.settings.as_ref().map_or(true, |stored| {
-                        // Simple field comparison for most common changes
+                    let settings_changed = self.settings.as_ref().map_or(true, |stored| {
                         stored.crawler.max_pages != current_settings.crawler.max_pages
                             || stored.crawler.concurrency != current_settings.crawler.concurrency
                             || stored.crawler.stay_on_domain
                                 != current_settings.crawler.stay_on_domain
                             || stored.ui.theme != current_settings.ui.theme
                             || stored.ui.refresh_rate_ms != current_settings.ui.refresh_rate_ms
-                    }) {
+                    });
+                    if settings_changed {
                         self.settings = Some(current_settings);
                         self.log("Settings reloaded from file");
                     }

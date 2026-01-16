@@ -8,7 +8,7 @@ use crate::crawler::helpers::word_count::get_words;
 /// This struct contains all relevant SEO and content analysis information
 /// extracted from an HTML document, including metadata, content metrics,
 /// links, images, and structured data.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct PageData {
     pub id: usize,
     pub url: String,

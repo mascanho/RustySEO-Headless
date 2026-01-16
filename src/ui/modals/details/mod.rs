@@ -1,4 +1,4 @@
-use crate::{models::App, tui_dbg, tui_println, ui::centered_rect};
+use crate::{models::App, ui::centered_rect};
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout},
