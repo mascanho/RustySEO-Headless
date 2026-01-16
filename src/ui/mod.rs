@@ -314,8 +314,8 @@ fn render_help_modal(f: &mut Frame) {
             Span::raw("Table Nav (In/Out/Img/H)"),
         ]),
         Line::from(vec![
-            Span::styled(" Ctrl+↑/↓", Style::default().fg(key_color)),
-            Span::raw("Modal Table Nav"),
+            Span::styled(" Shift+↑/↓", Style::default().fg(key_color)),
+            Span::raw("Navigate Tab Content"),
         ]),
         Line::from(""),
         Line::from(vec![Span::styled(

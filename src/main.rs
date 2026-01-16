@@ -222,9 +222,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 }
                                 KeyCode::Up => {
                                     if key.modifiers.contains(KeyModifiers::SHIFT) {
-                                        // Ctrl+Up for modal table scrolling
-                                        if app.detail_tab == 2
-                                            || app.detail_tab == 3
+                                        // Shift+Up for navigating content in detail tab
+                                        if app.detail_tab == 3
                                             || app.detail_tab == 4
                                             || app.detail_tab == 5
                                             || app.detail_tab == 8
@@ -237,14 +236,11 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                                     app.detail_scroll.saturating_sub(1);
                                             }
                                         }
-                                    } else {
-                                        // Always scroll dashboard table when up arrow is pressed
-                                        app.previous_row();
                                     }
                                 }
                                 KeyCode::Down => {
                                     if key.modifiers.contains(KeyModifiers::SHIFT) {
-                                        // Ctrl+Down for modal table scrolling
+                                        // Shift+Down for navigating content in detail tab
                                         if app.detail_tab == 3
                                             || app.detail_tab == 4
                                             || app.detail_tab == 5
@@ -255,9 +251,6 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                         } else if [0, 1, 2, 6, 7].contains(&app.detail_tab) {
                                             app.detail_scroll += 1;
                                         }
-                                    } else {
-                                        // Always scroll dashboard table when down arrow is pressed
-                                        app.next_row();
                                     }
                                 }
                                 _ => {}
