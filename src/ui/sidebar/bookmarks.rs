@@ -1,5 +1,4 @@
 use crate::models::App;
-use directories::ProjectDirs;
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
@@ -7,8 +6,6 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph, Tabs},
 };
-use serde_json;
-use std::fs;
 
 pub fn render(
     f: &mut Frame,
@@ -121,19 +118,7 @@ fn render_bookmarks_list(f: &mut Frame, app: &mut App, area: Rect, accent_color:
 }
 
 fn render_recent_crawls_list(f: &mut Frame, app: &mut App, area: Rect, accent_color: Color) {
-    let project_dirs = ProjectDirs::from("", "", "rustyseo").unwrap();
-    let recent_crawls_path = project_dirs.data_dir().join("recent-crawls.json");
-
-    let recent_crawls: Vec<String> = if recent_crawls_path.exists() {
-        std::fs::read_to_string(&recent_crawls_path)
-            .ok()
-            .and_then(|c| serde_json::from_str(&c).ok())
-            .unwrap_or_default()
-    } else {
-        Vec::new()
-    };
-
-    let recent_urls = recent_crawls.iter().take(10).cloned().collect::<Vec<_>>();
+    let recent_urls = app.get_recent_crawled_urls();
 
     // Adjust index if out of bounds
     if !recent_urls.is_empty() && app.last_crawled_index >= recent_urls.len() {
@@ -167,11 +152,11 @@ fn render_recent_crawls_list(f: &mut Frame, app: &mut App, area: Rect, accent_co
             };
 
             ListItem::new(Line::from(vec![
-                Span::styled("🔍 ", Style::default().fg(Color::Green)),
                 Span::styled(
                     format!("{:2}. ", i + 1),
                     Style::default().fg(Color::DarkGray),
                 ),
+                Span::styled("🔍 ", Style::default().fg(Color::Green)),
                 Span::styled(url, style),
             ]))
         })
@@ -180,7 +165,7 @@ fn render_recent_crawls_list(f: &mut Frame, app: &mut App, area: Rect, accent_co
     let list = List::new(items)
         .block(
             Block::default()
-                .title(" Recent Crawls (Last 10) ")
+                .title(" Recent Crawls ")
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(Color::Green)),
         )

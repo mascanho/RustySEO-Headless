@@ -1,5 +1,7 @@
+use directories::ProjectDirs;
 use fuzzy_matcher::FuzzyMatcher;
 use fuzzy_matcher::skim::SkimMatcherV2;
+use serde_json;
 use std::sync::mpsc;
 
 use crate::crawler::CrawlMessage;
@@ -498,18 +500,17 @@ impl App {
     }
 
     pub fn get_recent_crawled_urls(&self) -> Vec<String> {
-        self.table_data
-            .iter()
-            .rev()
-            .take(10) // Show last 10 crawled URLs
-            .filter_map(|row| {
-                if row.len() > 1 {
-                    Some(row[1].clone()) // URL is at index 1
-                } else {
-                    None
-                }
-            })
-            .collect()
+        let project_dirs = ProjectDirs::from("", "", "rustyseo").unwrap();
+        let recent_crawls_path = project_dirs.data_dir().join("recent-crawls.json");
+
+        if recent_crawls_path.exists() {
+            std::fs::read_to_string(&recent_crawls_path)
+                .ok()
+                .and_then(|c| serde_json::from_str(&c).ok())
+                .unwrap_or_default()
+        } else {
+            Vec::new()
+        }
     }
 
     pub fn next_detail_tab(&mut self) {
