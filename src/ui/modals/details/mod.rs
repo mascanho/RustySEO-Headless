@@ -4,7 +4,7 @@ use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, Borders, Clear, Paragraph, Tabs},
+    widgets::{Block, Borders, Clear, Padding, Paragraph, Tabs},
 };
 
 mod modal_tabs;
@@ -80,7 +80,8 @@ pub fn render(f: &mut Frame, app: &mut App) {
                         .add_modifier(Modifier::ITALIC)
                         .add_modifier(Modifier::RAPID_BLINK),
                 ))
-                .bg(Color::Rgb(15, 15, 25)),
+                .bg(Color::Rgb(15, 15, 25))
+                .padding(Padding::new(0, 0, 1, 0)),
         )
         .select(app.detail_tab)
         .style(Style::default().fg(Color::DarkGray))
