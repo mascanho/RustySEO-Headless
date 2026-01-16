@@ -106,6 +106,7 @@ impl CrawlEngine {
 
     /// Primary entry point for crawling.
     /// Returns a vector of PageData for backward compatibility.
+
     pub async fn crawl(&self, start_url: &str, headless: bool) -> Vec<PageData> {
         let (tx, mut rx) = mpsc::channel(self.max_pages);
         let start_url = start_url.to_string();
@@ -118,22 +119,31 @@ impl CrawlEngine {
 
         let mut results = Vec::new();
         while let Some(data) = rx.recv().await {
-            if headless {
-                println!(
-                    "[{}] {} - {} links found",
-                    data.status,
-                    data.url,
-                    data.anchor_links.len()
-                );
+            match data {
+                crate::crawler::CrawlMessage::Page(p) => {
+                    if headless {
+                        println!(
+                            "[{}] {} - {} links found",
+                            p.status,
+                            p.url,
+                            p.anchor_links.len()
+                        );
+                    }
+                    results.push(p);
+                }
+                crate::crawler::CrawlMessage::Progress { .. } => {} // ignore progress for CLI
             }
-            results.push(data);
         }
 
         results
     }
 
     /// Robust concurrent crawler logic using JoinSet for task management
-    pub async fn crawl_concurrently(&self, start_url: &str, tx: mpsc::Sender<PageData>) {
+    pub async fn crawl_concurrently(
+        &self,
+        start_url: &str,
+        tx: mpsc::Sender<crate::crawler::CrawlMessage>,
+    ) {
         let base_url = match Url::parse(start_url) {
             Ok(url) => url,
             Err(_) => return,
@@ -299,7 +309,19 @@ impl CrawlEngine {
                         // Send result back
                         self.success_count.fetch_add(1, Ordering::SeqCst);
                         self.stats.increment_crawled();
-                        let _ = tx.send(data).await;
+                        let _ = tx.send(crate::crawler::CrawlMessage::Page(data)).await;
+
+                        // Send progress update
+                        let scanned = self.success_count.load(Ordering::SeqCst) as usize;
+                        let queued = queue.len();
+                        let processing = join_set.len();
+                        let _ = tx
+                            .send(crate::crawler::CrawlMessage::Progress {
+                                scanned,
+                                queued,
+                                processing,
+                            })
+                            .await;
                     }
                     Ok(Err(e)) => {
                         self.stats.increment_failed();

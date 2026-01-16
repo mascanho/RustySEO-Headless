@@ -47,9 +47,9 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
     // Status / System Info
     let status_prefix = if app.is_crawling {
-        format!(" 🔄 CRAWLING: {} ", app.input_url)
+        format!(" 🔄 {} ", app.input_url)
     } else if app.crawl_progress >= 1.0 {
-        format!(" ✅ FINISHED: {} ", app.input_url)
+        format!(" ✅ {} ", app.input_url)
     } else {
         " 💤 STATUS: IDLE ".to_string()
     };
@@ -67,10 +67,10 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 let total_filtered = app.full_filtered_table_data.len();
                 let total_pages = (total_filtered + app.page_size - 1) / app.page_size;
                 format!(
-                    " 🔗 URLs: {} (page {}/{}) ",
+                    " 🔗 URLs: {}",
                     total_filtered,
-                    app.current_page + 1,
-                    total_pages
+                    // app.current_page + 1,
+                    // total_pages
                 )
             },
             Style::default().fg(Color::Green),

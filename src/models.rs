@@ -188,7 +188,7 @@ pub struct App {
     pub detail_horizontal_scroll: usize,
     pub detail_table_state: ratatui::widgets::TableState,
     pub input_url: String,
-    pub crawl_receiver: Option<Receiver<PageData>>,
+    pub crawl_receiver: Option<Receiver<crate::crawler::CrawlMessage>>,
     pub is_crawling: bool,
     pub settings: Option<AppSettings>,
     pub log_receiver: Option<Receiver<String>>,

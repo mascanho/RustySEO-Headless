@@ -2,6 +2,7 @@ use fuzzy_matcher::FuzzyMatcher;
 use fuzzy_matcher::skim::SkimMatcherV2;
 use std::sync::mpsc;
 
+use crate::crawler::CrawlMessage;
 use crate::models::{App, AppSettings};
 use crate::ui::modals::dashboard_menu;
 
@@ -101,7 +102,19 @@ impl App {
         if let Some(ref rx) = self.crawl_receiver {
             loop {
                 match rx.try_recv() {
-                    Ok(data) => results.push(data),
+                    Ok(CrawlMessage::Page(data)) => results.push(data),
+                    Ok(CrawlMessage::Progress {
+                        scanned,
+                        queued,
+                        processing,
+                    }) => {
+                        let total = scanned + queued + processing;
+                        self.crawl_progress = if total == 0 {
+                            0.0
+                        } else {
+                            (scanned as f64 / total as f64).min(1.0)
+                        };
+                    }
                     Err(mpsc::TryRecvError::Empty) => break,
                     Err(mpsc::TryRecvError::Disconnected) => {
                         crawl_finished = true;
@@ -142,14 +155,6 @@ impl App {
             self.table_data.push(row);
             self.log(format!("Crawled: {}", data.url));
 
-            // Update overall progress
-            let limit = self
-                .settings
-                .as_ref()
-                .map(|s| s.crawler.max_pages)
-                .unwrap_or(50) as f64;
-            self.crawl_progress = (self.table_data.len() as f64 / limit).min(1.0);
-
             self.apply_filter();
         }
 
@@ -176,14 +181,6 @@ impl App {
 
         if self.input_url.is_empty() {
             return;
-        }
-
-        // Only do progress simulation if NOT actually crawling
-        if !self.is_crawling && self.crawl_progress < 1.0 {
-            self.crawl_progress += 0.005;
-            if self.crawl_progress > 1.0 {
-                self.crawl_progress = 0.0;
-            }
         }
 
         // 3. Process logs from tracing
@@ -695,7 +692,7 @@ impl App {
         self.logs_data
             .insert(0, format!("Starting crawl for: {}", self.input_url));
 
-        let (tx, rx) = mpsc::channel();
+        let (tx, rx): (mpsc::Sender<CrawlMessage>, mpsc::Receiver<CrawlMessage>) = mpsc::channel();
         self.crawl_receiver = Some(rx);
         let target_url = self.input_url.clone();
         let max_pages = self
