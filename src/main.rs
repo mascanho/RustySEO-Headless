@@ -31,11 +31,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Logging initialization moved to after TUI setup to capture logs in app
     let log_rx = logging::init();
 
-    // Create the file for the settings
-    settings::utils::create::create_settings_file().await;
+    // SPAWN SOME IO TASKS TO NOT SLOW DOWN THE UI
+    tokio::task::spawn(async move {
+        // CREATE THE RECENT CRAWLS FILE IF IT DOES NOT EXIST
+        settings::utils::create::create_recent_crawls_file().await;
 
-    // Init database
-    db::init_db();
+        // Create the file for the settings
+        settings::utils::create::create_settings_file().await;
+
+        // Init database
+        db::init_db();
+    });
 
     // Conditionally render the UI based on the args passed
     let cli = Cli::parse();

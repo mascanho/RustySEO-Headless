@@ -14,6 +14,7 @@ use crate::crawler::helpers::{
     html_parser::{PageData, extract_page_elements},
     user_agents::user_agents,
 };
+use crate::settings::utils::create::add_recent_entry;
 
 #[derive(Clone)]
 pub struct CrawlEngine {
@@ -108,6 +109,8 @@ impl CrawlEngine {
     /// Returns a vector of PageData for backward compatibility.
 
     pub async fn crawl(&self, start_url: &str, headless: bool) -> Vec<PageData> {
+        // SET THE RECENTLY CRAWLED INTO THE LIST OF RECENTLY CRAWLED URLS
+        add_recent_entry(start_url.to_string()).await;
         let (tx, mut rx) = mpsc::channel(self.max_pages);
         let start_url = start_url.to_string();
         let engine = self.clone();
