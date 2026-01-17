@@ -93,34 +93,31 @@ fn create_rows<'a>(data: &'a Vec<Vec<String>>, selected_idx: Option<usize>, page
             row_style = row_style.fg(Color::Cyan).add_modifier(Modifier::BOLD);
         }
 
-        let cells: Vec<Cell> = row.iter().enumerate().map(|(j, content)| {
+        let mut cells: Vec<Cell> = row.iter().enumerate().map(|(j, content)| {
             let mut display_content = content.clone();
             if j == 1 || j == 2 {
                 // Truncate long URLs
-                if display_content.len() > 60 {
-                    display_content = format!("...{}", &display_content[display_content.len() - 57..]);
+                if display_content.len() > 64 {
+                    display_content = format!("...{}", &display_content[display_content.len() - 61..]);
                 }
             }
-
-            if j == 5 {
-                // Status Column
-                let dest_url = &row[2];
-                let status = lookup_status(dest_url, page_data);
-                let color = if status.contains("200") {
-                    Color::Green
-                } else if status.contains("30") {
-                    Color::Yellow
-                } else if status.contains("40") || status.contains("50") {
-                    Color::Red
-                } else {
-                    Color::DarkGray
-                };
-                Cell::from(format!(" {} ", status)).style(row_style.fg(color).bold())
-            } else {
-                Cell::from(format!(" {} ", display_content)).style(row_style)
-            }
+            Cell::from(format!(" {} ", display_content)).style(row_style)
         }).collect();
 
+        // Status Column lookup based on Destination URL (index 2)
+        let dest_url = &row[2];
+        let status = lookup_status(dest_url, page_data);
+        let color = if status.contains("200") {
+            Color::Green
+        } else if status.contains("30") {
+            Color::Yellow
+        } else if status.contains("40") || status.contains("50") {
+            Color::Red
+        } else {
+            Color::DarkGray
+        };
+        cells.push(Cell::from(format!(" {} ", status)).style(row_style.fg(color).bold()));
+        
         Row::new(cells).height(1)
     }).collect()
 }

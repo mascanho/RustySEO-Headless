@@ -170,10 +170,13 @@ impl App {
             
             // Populate internal links table
             for link in &data.anchor_links {
+                let normalized_to = crate::crawler::url_normalizer::normalize_url(&link.href)
+                    .unwrap_or_else(|| link.href.clone());
+                    
                 let internal_row = vec![
                     (self.internal_table_data.len() + 1).to_string(),
                     data.url.clone(),   // Source
-                    link.href.clone(),  // To
+                    normalized_to,      // To (Normalized)
                     link.text.clone(),  // Anchor
                     link.rel.clone(),   // Rel
                 ];
