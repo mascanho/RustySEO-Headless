@@ -45,7 +45,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
     // Render Navigation Tabs
     let titles = vec![
-        "Dashboard",
+        "Overview",
         "Crawl",
         "Internal",
         "Redirects",
@@ -118,19 +118,19 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
     // Render Input Modal when in input mode
     if app.input_mode {
-        let modal_area = centered_rect(25, 8, size);
+        let modal_area = centered_rect(25, 6, size);
 
         let input_block = Block::default()
             .borders(Borders::ALL)
             .title(vec![
                 Span::styled(
-                    " 🔍 Command / URL Input ",
+                    " Crawl URL ",
                     Style::default()
                         .fg(Color::Yellow)
                         .add_modifier(Modifier::BOLD),
                 ),
                 Span::styled(
-                    " (Esc to Cancel, Enter to Submit) ",
+                    " (Esc to Cancel, Enter to crawl ) ",
                     Style::default().fg(Color::Gray),
                 ),
             ])
