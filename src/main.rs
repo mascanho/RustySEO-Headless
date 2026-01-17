@@ -665,7 +665,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                         MouseEventKind::ScrollUp | MouseEventKind::ScrollDown
                     ) {
                         // Handle mouse wheel scrolling on tables
-                        if app.current_state == AppState::Dashboard || app.current_state == AppState::Internal {
+                        if app.current_state == AppState::Dashboard
+                            || app.current_state == AppState::Internal
+                        {
                             if let Some(rect) = app.table_rect {
                                 if mouse.column >= rect.x
                                     && mouse.column < rect.x + rect.width
@@ -674,13 +676,19 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 {
                                     match mouse.kind {
                                         MouseEventKind::ScrollUp => {
-                                            if app.current_state == AppState::Dashboard { app.previous_row() }
-                                            else { app.previous_internal_row() }
-                                        },
+                                            if app.current_state == AppState::Dashboard {
+                                                app.previous_row()
+                                            } else {
+                                                app.previous_internal_row()
+                                            }
+                                        }
                                         MouseEventKind::ScrollDown => {
-                                            if app.current_state == AppState::Dashboard { app.next_row() }
-                                            else { app.next_internal_row() }
-                                        },
+                                            if app.current_state == AppState::Dashboard {
+                                                app.next_row()
+                                            } else {
+                                                app.next_internal_row()
+                                            }
+                                        }
                                         _ => {}
                                     }
                                 }

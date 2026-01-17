@@ -241,7 +241,9 @@ impl CrawlEngine {
                                 for link in &data.anchor_links {
                                     // Normalize each discovered link
                                     let normalized_link =
-                                        match crate::crawler::url_normalizer::normalize_url(&link.href) {
+                                        match crate::crawler::url_normalizer::normalize_url(
+                                            &link.href,
+                                        ) {
                                             Some(u) => u,
                                             None => {
                                                 normalization_failed += 1;

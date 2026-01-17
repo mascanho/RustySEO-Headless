@@ -1,8 +1,8 @@
+use crate::tui_println;
 use directories::ProjectDirs;
+use publicsuffix::{List, Psl};
 use std::fs;
 use std::io::Write;
-use crate::tui_println;
-use publicsuffix::{List, Psl};
 
 pub async fn create_settings_file() -> ProjectDirs {
     let project_dirs = ProjectDirs::from("", "", "rustyseo").unwrap();
