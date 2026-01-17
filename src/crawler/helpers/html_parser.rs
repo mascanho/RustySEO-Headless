@@ -16,6 +16,15 @@ pub struct AnchorLink {
     pub rel: String,
 }
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct CssInfo {
+    pub total_size_bytes: Option<usize>,
+    pub total_size_formatted: String,
+    pub external_css_count: usize,
+    pub inline_css_size_bytes: Option<usize>,
+    pub inline_css_size_formatted: String,
+}
+
 /// Comprehensive data structure representing a parsed web page
 ///
 /// This struct contains all relevant SEO and content analysis information
@@ -47,6 +56,7 @@ pub struct PageData {
     pub canonicals: Vec<(String, String, Option<String>)>, // rel, href, hreflang
     pub size: usize,
     pub word_count: Option<usize>,
+    pub css: Option<CssInfo>,
 }
 
 /// Extract page elements and metadata from HTML document
@@ -167,6 +177,33 @@ pub fn extract_page_elements(document: &Html) -> PageData {
     // Calculate word count for content analysis
     let word_count = Some(get_words(document));
 
+    // GET THE CSS INFORMATION THAT IS POSSIBLE TO GRAB FROM THE HTML
+    let css = document
+        .select(&Selector::parse("link[rel='stylesheet'], style").unwrap())
+        .fold(
+            CssInfo {
+                total_size_bytes: Some(0),
+                total_size_formatted: "0 B".to_string(),
+                external_css_count: 0,
+                inline_css_size_bytes: Some(0),
+                inline_css_size_formatted: "0 B".to_string(),
+            },
+            |mut acc, e| {
+                if e.value().name() == "link" {
+                    acc.external_css_count += 1;
+                    // Size estimation for external CSS could be added here
+                } else if e.value().name() == "style" {
+                    let inline_css = e.text().collect::<String>();
+                    let inline_size = inline_css.len();
+                    acc.inline_css_size_bytes =
+                        Some(acc.inline_css_size_bytes.unwrap_or(0) + inline_size);
+                    acc.inline_css_size_formatted =
+                        format!("{} B", acc.inline_css_size_bytes.unwrap());
+                }
+                acc
+            },
+        );
+
     // Construct and return the comprehensive page data structure
     PageData {
         id: 0,               // Will be set by calling code
@@ -193,6 +230,7 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         canonicals,
         size,
         word_count,
+        css: Some(css),
     }
 }
 

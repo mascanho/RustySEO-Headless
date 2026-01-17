@@ -167,14 +167,17 @@ impl App {
                 data.canonicals.len().to_string(),
                 data.size.to_string(),
                 data.word_count.unwrap_or(0).to_string(),
+                data.css
+                    .as_ref()
+                    .map_or("0 B".to_string(), |css| css.total_size_formatted.clone()),
             ];
             self.table_data.push(row);
-            
+
             // Populate internal links table
             for link in &data.anchor_links {
                 let normalized_to = crate::crawler::url_normalizer::normalize_url(&link.href)
                     .unwrap_or_else(|| link.href.clone());
-                    
+
                 let internal_link = crate::models::InternalLink {
                     id: self.internal_table_data.len() + 1,
                     source: data.url.clone(),
@@ -185,7 +188,8 @@ impl App {
                 self.internal_table_data.push(internal_link);
             }
 
-            self.url_to_status.insert(data.url.clone(), data.status.clone());
+            self.url_to_status
+                .insert(data.url.clone(), data.status.clone());
             self.log(format!("Crawled: {}", data.url));
         }
 
@@ -1070,15 +1074,19 @@ impl App {
             let mut scored_data = Vec::new();
             for link in &self.internal_table_data {
                 let search_blob = format!("{} {} {}", link.source, link.destination, link.anchor);
-                if let Some(score) = matcher.fuzzy_match(&search_blob, &self.internal_search_query) {
+                if let Some(score) = matcher.fuzzy_match(&search_blob, &self.internal_search_query)
+                {
                     scored_data.push((score, link.clone()));
                 }
             }
             scored_data.sort_by(|a, b| b.0.cmp(&a.0));
-            self.internal_full_filtered_table_data = scored_data.into_iter().map(|(_, link)| link).collect();
+            self.internal_full_filtered_table_data =
+                scored_data.into_iter().map(|(_, link)| link).collect();
         }
 
-        let total_pages = (self.internal_full_filtered_table_data.len() + self.internal_page_size - 1) / self.internal_page_size;
+        let total_pages = (self.internal_full_filtered_table_data.len() + self.internal_page_size
+            - 1)
+            / self.internal_page_size;
         if self.internal_current_page >= total_pages {
             self.internal_current_page = total_pages.saturating_sub(1);
         }
@@ -1088,15 +1096,18 @@ impl App {
 
     pub fn apply_internal_pagination(&mut self) {
         let start = self.internal_current_page * self.internal_page_size;
-        let end = (start + self.internal_page_size).min(self.internal_full_filtered_table_data.len());
-        self.internal_filtered_table_data = self.internal_full_filtered_table_data[start..end].to_vec();
+        let end =
+            (start + self.internal_page_size).min(self.internal_full_filtered_table_data.len());
+        self.internal_filtered_table_data =
+            self.internal_full_filtered_table_data[start..end].to_vec();
 
         if let Some(selected) = self.internal_table_state.selected() {
             if selected >= self.internal_filtered_table_data.len() {
                 if self.internal_filtered_table_data.is_empty() {
                     self.internal_table_state.select(None);
                 } else {
-                    self.internal_table_state.select(Some(self.internal_filtered_table_data.len() - 1));
+                    self.internal_table_state
+                        .select(Some(self.internal_filtered_table_data.len() - 1));
                 }
             }
         }
@@ -1104,11 +1115,16 @@ impl App {
 
     pub fn next_internal_row(&mut self) {
         let len = self.internal_filtered_table_data.len();
-        if len == 0 { return; }
+        if len == 0 {
+            return;
+        }
         let i = match self.internal_table_state.selected() {
             Some(i) => {
                 if i >= len - 1 {
-                    let total_pages = (self.internal_full_filtered_table_data.len() + self.internal_page_size - 1) / self.internal_page_size;
+                    let total_pages = (self.internal_full_filtered_table_data.len()
+                        + self.internal_page_size
+                        - 1)
+                        / self.internal_page_size;
                     if self.internal_current_page + 1 < total_pages {
                         self.internal_current_page += 1;
                         self.apply_internal_pagination();
@@ -1127,7 +1143,9 @@ impl App {
 
     pub fn previous_internal_row(&mut self) {
         let len = self.internal_filtered_table_data.len();
-        if len == 0 { return; }
+        if len == 0 {
+            return;
+        }
         let i = match self.internal_table_state.selected() {
             Some(i) => {
                 if i == 0 {
@@ -1148,7 +1166,9 @@ impl App {
     }
 
     pub fn next_internal_page(&mut self) {
-        let total_pages = (self.internal_full_filtered_table_data.len() + self.internal_page_size - 1) / self.internal_page_size;
+        let total_pages = (self.internal_full_filtered_table_data.len() + self.internal_page_size
+            - 1)
+            / self.internal_page_size;
         if self.internal_current_page + 1 < total_pages {
             self.internal_current_page += 1;
             self.apply_internal_pagination();
