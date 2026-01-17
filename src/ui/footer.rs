@@ -101,7 +101,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                     .add_modifier(Modifier::BOLD),
             )
         } else {
-            Span::styled(" 💤 JS: OFF ", Style::default().fg(Color::Gray))
+            Span::styled(" 💤 JS: OFF ", Style::default().fg(Color::Red))
         },
         Span::styled(" | ", Style::default().fg(border_color)),
         // MAX PAGES
