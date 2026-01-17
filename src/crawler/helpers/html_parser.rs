@@ -23,6 +23,7 @@ pub struct CssInfo {
     pub external_css_count: usize,
     pub inline_css_size_bytes: Option<usize>,
     pub inline_css_size_formatted: String,
+    pub css_urls: Vec<String>,
 }
 
 /// Comprehensive data structure representing a parsed web page
@@ -187,10 +188,15 @@ pub fn extract_page_elements(document: &Html) -> PageData {
                 external_css_count: 0,
                 inline_css_size_bytes: Some(0),
                 inline_css_size_formatted: "0 B".to_string(),
+                css_urls: Vec::new(),
             },
             |mut acc, e| {
                 if e.value().name() == "link" {
                     acc.external_css_count += 1;
+                    // Collect CSS URLs
+                    if let Some(href) = e.value().attr("href") {
+                        acc.css_urls.push(href.to_string());
+                    }
                     // Size estimation for external CSS could be added here
                 } else if e.value().name() == "style" {
                     let inline_css = e.text().collect::<String>();

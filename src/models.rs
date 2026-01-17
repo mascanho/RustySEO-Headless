@@ -162,6 +162,13 @@ pub struct InternalLink {
     pub rel: String,
 }
 
+#[derive(Debug, Clone)]
+pub struct CssUrl {
+    pub id: usize,
+    pub url: String,
+    pub page_count: usize, // Number of pages that reference this CSS URL
+}
+
 pub struct App {
     pub sidebar_visible: bool,
     pub task_panel_visible: bool,
@@ -227,6 +234,17 @@ pub struct App {
     pub internal_table_state: ratatui::widgets::TableState,
     pub internal_filtered_table_data: Vec<InternalLink>,
     pub internal_full_filtered_table_data: Vec<InternalLink>,
+
+    // CSS URLs Tab State
+    pub css_urls_table_data: Vec<CssUrl>,
+    pub css_urls_table_state: ratatui::widgets::TableState,
+    pub css_urls_filtered_table_data: Vec<CssUrl>,
+    pub css_urls_full_filtered_table_data: Vec<CssUrl>,
+    pub css_urls_current_page: usize,
+    pub css_urls_page_size: usize,
+    pub css_urls_horizontal_scroll: usize,
+    pub css_urls_search_query: String,
+    pub show_css_urls_search: bool,
     pub internal_current_page: usize,
     pub internal_page_size: usize,
     pub internal_horizontal_scroll: usize,

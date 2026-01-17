@@ -105,6 +105,15 @@ impl Default for App {
             internal_horizontal_scroll: 0,
             internal_search_query: String::new(),
             show_internal_search: false,
+            css_urls_table_data: Vec::new(),
+            css_urls_table_state: ratatui::widgets::TableState::default(),
+            css_urls_filtered_table_data: Vec::new(),
+            css_urls_full_filtered_table_data: Vec::new(),
+            css_urls_current_page: 0,
+            css_urls_page_size: 100,
+            css_urls_horizontal_scroll: 0,
+            css_urls_search_query: String::new(),
+            show_css_urls_search: false,
             url_to_status: HashMap::new(),
         }
     }
@@ -176,6 +185,10 @@ impl App {
                 data.css.as_ref().map_or("0 B".to_string(), |css| {
                     css.inline_css_size_formatted.clone()
                 }),
+                data.css
+                    .as_ref()
+                    .and_then(|css| css.css_urls.first())
+                    .map_or("inline only".to_string(), |url| url.clone()),
             ];
             self.table_data.push(row);
 
@@ -192,6 +205,34 @@ impl App {
                     rel: link.rel.clone(),
                 };
                 self.internal_table_data.push(internal_link);
+            }
+
+            // Collect CSS URLs for CSS URLs table
+            if let Some(css_info) = &data.css {
+                for css_url in &css_info.css_urls {
+                    // Normalize the CSS URL if possible
+                    let normalized_css_url = crate::crawler::url_normalizer::normalize_url(css_url)
+                        .unwrap_or_else(|| css_url.clone());
+
+                    // Check if this URL is already in our collection
+                    let existing_index = self
+                        .css_urls_table_data
+                        .iter()
+                        .position(|css| css.url == normalized_css_url);
+
+                    if let Some(index) = existing_index {
+                        // Increment the page count for existing URL
+                        self.css_urls_table_data[index].page_count += 1;
+                    } else {
+                        // Add new unique CSS URL
+                        let css_url_entry = crate::models::CssUrl {
+                            id: self.css_urls_table_data.len() + 1,
+                            url: normalized_css_url,
+                            page_count: 1,
+                        };
+                        self.css_urls_table_data.push(css_url_entry);
+                    }
+                }
             }
 
             self.url_to_status
@@ -854,9 +895,16 @@ impl App {
         self.page_data.clear();
         self.table_data.clear();
         self.internal_table_data.clear();
+        self.css_urls_table_data.clear();
+        self.css_urls_filtered_table_data.clear();
+        self.css_urls_full_filtered_table_data.clear();
         self.url_to_status.clear();
         self.table_state.select(None); // Reset table selection when data is cleared
         self.internal_table_state.select(None);
+        self.css_urls_table_state.select(None);
+        self.css_urls_current_page = 0;
+        self.css_urls_search_query.clear();
+        self.show_css_urls_search = false;
         self.crawl_progress = 0.0;
         self.is_crawling = true;
         self.logs_data
@@ -1114,6 +1162,57 @@ impl App {
                 } else {
                     self.internal_table_state
                         .select(Some(self.internal_filtered_table_data.len() - 1));
+                }
+            }
+        }
+    }
+
+    pub fn apply_css_urls_filter(&mut self) {
+        if self.css_urls_search_query.is_empty() {
+            // Only update if lengths differ to avoid redundant massive clones
+            if self.css_urls_full_filtered_table_data.len() != self.css_urls_table_data.len() {
+                self.css_urls_full_filtered_table_data = self.css_urls_table_data.clone();
+            }
+        } else {
+            let matcher = SkimMatcherV2::default();
+            let mut scored_data = Vec::new();
+            for css_url in &self.css_urls_table_data {
+                if let Some(score) = matcher.fuzzy_match(&css_url.url, &self.css_urls_search_query)
+                {
+                    scored_data.push((score, css_url.clone()));
+                }
+            }
+            scored_data.sort_by(|a, b| b.0.cmp(&a.0));
+            self.css_urls_full_filtered_table_data = scored_data
+                .into_iter()
+                .map(|(_, css_url)| css_url)
+                .collect();
+        }
+
+        let total_pages = (self.css_urls_full_filtered_table_data.len() + self.css_urls_page_size
+            - 1)
+            / self.css_urls_page_size;
+        if self.css_urls_current_page >= total_pages {
+            self.css_urls_current_page = total_pages.saturating_sub(1);
+        }
+
+        self.apply_css_urls_pagination();
+    }
+
+    pub fn apply_css_urls_pagination(&mut self) {
+        let start = self.css_urls_current_page * self.css_urls_page_size;
+        let end =
+            (start + self.css_urls_page_size).min(self.css_urls_full_filtered_table_data.len());
+        self.css_urls_filtered_table_data =
+            self.css_urls_full_filtered_table_data[start..end].to_vec();
+
+        if let Some(selected) = self.css_urls_table_state.selected() {
+            if selected >= self.css_urls_filtered_table_data.len() {
+                if self.css_urls_filtered_table_data.is_empty() {
+                    self.css_urls_table_state.select(None);
+                } else {
+                    self.css_urls_table_state
+                        .select(Some(self.css_urls_filtered_table_data.len() - 1));
                 }
             }
         }
