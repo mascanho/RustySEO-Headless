@@ -1,5 +1,6 @@
 use crate::app::AppState;
 
+use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
 
 use serde::{Deserialize, Serialize};
@@ -152,6 +153,15 @@ pub struct ChatLog {
     pub content: String,
 }
 
+#[derive(Debug, Clone)]
+pub struct InternalLink {
+    pub id: usize,
+    pub source: String,
+    pub destination: String,
+    pub anchor: String,
+    pub rel: String,
+}
+
 pub struct App {
     pub sidebar_visible: bool,
     pub task_panel_visible: bool,
@@ -213,13 +223,14 @@ pub struct App {
     pub last_log_search_time: Option<std::time::Instant>,
     pub recent_crawls: Result<Vec<String>, Box<dyn std::error::Error>>,
     // Internal Links Tab State
-    pub internal_table_data: Vec<Vec<String>>,
+    pub internal_table_data: Vec<InternalLink>,
     pub internal_table_state: ratatui::widgets::TableState,
-    pub internal_filtered_table_data: Vec<Vec<String>>,
-    pub internal_full_filtered_table_data: Vec<Vec<String>>,
+    pub internal_filtered_table_data: Vec<InternalLink>,
+    pub internal_full_filtered_table_data: Vec<InternalLink>,
     pub internal_current_page: usize,
     pub internal_page_size: usize,
     pub internal_horizontal_scroll: usize,
     pub internal_search_query: String,
     pub show_internal_search: bool,
+    pub url_to_status: HashMap<String, String>,
 }

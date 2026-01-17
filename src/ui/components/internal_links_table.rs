@@ -5,9 +5,8 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table},
 };
-
+use std::collections::HashMap;
 use crate::models::App;
-use crate::crawler::PageData;
 
 /// Standard colors for consistency
 const ACCENT_COLOR: Color = Color::Rgb(80, 140, 255);
@@ -35,7 +34,7 @@ pub fn render_internal_links_table(f: &mut Frame, app: &mut App, area: Rect, tit
     .height(1);
 
     let selected_idx = app.internal_table_state.selected();
-    let rows = create_rows(&app.internal_filtered_table_data, selected_idx, &app.page_data);
+    let rows = create_rows(&app.internal_filtered_table_data, selected_idx, &app.url_to_status);
 
     let widths = [
         Constraint::Length(5),   // #
@@ -79,8 +78,8 @@ pub fn render_internal_links_table(f: &mut Frame, app: &mut App, area: Rect, tit
     }
 }
 
-fn create_rows<'a>(data: &'a Vec<Vec<String>>, selected_idx: Option<usize>, page_data: &'a Vec<PageData>) -> Vec<Row<'a>> {
-    data.iter().enumerate().map(|(i, row)| {
+fn create_rows<'a>(data: &'a Vec<crate::models::InternalLink>, selected_idx: Option<usize>, url_to_status: &'a HashMap<String, String>) -> Vec<Row<'a>> {
+    data.iter().enumerate().map(|(i, link)| {
         let is_selected = selected_idx == Some(i);
         let base_style = if i % 2 == 0 {
             Style::default().bg(Color::Rgb(20, 20, 30))
@@ -93,20 +92,16 @@ fn create_rows<'a>(data: &'a Vec<Vec<String>>, selected_idx: Option<usize>, page
             row_style = row_style.fg(Color::Cyan).add_modifier(Modifier::BOLD);
         }
 
-        let mut cells: Vec<Cell> = row.iter().enumerate().map(|(j, content)| {
-            let mut display_content = content.clone();
-            if j == 1 || j == 2 {
-                // Truncate long URLs
-                if display_content.len() > 64 {
-                    display_content = format!("...{}", &display_content[display_content.len() - 61..]);
-                }
-            }
-            Cell::from(format!(" {} ", display_content)).style(row_style)
-        }).collect();
+        let mut cells = vec![
+            Cell::from(format!(" {} ", link.id)).style(row_style),
+            Cell::from(format!(" {} ", truncate_url(&link.source))).style(row_style),
+            Cell::from(format!(" {} ", truncate_url(&link.destination))).style(row_style),
+            Cell::from(format!(" {} ", link.anchor)).style(row_style),
+            Cell::from(format!(" {} ", link.rel)).style(row_style),
+        ];
 
-        // Status Column lookup based on Destination URL (index 2)
-        let dest_url = &row[2];
-        let status = lookup_status(dest_url, page_data);
+        // Status Column lookup based on Destination URL
+        let status = lookup_status(&link.destination, url_to_status);
         let color = if status.contains("200") {
             Color::Green
         } else if status.contains("30") {
@@ -122,13 +117,16 @@ fn create_rows<'a>(data: &'a Vec<Vec<String>>, selected_idx: Option<usize>, page
     }).collect()
 }
 
-fn lookup_status(url: &str, page_data: &Vec<PageData>) -> String {
-    for page in page_data {
-        if page.url == url {
-            return page.status.clone();
-        }
+fn truncate_url(url: &str) -> String {
+    if url.len() > 64 {
+        format!("...{}", &url[url.len() - 61..])
+    } else {
+        url.to_string()
     }
-    "Pending".to_string()
+}
+
+fn lookup_status(url: &str, url_to_status: &HashMap<String, String>) -> String {
+    url_to_status.get(url).cloned().unwrap_or_else(|| "Pending".to_string())
 }
 
 fn calculate_total_pages(app: &App) -> usize {

@@ -2,6 +2,7 @@ use directories::ProjectDirs;
 use fuzzy_matcher::FuzzyMatcher;
 use fuzzy_matcher::skim::SkimMatcherV2;
 use serde_json;
+use std::collections::HashMap;
 use std::sync::mpsc;
 
 use crate::crawler::CrawlMessage;
@@ -104,6 +105,7 @@ impl Default for App {
             internal_horizontal_scroll: 0,
             internal_search_query: String::new(),
             show_internal_search: false,
+            url_to_status: HashMap::new(),
         }
     }
 }
@@ -139,7 +141,7 @@ impl App {
         }
 
         // 2. Process collected results
-        for data in results {
+        for data in &results {
             let current_id = self.page_data.len() + 1;
             let mut page_data = data.clone();
             page_data.id = current_id;
@@ -173,18 +175,21 @@ impl App {
                 let normalized_to = crate::crawler::url_normalizer::normalize_url(&link.href)
                     .unwrap_or_else(|| link.href.clone());
                     
-                let internal_row = vec![
-                    (self.internal_table_data.len() + 1).to_string(),
-                    data.url.clone(),   // Source
-                    normalized_to,      // To (Normalized)
-                    link.text.clone(),  // Anchor
-                    link.rel.clone(),   // Rel
-                ];
-                self.internal_table_data.push(internal_row);
+                let internal_link = crate::models::InternalLink {
+                    id: self.internal_table_data.len() + 1,
+                    source: data.url.clone(),
+                    destination: normalized_to,
+                    anchor: link.text.clone(),
+                    rel: link.rel.clone(),
+                };
+                self.internal_table_data.push(internal_link);
             }
 
+            self.url_to_status.insert(data.url.clone(), data.status.clone());
             self.log(format!("Crawled: {}", data.url));
+        }
 
+        if !results.is_empty() {
             self.apply_filter();
             self.apply_internal_filter();
         }
@@ -200,6 +205,7 @@ impl App {
         if let Some(last_time) = self.last_search_time {
             if last_time.elapsed() > std::time::Duration::from_millis(300) {
                 self.apply_filter();
+                self.apply_internal_filter();
                 self.last_search_time = None;
             }
         }
@@ -838,6 +844,7 @@ impl App {
         self.page_data.clear();
         self.table_data.clear();
         self.internal_table_data.clear();
+        self.url_to_status.clear();
         self.table_state.select(None); // Reset table selection when data is cleared
         self.internal_table_state.select(None);
         self.crawl_progress = 0.0;
@@ -1054,18 +1061,21 @@ impl App {
 
     pub fn apply_internal_filter(&mut self) {
         if self.internal_search_query.is_empty() {
-            self.internal_full_filtered_table_data = self.internal_table_data.clone();
+            // Only update if lengths differ to avoid redundant massive clones
+            if self.internal_full_filtered_table_data.len() != self.internal_table_data.len() {
+                self.internal_full_filtered_table_data = self.internal_table_data.clone();
+            }
         } else {
             let matcher = SkimMatcherV2::default();
             let mut scored_data = Vec::new();
-            for row in &self.internal_table_data {
-                let search_blob = format!("{} {} {}", row[1], row[2], row[3]);
+            for link in &self.internal_table_data {
+                let search_blob = format!("{} {} {}", link.source, link.destination, link.anchor);
                 if let Some(score) = matcher.fuzzy_match(&search_blob, &self.internal_search_query) {
-                    scored_data.push((score, row.clone()));
+                    scored_data.push((score, link.clone()));
                 }
             }
             scored_data.sort_by(|a, b| b.0.cmp(&a.0));
-            self.internal_full_filtered_table_data = scored_data.into_iter().map(|(_, row)| row).collect();
+            self.internal_full_filtered_table_data = scored_data.into_iter().map(|(_, link)| link).collect();
         }
 
         let total_pages = (self.internal_full_filtered_table_data.len() + self.internal_page_size - 1) / self.internal_page_size;
