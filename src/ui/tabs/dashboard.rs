@@ -258,14 +258,22 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             Block::default()
                 .borders(Borders::ALL)
                 .title(Span::styled(
-                    format!(" 📊 SEO Audit Dashboard ({}) ", app.full_filtered_table_data.len()),
+                    format!(
+                        "SEO Audit Dashboard ({}) ",
+                        app.full_filtered_table_data.len()
+                    ),
                     Style::default()
                         .fg(Color::Yellow)
                         .add_modifier(Modifier::BOLD),
                 ))
                 .title_bottom(
                     Line::from(Span::styled(
-                        format!(" Page {} of {} {} ", app.current_page + 1, total_pages, scroll_indicator),
+                        format!(
+                            " Page {} of {} {} ",
+                            app.current_page + 1,
+                            total_pages,
+                            scroll_indicator
+                        ),
                         Style::default().fg(Color::DarkGray).italic(),
                     ))
                     .alignment(Alignment::Right),
