@@ -170,6 +170,12 @@ impl App {
                 data.css
                     .as_ref()
                     .map_or("0 B".to_string(), |css| css.total_size_formatted.clone()),
+                data.css
+                    .as_ref()
+                    .map_or("0".to_string(), |css| css.external_css_count.to_string()),
+                data.css.as_ref().map_or("0 B".to_string(), |css| {
+                    css.inline_css_size_formatted.clone()
+                }),
             ];
             self.table_data.push(row);
 

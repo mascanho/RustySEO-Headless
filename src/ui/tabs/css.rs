@@ -26,23 +26,20 @@ fn style_cell_content(
     content: &mut String,
     cell_style: &mut Style,
     j: usize,
-    c: &str,
+    _c: &str,
     is_selected: bool,
 ) {
     // Handle text truncation for long content columns
-    if j == 1 || j == 2 || j == 4 || j == 6 || j == 8 {
-        // This would need access to horizontal_scroll, so keeping in main function
-        // For modularity, this could be passed as parameter
+    if j == 1 {
+        // URL column - truncation handled in main function
     }
 
     // Apply column-specific styling
     match j {
-        10 => style_status_column(content, cell_style, is_selected), // Status
-        11 => style_mobile_column(content),                          // Mobile
-        3 => style_length_column(cell_style, c, 60, is_selected),    // Title length
-        5 => style_length_column(cell_style, c, 160, is_selected),   // Desc length
-        13 => style_indexability_column(content, cell_style, is_selected), // Indexability
-        _ => {}                                                      // No special styling
+        5 => style_status_column(content, cell_style, is_selected), // Status
+        6 => style_mobile_column(content),                          // Mobile
+        8 => style_indexability_column(content, cell_style, is_selected), // Indexability
+        _ => {}                                                     // No special styling
     }
 }
 
@@ -95,17 +92,6 @@ fn style_mobile_column(content: &mut String) {
     } else {
         "No".to_string()
     };
-}
-
-/// Helper function to style length columns with color coding
-fn style_length_column(cell_style: &mut Style, c: &str, optimal_max: usize, is_selected: bool) {
-    if let Ok(len) = c.parse::<usize>() {
-        if len > optimal_max && !is_selected {
-            *cell_style = cell_style.fg(Color::Red);
-        } else if len < optimal_max && !is_selected {
-            *cell_style = cell_style.fg(Color::Green);
-        }
-    }
 }
 
 /// Helper function to style the indexability column
@@ -162,23 +148,18 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         app.filtered_table_data = app.table_data.clone();
     }
 
-    // Define the header titles for each column in the table
-    // These correspond to SEO metrics and page information
+    // Define the header titles for each column in the CSS table
+    // These correspond to CSS-related metrics and page information
     let header_titles = [
-        "ID",        // Sequential identifier for each row
-        "URL",       // The crawled page URL
-        "Title",     // Page title text
-        "Len",       // Title length in characters
-        "Desc",      // Meta description text
-        "Len",       // Description length in characters
-        "H1",        // H1 heading text
-        "Len",       // H1 length in characters
-        "H2",        // H2 heading text
-        "Len",       // H2 length in characters
-        "Status",    // HTTP status code
-        "Mobile",    // Mobile-friendliness indicator
-        "Lang",      // Detected language
-        "Indexable", // Indexability status
+        "ID",              // Sequential identifier for each row
+        "URL",             // The crawled page URL
+        "CSS Total Size",  // Total CSS size (formatted)
+        "Ext CSS Count",   // Number of external CSS files
+        "Inline CSS Size", // Size of inline CSS (formatted)
+        "Status",          // HTTP status code
+        "Mobile",          // Mobile-friendliness indicator
+        "Lang",            // Detected language
+        "Indexable",       // Indexability status
     ];
 
     // Create the table header row using the helper function
@@ -207,31 +188,23 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         // Calculate the starting index for pagination
         let start = app.current_page * app.page_size;
         let full_idx = start + i;
-
-        // Prepare the data to be displayed in each column
-        // This maps the raw data array to specific columns
         let displayed_data = vec![
-            (full_idx + 1).to_string(), // ID: 1-based sequential number
-            data[1].clone(),            // URL: from data index 1
-            data[2].clone(),            // Title: from data index 2
-            data[3].clone(),            // Title Len: from data index 3
-            data[6].clone(),            // Desc: from data index 6
-            data[7].clone(),            // Desc Len: from data index 7
-            data[4].clone(),            // H1: from data index 4
-            data[5].clone(),            // H1 Len: from data index 5
-            data[8].clone(),            // H2: from data index 8
-            data[9].clone(),            // H2 Len: from data index 9
-            data[10].clone(),           // Status: from data index 10
-            data[11].clone(),           // Mobile: from data index 11
-            data[12].clone(),           // Language: from data index 12
-            data[13].clone(),           // Indexability: from data index 13
+            (full_idx + 1).to_string(), // Sequential ID
+            data[1].clone(),            // URL
+            data[19].clone(),           // CSS Total Size
+            data[20].clone(),           // External CSS Count
+            data[21].clone(),           // Inline CSS Size
+            data[10].clone(),           // Status
+            data[11].clone(),           // Mobile
+            data[12].clone(),           // Language
+            data[13].clone(),           // Indexability
         ];
 
         // Process each cell's content and styling
         let cells = displayed_data.iter().enumerate().map(|(j, c)| {
             // Initialize content variable for text processing
-            let mut content = if j == 1 || j == 2 || j == 4 || j == 6 || j == 8 {
-                // For columns that contain potentially long text (URL, Title, H1, Desc, H2)
+            let mut content = if j == 1 {
+                // For columns that contain potentially long text (URL)
                 let content_str = c.as_str();
                 let char_count = content_str.chars().count();
 
@@ -264,12 +237,11 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             style_cell_content(&mut content, &mut cell_style, j, c, is_selected);
 
             // Apply padding to specific columns for alignment
-            let content = if j == 3 || j == 5 || j == 7 || j == 9 || j == 10 || j == 11 {
-                // Columns that need fixed width: lengths and status columns
+            let content = if j == 3 || j == 5 || j == 6 {
+                // Columns that need fixed width: count and status columns
                 let width = match j {
-                    3 | 5 => 5,          // Length columns: 5 characters wide
-                    7 | 9 => 7,          // H1/H2 length columns: 7 characters wide
-                    10 | 11 => 8,        // Status and Mobile columns: 8 characters wide
+                    3 => 15,             // External CSS Count: 15 characters wide
+                    5 | 6 => 8,          // Status and Mobile columns: 8 characters wide
                     _ => unreachable!(), // Should not reach here
                 };
                 pad_content(content, width)
@@ -290,20 +262,15 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
     // Define column width constraints for the table layout
     let widths = [
-        Constraint::Length(max_id_width), // ID column: dynamic width
-        Constraint::Min(55),              // URL column: minimum 55 characters
-        Constraint::Length(20),           // Title column: fixed 20 characters
-        Constraint::Length(5),            // Title Len: fixed 5 characters
-        Constraint::Length(20),           // Desc column: fixed 20 characters
-        Constraint::Length(5),            // Desc Len: fixed 5 characters
-        Constraint::Length(20),           // H1 column: fixed 20 characters
-        Constraint::Length(7),            // H1 Len: fixed 7 characters
-        Constraint::Length(15),           // H2 column: fixed 15 characters
-        Constraint::Length(7),            // H2 Len: fixed 7 characters
-        Constraint::Length(8),            // Status column: fixed 8 characters
-        Constraint::Length(8),            // Mobile column: fixed 8 characters
-        Constraint::Length(6),            // Lang column: fixed 6 characters
-        Constraint::Min(8),               // Indexable column: minimum 8 characters
+        Constraint::Length(max_id_width), // ID
+        Constraint::Min(55),              // URL
+        Constraint::Length(15),           // CSS Total Size
+        Constraint::Length(15),           // External CSS Count
+        Constraint::Length(18),           // Inline CSS Size
+        Constraint::Length(8),            // Status
+        Constraint::Length(8),            // Mobile
+        Constraint::Length(6),            // Lang
+        Constraint::Min(8),               // Indexable
     ];
 
     // Calculate total number of pages for pagination
