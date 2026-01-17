@@ -88,20 +88,21 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 .add_modifier(Modifier::BOLD),
         ),
         Span::styled(" | ", Style::default().fg(border_color)),
+        Span::styled(
+            " ⚡ JS: ",
+            Style::default()
+                .fg(Color::Gray)
+                .add_modifier(Modifier::BOLD),
+        ),
         if app
             .settings
             .as_ref()
             .map(|s| s.crawler.enable_javascript)
             .unwrap_or(false)
         {
-            Span::styled(
-                " ⚡ JS: ON ",
-                Style::default()
-                    .fg(Color::Green)
-                    .add_modifier(Modifier::BOLD),
-            )
+            Span::styled(format!("{}", "ON"), Style::default().fg(Color::Green))
         } else {
-            Span::styled(" 💤 JS: OFF ", Style::default().fg(Color::Red))
+            Span::styled(format!("{}", "OFF"), Style::default().fg(Color::Red))
         },
         Span::styled(" | ", Style::default().fg(border_color)),
         // MAX PAGES
