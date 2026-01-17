@@ -161,7 +161,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
     }
 
     // Render Footers
-    let url = &row_data[1];
+    let _url = &row_data[1];
     let status = &row_data[10];
 
     let status_code = status

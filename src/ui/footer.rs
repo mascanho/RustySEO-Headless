@@ -65,7 +65,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         Span::styled(
             {
                 let total_filtered = app.full_filtered_table_data.len();
-                let total_pages = (total_filtered + app.page_size - 1) / app.page_size;
+                let _total_pages = (total_filtered + app.page_size - 1) / app.page_size;
                 format!(
                     " 🔗 URLs: {}",
                     total_filtered,

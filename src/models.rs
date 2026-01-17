@@ -1,4 +1,4 @@
-use crate::{app::AppState, crawler::PageData};
+use crate::app::AppState;
 
 use std::sync::mpsc::Receiver;
 
@@ -212,4 +212,14 @@ pub struct App {
     pub last_search_time: Option<std::time::Instant>,
     pub last_log_search_time: Option<std::time::Instant>,
     pub recent_crawls: Result<Vec<String>, Box<dyn std::error::Error>>,
+    // Internal Links Tab State
+    pub internal_table_data: Vec<Vec<String>>,
+    pub internal_table_state: ratatui::widgets::TableState,
+    pub internal_filtered_table_data: Vec<Vec<String>>,
+    pub internal_full_filtered_table_data: Vec<Vec<String>>,
+    pub internal_current_page: usize,
+    pub internal_page_size: usize,
+    pub internal_horizontal_scroll: usize,
+    pub internal_search_query: String,
+    pub show_internal_search: bool,
 }

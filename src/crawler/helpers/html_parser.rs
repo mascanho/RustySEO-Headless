@@ -8,6 +8,19 @@ use crate::crawler::helpers::word_count::get_words;
 /// This struct contains all relevant SEO and content analysis information
 /// extracted from an HTML document, including metadata, content metrics,
 /// links, images, and structured data.
+/// Comprehensive data structure representing a link found on a page
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct AnchorLink {
+    pub href: String,
+    pub text: String,
+    pub rel: String,
+}
+
+/// Comprehensive data structure representing a parsed web page
+///
+/// This struct contains all relevant SEO and content analysis information
+/// extracted from an HTML document, including metadata, content metrics,
+/// links, images, and structured data.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct PageData {
     pub id: usize,
@@ -24,8 +37,8 @@ pub struct PageData {
     pub mobile: bool,
     pub language: String,
     pub indexability: String,
-    pub anchor_links: Vec<(String, String)>,
-    pub outlinks: Vec<(String, String)>,
+    pub anchor_links: Vec<AnchorLink>,
+    pub outlinks: Vec<AnchorLink>,
     pub images: Vec<ImageInfo>,
     pub headings: Vec<(String, String)>,
     pub headers: Vec<String>,
@@ -60,7 +73,6 @@ pub fn extract_page_elements(document: &Html) -> PageData {
     let description = extract_meta_content(document, &desc_selector);
 
     // Check for mobile viewport meta tag
-    // Check for mobile viewport meta tag
     let mobile = document
         .select(&Selector::parse("meta[name='viewport']").unwrap())
         .next()
@@ -83,19 +95,17 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         .unwrap_or_default();
 
     // Extract all links from the page
-    // Note: Currently anchor_links and outlinks contain the same data
-    // TODO: Consider filtering internal vs external links if needed
-    let links: Vec<(String, String)> = document
+    let anchor_links: Vec<AnchorLink> = document
         .select(&Selector::parse("a[href]").unwrap())
         .map(|e| {
             let href = e.value().attr("href").unwrap().to_string();
-            let text = e.text().collect::<String>();
-            (href, text)
+            let text = e.text().collect::<String>().trim().to_string();
+            let rel = e.value().attr("rel").unwrap_or("").to_string();
+            AnchorLink { href, text, rel }
         })
         .collect();
 
-    let anchor_links = links.clone();
-    let outlinks = links;
+    let outlinks = anchor_links.clone();
 
     // Extract image information including size estimates
     let images: Vec<ImageInfo> = document

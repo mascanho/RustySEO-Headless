@@ -8,7 +8,7 @@ use ratatui::{
 
 pub fn render(
     f: &mut Frame,
-    outlinks: &[(String, String)],
+    anchor_links: &[crate::crawler::helpers::html_parser::AnchorLink],
     horizontal_scroll: usize,
     table_state: &mut TableState,
     area: Rect,
@@ -28,7 +28,7 @@ pub fn render(
     }))
     .height(1);
 
-    let rows = outlinks.iter().enumerate().map(|(i, (href, text))| {
+    let rows = anchor_links.iter().enumerate().map(|(i, link)| {
         let is_selected = table_state.selected() == Some(i);
 
         let mut row_style = if i % 2 == 0 {
@@ -44,7 +44,7 @@ pub fn render(
                 .add_modifier(Modifier::BOLD);
         }
 
-        let displayed_data = [(i + 1).to_string(), href.clone(), text.clone()];
+        let displayed_data = [(i + 1).to_string(), link.href.clone(), link.text.clone()];
 
         let cells = displayed_data.iter().enumerate().map(|(j, c)| {
             let content = if j == 1 {
@@ -110,7 +110,7 @@ pub fn render(
                 .title(Span::styled(
                     format!(
                         " ↗️  Outgoing Links ({}) {} ",
-                        outlinks.len(),
+                        anchor_links.len(),
                         scroll_indicator
                     ),
                     Style::default()

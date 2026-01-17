@@ -8,6 +8,7 @@ use ratatui::{
 
 use crate::{app::AppState, models::App};
 
+pub mod components;
 pub mod footer;
 pub mod modals;
 pub mod side_panel;

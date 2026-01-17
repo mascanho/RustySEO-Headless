@@ -1,8 +1,8 @@
 use ratatui::{
     Frame,
-    layout::{Constraint, Rect},
+    layout::{Alignment, Constraint, Rect},
     style::{Color, Modifier, Style, Stylize},
-    text::Span,
+    text::{Line, Span},
     widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table},
 };
 
@@ -258,16 +258,18 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             Block::default()
                 .borders(Borders::ALL)
                 .title(Span::styled(
-                    format!(
-                        " 📊 SEO Audit Dashboard (Page {}/{}) {} ",
-                        app.current_page + 1,
-                        total_pages,
-                        scroll_indicator
-                    ),
+                    format!(" 📊 SEO Audit Dashboard ({}) ", app.full_filtered_table_data.len()),
                     Style::default()
                         .fg(Color::Yellow)
                         .add_modifier(Modifier::BOLD),
                 ))
+                .title_bottom(
+                    Line::from(Span::styled(
+                        format!(" Page {} of {} {} ", app.current_page + 1, total_pages, scroll_indicator),
+                        Style::default().fg(Color::DarkGray).italic(),
+                    ))
+                    .alignment(Alignment::Right),
+                )
                 .border_style(Style::default().fg(border_color)),
         )
         .column_spacing(1)

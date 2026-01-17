@@ -238,16 +238,16 @@ impl CrawlEngine {
 
                             {
                                 let visited = self.visited.lock().await;
-                                for (link, _) in &data.anchor_links {
+                                for link in &data.anchor_links {
                                     // Normalize each discovered link
                                     let normalized_link =
-                                        match crate::crawler::url_normalizer::normalize_url(link) {
+                                        match crate::crawler::url_normalizer::normalize_url(&link.href) {
                                             Some(u) => u,
                                             None => {
                                                 normalization_failed += 1;
                                                 tracing::debug!(
                                                     "[LINK] Failed to normalize: {}",
-                                                    link
+                                                    link.href
                                                 );
                                                 continue;
                                             }
@@ -464,11 +464,15 @@ impl CrawlEngine {
         page_data.outlinks = page_data
             .anchor_links
             .iter()
-            .filter_map(|(href, text)| {
-                if let Ok(abs_url) = base_url.join(href) {
-                    Some((abs_url.to_string(), text.clone()))
+            .map(|link| {
+                if let Ok(abs_url) = base_url.join(&link.href) {
+                    crate::crawler::helpers::html_parser::AnchorLink {
+                        href: abs_url.to_string(),
+                        text: link.text.clone(),
+                        rel: link.rel.clone(),
+                    }
                 } else {
-                    Some((href.clone(), text.clone()))
+                    link.clone()
                 }
             })
             .collect();
@@ -478,8 +482,8 @@ impl CrawlEngine {
         page_data.anchor_links = page_data
             .anchor_links
             .into_iter()
-            .filter_map(|(href, text)| {
-                if let Ok(mut abs_url) = base_url.join(&href) {
+            .filter_map(|link| {
+                if let Ok(mut abs_url) = base_url.join(&link.href) {
                     // Remove fragment (e.g., #section) to avoid duplicate crawls
                     abs_url.set_fragment(None);
 
@@ -487,7 +491,11 @@ impl CrawlEngine {
                         let url_str = abs_url.to_string();
                         // Deduplicate within this page
                         if seen_urls.insert(url_str.clone()) {
-                            return Some((url_str, text));
+                            return Some(crate::crawler::helpers::html_parser::AnchorLink {
+                                href: url_str,
+                                text: link.text,
+                                rel: link.rel,
+                            });
                         }
                     }
                 }
@@ -565,16 +573,19 @@ impl CrawlEngine {
         page_data.status = status;
         page_data.headers = vec!["Requested-Mode: JavaScript".to_string()];
 
-        // Same Link Processing Logic
         // Store all original links as outlinks before filtering
         page_data.outlinks = page_data
             .anchor_links
             .iter()
-            .filter_map(|(href, text)| {
-                if let Ok(abs_url) = base_url.join(href) {
-                    Some((abs_url.to_string(), text.clone()))
+            .map(|link| {
+                if let Ok(abs_url) = base_url.join(&link.href) {
+                    crate::crawler::helpers::html_parser::AnchorLink {
+                        href: abs_url.to_string(),
+                        text: link.text.clone(),
+                        rel: link.rel.clone(),
+                    }
                 } else {
-                    Some((href.clone(), text.clone()))
+                    link.clone()
                 }
             })
             .collect();
@@ -584,13 +595,17 @@ impl CrawlEngine {
         page_data.anchor_links = page_data
             .anchor_links
             .into_iter()
-            .filter_map(|(href, text)| {
-                if let Ok(mut abs_url) = base_url.join(&href) {
+            .filter_map(|link| {
+                if let Ok(mut abs_url) = base_url.join(&link.href) {
                     abs_url.set_fragment(None);
                     if abs_url.domain() == base_url.domain() {
                         let url_str = abs_url.to_string();
                         if seen_urls.insert(url_str.clone()) {
-                            return Some((url_str, text));
+                            return Some(crate::crawler::helpers::html_parser::AnchorLink {
+                                href: url_str,
+                                text: link.text,
+                                rel: link.rel,
+                            });
                         }
                     }
                 }

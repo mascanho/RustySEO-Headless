@@ -109,6 +109,22 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             }
                             _ => {}
                         }
+                    } else if app.show_internal_search {
+                        match key.code {
+                            KeyCode::Enter | KeyCode::Esc => {
+                                app.show_internal_search = false;
+                                app.apply_internal_filter();
+                            }
+                            KeyCode::Char(c) => {
+                                app.internal_search_query.push(c);
+                                app.last_search_time = Some(std::time::Instant::now());
+                            }
+                            KeyCode::Backspace => {
+                                app.internal_search_query.pop();
+                                app.last_search_time = Some(std::time::Instant::now());
+                            }
+                            _ => {}
+                        }
                     } else if app.show_log_search {
                         match key.code {
                             KeyCode::Enter | KeyCode::Esc => {
@@ -444,6 +460,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     app.show_log_search = true;
                                 } else if app.current_state == AppState::Dashboard {
                                     app.show_search = true;
+                                } else if app.current_state == AppState::Internal {
+                                    app.show_internal_search = true;
                                 }
                             }
 
@@ -462,10 +480,12 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             // }
                             KeyCode::Char('k') | KeyCode::Up => match app.current_state {
                                 AppState::Dashboard => app.previous_row(),
+                                AppState::Internal => app.previous_internal_row(),
                                 _ => {}
                             },
                             KeyCode::Char('j') | KeyCode::Down => match app.current_state {
                                 AppState::Dashboard => app.next_row(),
+                                AppState::Internal => app.next_internal_row(),
                                 _ => {}
                             },
 
@@ -515,8 +535,16 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 }
                             }
 
-                            KeyCode::Char(']') => app.next_page(),
-                            KeyCode::Char('[') => app.previous_page(),
+                            KeyCode::Char(']') => match app.current_state {
+                                AppState::Dashboard => app.next_page(),
+                                AppState::Internal => app.next_internal_page(),
+                                _ => {}
+                            },
+                            KeyCode::Char('[') => match app.current_state {
+                                AppState::Dashboard => app.previous_page(),
+                                AppState::Internal => app.previous_internal_page(),
+                                _ => {}
+                            },
 
                             // Quick jumps
                             KeyCode::Char('g') => app.set_sidebar_tab(0),
@@ -636,8 +664,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                         mouse.kind,
                         MouseEventKind::ScrollUp | MouseEventKind::ScrollDown
                     ) {
-                        // Handle mouse wheel scrolling on dashboard table
-                        if app.current_state == AppState::Dashboard {
+                        // Handle mouse wheel scrolling on tables
+                        if app.current_state == AppState::Dashboard || app.current_state == AppState::Internal {
                             if let Some(rect) = app.table_rect {
                                 if mouse.column >= rect.x
                                     && mouse.column < rect.x + rect.width
@@ -645,8 +673,14 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     && mouse.row < rect.y + rect.height
                                 {
                                     match mouse.kind {
-                                        MouseEventKind::ScrollUp => app.previous_row(),
-                                        MouseEventKind::ScrollDown => app.next_row(),
+                                        MouseEventKind::ScrollUp => {
+                                            if app.current_state == AppState::Dashboard { app.previous_row() }
+                                            else { app.previous_internal_row() }
+                                        },
+                                        MouseEventKind::ScrollDown => {
+                                            if app.current_state == AppState::Dashboard { app.next_row() }
+                                            else { app.next_internal_row() }
+                                        },
                                         _ => {}
                                     }
                                 }

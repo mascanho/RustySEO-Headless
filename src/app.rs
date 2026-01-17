@@ -95,6 +95,15 @@ impl Default for App {
             last_search_time: None,
             last_log_search_time: None,
             recent_crawls: recent_crawls(),
+            internal_table_data: Vec::new(),
+            internal_table_state: ratatui::widgets::TableState::default(),
+            internal_filtered_table_data: Vec::new(),
+            internal_full_filtered_table_data: Vec::new(),
+            internal_current_page: 0,
+            internal_page_size: 100,
+            internal_horizontal_scroll: 0,
+            internal_search_query: String::new(),
+            show_internal_search: false,
         }
     }
 }
@@ -158,9 +167,23 @@ impl App {
                 data.word_count.unwrap_or(0).to_string(),
             ];
             self.table_data.push(row);
+            
+            // Populate internal links table
+            for link in &data.anchor_links {
+                let internal_row = vec![
+                    (self.internal_table_data.len() + 1).to_string(),
+                    data.url.clone(),   // Source
+                    link.href.clone(),  // To
+                    link.text.clone(),  // Anchor
+                    link.rel.clone(),   // Rel
+                ];
+                self.internal_table_data.push(internal_row);
+            }
+
             self.log(format!("Crawled: {}", data.url));
 
             self.apply_filter();
+            self.apply_internal_filter();
         }
 
         if crawl_finished {
@@ -811,7 +834,9 @@ impl App {
 
         self.page_data.clear();
         self.table_data.clear();
+        self.internal_table_data.clear();
         self.table_state.select(None); // Reset table selection when data is cleared
+        self.internal_table_state.select(None);
         self.crawl_progress = 0.0;
         self.is_crawling = true;
         self.logs_data
@@ -1021,6 +1046,106 @@ impl App {
                         .select(Some(self.filtered_table_data.len() - 1));
                 }
             }
+        }
+    }
+
+    pub fn apply_internal_filter(&mut self) {
+        if self.internal_search_query.is_empty() {
+            self.internal_full_filtered_table_data = self.internal_table_data.clone();
+        } else {
+            let matcher = SkimMatcherV2::default();
+            let mut scored_data = Vec::new();
+            for row in &self.internal_table_data {
+                let search_blob = format!("{} {} {}", row[1], row[2], row[3]);
+                if let Some(score) = matcher.fuzzy_match(&search_blob, &self.internal_search_query) {
+                    scored_data.push((score, row.clone()));
+                }
+            }
+            scored_data.sort_by(|a, b| b.0.cmp(&a.0));
+            self.internal_full_filtered_table_data = scored_data.into_iter().map(|(_, row)| row).collect();
+        }
+
+        let total_pages = (self.internal_full_filtered_table_data.len() + self.internal_page_size - 1) / self.internal_page_size;
+        if self.internal_current_page >= total_pages {
+            self.internal_current_page = total_pages.saturating_sub(1);
+        }
+
+        self.apply_internal_pagination();
+    }
+
+    pub fn apply_internal_pagination(&mut self) {
+        let start = self.internal_current_page * self.internal_page_size;
+        let end = (start + self.internal_page_size).min(self.internal_full_filtered_table_data.len());
+        self.internal_filtered_table_data = self.internal_full_filtered_table_data[start..end].to_vec();
+
+        if let Some(selected) = self.internal_table_state.selected() {
+            if selected >= self.internal_filtered_table_data.len() {
+                if self.internal_filtered_table_data.is_empty() {
+                    self.internal_table_state.select(None);
+                } else {
+                    self.internal_table_state.select(Some(self.internal_filtered_table_data.len() - 1));
+                }
+            }
+        }
+    }
+
+    pub fn next_internal_row(&mut self) {
+        let len = self.internal_filtered_table_data.len();
+        if len == 0 { return; }
+        let i = match self.internal_table_state.selected() {
+            Some(i) => {
+                if i >= len - 1 {
+                    let total_pages = (self.internal_full_filtered_table_data.len() + self.internal_page_size - 1) / self.internal_page_size;
+                    if self.internal_current_page + 1 < total_pages {
+                        self.internal_current_page += 1;
+                        self.apply_internal_pagination();
+                        0
+                    } else {
+                        len - 1
+                    }
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.internal_table_state.select(Some(i));
+    }
+
+    pub fn previous_internal_row(&mut self) {
+        let len = self.internal_filtered_table_data.len();
+        if len == 0 { return; }
+        let i = match self.internal_table_state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    if self.internal_current_page > 0 {
+                        self.internal_current_page -= 1;
+                        self.apply_internal_pagination();
+                        self.internal_filtered_table_data.len().saturating_sub(1)
+                    } else {
+                        0
+                    }
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.internal_table_state.select(Some(i));
+    }
+
+    pub fn next_internal_page(&mut self) {
+        let total_pages = (self.internal_full_filtered_table_data.len() + self.internal_page_size - 1) / self.internal_page_size;
+        if self.internal_current_page + 1 < total_pages {
+            self.internal_current_page += 1;
+            self.apply_internal_pagination();
+        }
+    }
+
+    pub fn previous_internal_page(&mut self) {
+        if self.internal_current_page > 0 {
+            self.internal_current_page -= 1;
+            self.apply_internal_pagination();
         }
     }
 

@@ -1,11 +1,7 @@
 use directories::ProjectDirs;
 use std::fs;
 use std::io::Write;
-use std::str::FromStr;
-use tracing_subscriber::fmt::format;
-
-use crate::models::AppSettings;
-use crate::{settings, tui_println};
+use crate::tui_println;
 use publicsuffix::{List, Psl};
 
 pub async fn create_settings_file() -> ProjectDirs {
