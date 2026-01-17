@@ -28,7 +28,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             Block::default()
                 .borders(Borders::ALL)
                 .title(Span::styled(
-                    " ⚙️  Crawl Progress ",
+                    "Crawl Progress ",
                     Style::default().fg(Color::Yellow),
                 ))
                 .border_style(Style::default().fg(border_color))
@@ -105,7 +105,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         },
         Span::styled(" | ", Style::default().fg(border_color)),
         // MAX PAGES
-        Span::styled("Max Pages: ", Style::default().fg(Color::Gray)),
+        Span::styled("Max URLs: ", Style::default().fg(Color::Gray)),
         Span::styled(
             format!(
                 "{}",
@@ -153,7 +153,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             Block::default()
                 .borders(Borders::ALL)
                 .title(Span::styled(
-                    " 🖥️  System Status ",
+                    "System Status ",
                     Style::default().fg(Color::Yellow),
                 ))
                 .border_style(Style::default().fg(border_color)),

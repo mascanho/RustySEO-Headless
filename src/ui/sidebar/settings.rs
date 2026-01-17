@@ -50,7 +50,7 @@ pub fn render(
                 Constraint::Length(6), // Engine
                 Constraint::Length(5), // Viewport
                 Constraint::Length(5), // System
-                Constraint::Min(0),    // Connectors
+                Constraint::Min(0),    // Internal
             ])
             .split(inner_area);
 

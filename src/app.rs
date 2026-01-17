@@ -13,7 +13,7 @@ use crate::ui::modals::dashboard_menu;
 pub enum AppState {
     Dashboard,
     Crawl,
-    Connectors,
+    Internal,
     Redirects,
     Images,
     Css,
@@ -722,8 +722,8 @@ impl App {
     pub fn next_state(&mut self) {
         self.current_state = match self.current_state {
             AppState::Dashboard => AppState::Crawl,
-            AppState::Crawl => AppState::Connectors,
-            AppState::Connectors => AppState::Redirects,
+            AppState::Crawl => AppState::Internal,
+            AppState::Internal => AppState::Redirects,
             AppState::Redirects => AppState::Images,
             AppState::Images => AppState::Css,
             AppState::Css => AppState::Javascript,
@@ -740,8 +740,8 @@ impl App {
         self.current_state = match self.current_state {
             AppState::Dashboard => AppState::Content,
             AppState::Crawl => AppState::Dashboard,
-            AppState::Connectors => AppState::Crawl,
-            AppState::Redirects => AppState::Connectors,
+            AppState::Internal => AppState::Crawl,
+            AppState::Redirects => AppState::Internal,
             AppState::Images => AppState::Redirects,
             AppState::Css => AppState::Images,
             AppState::Javascript => AppState::Css,
@@ -757,7 +757,7 @@ impl App {
         match self.current_state {
             AppState::Dashboard => 0,
             AppState::Crawl => 1,
-            AppState::Connectors => 2,
+            AppState::Internal => 2,
             AppState::Redirects => 3,
             AppState::Images => 4,
             AppState::Css => 5,

@@ -534,7 +534,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             // Number jumps
                             KeyCode::Char('1') => app.current_state = AppState::Dashboard,
                             KeyCode::Char('2') => app.current_state = AppState::Crawl,
-                            KeyCode::Char('3') => app.current_state = AppState::Connectors,
+                            KeyCode::Char('3') => app.current_state = AppState::Internal,
                             KeyCode::Char('4') => app.current_state = AppState::Redirects,
                             KeyCode::Char('5') => app.current_state = AppState::Images,
                             KeyCode::Char('6') => app.current_state = AppState::Css,
@@ -594,7 +594,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     app.current_state = match tab_index {
                                         0 => AppState::Dashboard,
                                         1 => AppState::Crawl,
-                                        2 => AppState::Connectors,
+                                        2 => AppState::Internal,
                                         3 => AppState::Redirects,
                                         4 => AppState::Images,
                                         5 => AppState::Css,

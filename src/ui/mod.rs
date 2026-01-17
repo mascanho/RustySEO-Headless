@@ -46,7 +46,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
     let titles = vec![
         "Dashboard",
         "Crawl",
-        "Connectors",
+        "Internal",
         "Redirects",
         "Images",
         "CSS",
@@ -80,7 +80,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
     match app.current_state {
         AppState::Dashboard => tabs::dashboard::render(f, app, content_area),
         AppState::Crawl => tabs::crawl::render(f, app, content_area),
-        AppState::Connectors => tabs::connectors::render(f, app, content_area),
+        AppState::Internal => tabs::internal::render(f, app, content_area),
         AppState::Redirects
         | AppState::Images
         | AppState::Css
