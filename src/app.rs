@@ -124,6 +124,9 @@ impl Default for App {
             js_urls_horizontal_scroll: 0,
             js_urls_search_query: String::new(),
             show_js_urls_search: false,
+            show_js_pages_modal: false,
+            js_pages_list: Vec::new(),
+            js_pages_state: ratatui::widgets::ListState::default(),
         }
     }
 }
@@ -1416,5 +1419,25 @@ impl App {
                 }
             }
         }
+    }
+
+    pub fn show_js_pages_for_url(&mut self, js_url: String) {
+        let mut pages = Vec::new();
+        for page in &self.page_data {
+            if let Some(js_info) = &page.javascript {
+                if js_info.js_urls.contains(&js_url) {
+                    pages.push(page.url.clone());
+                }
+            }
+        }
+        self.js_pages_list = pages;
+        self.js_pages_state.select(Some(0));
+        self.show_js_pages_modal = true;
+    }
+
+    pub fn close_js_pages_modal(&mut self) {
+        self.show_js_pages_modal = false;
+        self.js_pages_list.clear();
+        self.js_pages_state.select(None);
     }
 }

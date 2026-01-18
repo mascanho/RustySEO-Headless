@@ -141,6 +141,31 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             }
                             _ => {}
                         }
+                    } else if app.show_js_pages_modal {
+                        match key.code {
+                            KeyCode::Char('q') | KeyCode::Esc => app.close_js_pages_modal(),
+                            KeyCode::Char('k') | KeyCode::Up => {
+                                let len = app.js_pages_list.len();
+                                if len > 0 {
+                                    let i = match app.js_pages_state.selected() {
+                                        Some(i) => if i == 0 { len - 1 } else { i - 1 },
+                                        None => 0,
+                                    };
+                                    app.js_pages_state.select(Some(i));
+                                }
+                            }
+                            KeyCode::Char('j') | KeyCode::Down => {
+                                let len = app.js_pages_list.len();
+                                if len > 0 {
+                                    let i = match app.js_pages_state.selected() {
+                                        Some(i) => if i >= len - 1 { 0 } else { i + 1 },
+                                        None => 0,
+                                    };
+                                    app.js_pages_state.select(Some(i));
+                                }
+                            }
+                            _ => {}
+                        }
                     } else if app.show_log_search {
                         match key.code {
                             KeyCode::Enter | KeyCode::Esc => {
@@ -563,6 +588,12 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                             app.show_details = true;
                                         }
                                     }
+                                } else if app.current_state == AppState::Javascript {
+                                    if let Some(selected) = app.js_urls_table_state.selected() {
+                                        if let Some(js_url) = app.js_urls_filtered_table_data.get(selected) {
+                                            app.show_js_pages_for_url(js_url.url.clone());
+                                        }
+                                    }
                                 }
                             }
 
@@ -721,9 +752,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                         mouse.kind,
                         MouseEventKind::ScrollUp | MouseEventKind::ScrollDown
                     ) {
-                        // Handle mouse wheel scrolling on tables
+                         // Handle mouse wheel scrolling on tables
                         if app.current_state == AppState::Dashboard
                             || app.current_state == AppState::Internal
+                            || app.current_state == AppState::Javascript
                         {
                             if let Some(rect) = app.table_rect {
                                 if mouse.column >= rect.x
@@ -735,15 +767,26 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                         MouseEventKind::ScrollUp => {
                                             if app.current_state == AppState::Dashboard {
                                                 app.previous_row()
-                                            } else {
+                                            } else if app.current_state == AppState::Internal {
                                                 app.previous_internal_row()
+                                            } else if app.current_state == AppState::Javascript {
+                                                let selected = app.js_urls_table_state.selected().unwrap_or(0);
+                                                if selected > 0 {
+                                                    app.js_urls_table_state.select(Some(selected - 1));
+                                                }
                                             }
                                         }
                                         MouseEventKind::ScrollDown => {
                                             if app.current_state == AppState::Dashboard {
                                                 app.next_row()
-                                            } else {
+                                            } else if app.current_state == AppState::Internal {
                                                 app.next_internal_row()
+                                            } else if app.current_state == AppState::Javascript {
+                                                let len = app.js_urls_filtered_table_data.len();
+                                                let selected = app.js_urls_table_state.selected().unwrap_or(0);
+                                                if selected < len.saturating_sub(1) {
+                                                    app.js_urls_table_state.select(Some(selected + 1));
+                                                }
                                             }
                                         }
                                         _ => {}

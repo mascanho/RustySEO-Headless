@@ -271,4 +271,8 @@ pub struct App {
     pub js_urls_horizontal_scroll: usize,
     pub js_urls_search_query: String,
     pub show_js_urls_search: bool,
+    // Javascript Pages Modal State
+    pub show_js_pages_modal: bool,
+    pub js_pages_list: Vec<String>,
+    pub js_pages_state: ratatui::widgets::ListState,
 }

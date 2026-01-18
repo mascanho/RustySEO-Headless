@@ -165,6 +165,10 @@ pub fn ui(f: &mut Frame, app: &mut App) {
     if app.show_ai_modal {
         modals::ai_chat::render(f, app);
     }
+
+    if app.show_js_pages_modal {
+        modals::js_pages::render(f, app);
+    }
 }
 
 fn render_help_modal(f: &mut Frame) {
