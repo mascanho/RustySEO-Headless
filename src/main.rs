@@ -565,7 +565,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             //     }
                             // }
                             KeyCode::Char('k') | KeyCode::Up => match app.current_state {
-                                AppState::Dashboard => app.previous_row(),
+                                AppState::Dashboard | AppState::Content => app.previous_row(),
                                 AppState::Internal => app.previous_internal_row(),
                                 AppState::Javascript => {
                                     let selected = app.js_urls_table_state.selected().unwrap_or(0);
@@ -590,7 +590,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 _ => {}
                             },
                             KeyCode::Char('j') | KeyCode::Down => match app.current_state {
-                                AppState::Dashboard => app.next_row(),
+                                AppState::Dashboard | AppState::Content => app.next_row(),
                                 AppState::Internal => app.next_internal_row(),
                                 AppState::Javascript => {
                                     let len = app.js_urls_filtered_table_data.len();
@@ -825,6 +825,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                     ) {
                          // Handle mouse wheel scrolling on tables
                          if app.current_state == AppState::Dashboard
+                            || app.current_state == AppState::Content
                             || app.current_state == AppState::Internal
                             || app.current_state == AppState::Javascript
                             || app.current_state == AppState::Css

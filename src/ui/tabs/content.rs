@@ -1,8 +1,8 @@
 use ratatui::{
     Frame,
-    layout::{Constraint, Rect},
+    layout::{Alignment, Constraint, Rect},
     style::{Color, Modifier, Style, Stylize},
-    text::Span,
+    text::{Line, Span},
     widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table},
 };
 
@@ -11,6 +11,7 @@ use crate::models::App;
 /// Renders the Content tab with the same table as the Dashboard.
 /// This allows for content-specific views and future customizations.
 pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
+    app.table_rect = Some(area);
     let accent_color = Color::Rgb(80, 140, 255);
     let border_color = Color::Rgb(40, 45, 60);
 
@@ -115,10 +116,11 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         Row::new(cells).style(row_style).height(1)
     });
 
+    let max_id_width = app.full_filtered_table_data.len().to_string().len().max(2) as u16 + 2;
     let mut widths = vec![
-        Constraint::Length(6),  // ID
-        Constraint::Min(40),    // URL
-        Constraint::Length(12), // Word Count
+        Constraint::Length(max_id_width), // ID
+        Constraint::Min(40),              // URL
+        Constraint::Length(12),           // Word Count
     ];
 
     // Add 10 constraints for keywords
@@ -140,15 +142,25 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 .borders(Borders::ALL)
                 .title(Span::styled(
                     format!(
-                        " 📄 Content Dashboard (Page {}/{}) {} ",
-                        app.current_page + 1,
-                        total_pages,
-                        scroll_indicator
+                        " Content Audit ({}) ",
+                        app.full_filtered_table_data.len()
                     ),
                     Style::default()
                         .fg(Color::Yellow)
                         .add_modifier(Modifier::BOLD),
                 ))
+                .title_bottom(
+                    Line::from(Span::styled(
+                        format!(
+                            " Page {} of {} {} ",
+                            app.current_page + 1,
+                            total_pages,
+                            scroll_indicator
+                        ),
+                        Style::default().fg(Color::DarkGray).italic(),
+                    ))
+                    .alignment(Alignment::Right),
+                )
                 .border_style(Style::default().fg(border_color)),
         )
         .column_spacing(1)
