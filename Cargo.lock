@@ -3,6 +3,34 @@
 version = 4
 
 [[package]]
+name = "RustySEO-CLI"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "clap",
+ "crossterm",
+ "directories",
+ "fuzzy-matcher",
+ "headless_chrome",
+ "publicsuffix",
+ "rand 0.9.2",
+ "ratatui",
+ "regex",
+ "reqwest 0.13.1",
+ "rig-core",
+ "rusqlite",
+ "scraper",
+ "serde",
+ "serde_json",
+ "tokio",
+ "toml",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+]
+
+[[package]]
 name = "adler2"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -359,34 +387,6 @@ name = "clap_lex"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a1d728cc89cf3aee9ff92b05e62b19ee65a02b5702cff7d5a377e32c6ae29d8d"
-
-[[package]]
-name = "cly-rusty"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "chrono",
- "clap",
- "crossterm",
- "directories",
- "fuzzy-matcher",
- "headless_chrome",
- "publicsuffix",
- "rand 0.9.2",
- "ratatui",
- "regex",
- "reqwest 0.13.1",
- "rig-core",
- "rusqlite",
- "scraper",
- "serde",
- "serde_json",
- "tokio",
- "toml",
- "tracing",
- "tracing-subscriber",
- "url",
-]
 
 [[package]]
 name = "cmake"

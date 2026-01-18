@@ -45,7 +45,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
             Block::default()
                 .borders(Borders::ALL)
                 .title(Span::styled(
-                    " Tools ",
+                    " SIDEPANEL ",
                     Style::default()
                         .fg(Color::Yellow)
                         .add_modifier(Modifier::BOLD),
