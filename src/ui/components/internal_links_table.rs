@@ -89,6 +89,7 @@ pub fn render_internal_links_table(f: &mut Frame, app: &mut App, area: Rect, tit
                 ),
         )
         .column_spacing(1)
+        .row_highlight_style(Style::default().fg(Color::Red))
         .row_highlight_style(Style::default().bg(ACCENT_COLOR))
         .style(Style::default().bg(Color::Rgb(20, 20, 30)));
 
@@ -117,7 +118,7 @@ fn create_rows<'a>(
 
             let mut row_style = base_style;
             if is_selected {
-                row_style = row_style.fg(Color::Cyan).add_modifier(Modifier::BOLD);
+                row_style = row_style.fg(Color::White).add_modifier(Modifier::BOLD);
             }
 
             let mut cells = vec![
@@ -148,7 +149,7 @@ fn create_rows<'a>(
 
 fn truncate_url(url: &str) -> String {
     if url.len() > 64 {
-        format!("...{}", &url[url.len() - 61..])
+        format!("{}...", &url[url.len() - 61..])
     } else {
         url.to_string()
     }

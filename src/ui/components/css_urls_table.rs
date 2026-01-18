@@ -100,7 +100,7 @@ fn create_rows<'a>(
 
             let mut row_style = base_style;
             if is_selected {
-                row_style = row_style.fg(Color::Cyan).add_modifier(Modifier::BOLD);
+                row_style = row_style.fg(Color::White).add_modifier(Modifier::BOLD);
             }
 
             let cells = vec![
