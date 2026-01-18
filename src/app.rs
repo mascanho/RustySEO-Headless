@@ -127,6 +127,9 @@ impl Default for App {
             show_js_pages_modal: false,
             js_pages_list: Vec::new(),
             js_pages_state: ratatui::widgets::ListState::default(),
+            show_css_pages_modal: false,
+            css_pages_list: Vec::new(),
+            css_pages_state: ratatui::widgets::ListState::default(),
         }
     }
 }
@@ -1439,5 +1442,25 @@ impl App {
         self.show_js_pages_modal = false;
         self.js_pages_list.clear();
         self.js_pages_state.select(None);
+    }
+
+    pub fn show_css_pages_for_url(&mut self, css_url: String) {
+        let mut pages = Vec::new();
+        for page in &self.page_data {
+            if let Some(css_info) = &page.css {
+                if css_info.css_urls.contains(&css_url) {
+                    pages.push(page.url.clone());
+                }
+            }
+        }
+        self.css_pages_list = pages;
+        self.css_pages_state.select(Some(0));
+        self.show_css_pages_modal = true;
+    }
+
+    pub fn close_css_pages_modal(&mut self) {
+        self.show_css_pages_modal = false;
+        self.css_pages_list.clear();
+        self.css_pages_state.select(None);
     }
 }

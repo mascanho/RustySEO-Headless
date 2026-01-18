@@ -1,6 +1,7 @@
 use scraper::{Html, Selector};
 
 use crate::crawler::helpers::image_utils::ImageInfo;
+use crate::crawler::helpers::keywords::extract_keywords;
 use crate::crawler::helpers::word_count::get_words;
 
 /// Comprehensive data structure representing a parsed web page
@@ -82,6 +83,7 @@ pub struct PageData {
     pub word_count: Option<usize>,
     pub css: Option<CssInfo>,
     pub javascript: Option<JavascriptInfo>,
+    pub keywords: Option<Vec<String>>,
 }
 
 /// Extract page elements and metadata from HTML document
@@ -248,13 +250,17 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         |mut acc, e| {
             if e.value().name() == "script" {
                 let src = e.value().attr("src").map(|s| s.to_string());
-                let script_type = e.value().attr("type").unwrap_or("text/javascript").to_string();
+                let script_type = e
+                    .value()
+                    .attr("type")
+                    .unwrap_or("text/javascript")
+                    .to_string();
                 let is_async = e.value().attr("async").is_some();
                 let is_defer = e.value().attr("defer").is_some();
                 let is_module = script_type == "module";
                 let integrity = e.value().attr("integrity").map(|s| s.to_string());
                 let crossorigin = e.value().attr("crossorigin").map(|s| s.to_string());
-                
+
                 let inline_content = if src.is_none() {
                     e.text().collect::<String>()
                 } else {
@@ -287,6 +293,8 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         },
     );
 
+    let keywords = extract_keywords(&document);
+
     // Construct and return the comprehensive page data structure
     PageData {
         id: 0,               // Will be set by calling code
@@ -315,6 +323,7 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         word_count,
         css: Some(css),
         javascript: Some(javascript),
+        keywords: Some(keywords),
     }
 }
 

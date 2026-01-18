@@ -275,4 +275,8 @@ pub struct App {
     pub show_js_pages_modal: bool,
     pub js_pages_list: Vec<String>,
     pub js_pages_state: ratatui::widgets::ListState,
+    // CSS Pages Modal State
+    pub show_css_pages_modal: bool,
+    pub css_pages_list: Vec<String>,
+    pub css_pages_state: ratatui::widgets::ListState,
 }
