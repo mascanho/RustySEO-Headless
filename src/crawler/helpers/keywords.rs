@@ -65,6 +65,6 @@ pub fn extract_keywords(html: &Html) -> Vec<String> {
     sorted_counts
         .into_iter()
         .take(10)
-        .map(|(word, _)| word)
+        .map(|(word, count)| format!("({}) {}", count, word))
         .collect()
 }

@@ -125,7 +125,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
     // Add 10 constraints for keywords
     for _ in 0..10 {
-        widths.push(Constraint::Length(15));
+        widths.push(Constraint::Length(20));
     }
 
     let total_pages = (app.full_filtered_table_data.len() + app.page_size - 1) / app.page_size;
