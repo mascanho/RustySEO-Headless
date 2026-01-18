@@ -125,6 +125,22 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             }
                             _ => {}
                         }
+                    } else if app.show_js_urls_search {
+                        match key.code {
+                            KeyCode::Enter | KeyCode::Esc => {
+                                app.show_js_urls_search = false;
+                                app.apply_js_urls_filter();
+                            }
+                            KeyCode::Char(c) => {
+                                app.js_urls_search_query.push(c);
+                                app.last_search_time = Some(std::time::Instant::now());
+                            }
+                            KeyCode::Backspace => {
+                                app.js_urls_search_query.pop();
+                                app.last_search_time = Some(std::time::Instant::now());
+                            }
+                            _ => {}
+                        }
                     } else if app.show_log_search {
                         match key.code {
                             KeyCode::Enter | KeyCode::Esc => {
@@ -462,6 +478,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     app.show_search = true;
                                 } else if app.current_state == AppState::Internal {
                                     app.show_internal_search = true;
+                                } else if app.current_state == AppState::Css {
+                                    app.show_css_urls_search = true;
+                                } else if app.current_state == AppState::Javascript {
+                                    app.show_js_urls_search = true;
                                 }
                             }
 
@@ -481,11 +501,35 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             KeyCode::Char('k') | KeyCode::Up => match app.current_state {
                                 AppState::Dashboard => app.previous_row(),
                                 AppState::Internal => app.previous_internal_row(),
+                                AppState::Javascript => {
+                                    let selected = app.js_urls_table_state.selected().unwrap_or(0);
+                                    if selected > 0 {
+                                        app.js_urls_table_state.select(Some(selected - 1));
+                                    } else if app.js_urls_current_page > 0 {
+                                        app.js_urls_current_page -= 1;
+                                        app.apply_js_urls_pagination();
+                                        app.js_urls_table_state.select(Some(app.js_urls_filtered_table_data.len().saturating_sub(1)));
+                                    }
+                                }
                                 _ => {}
                             },
                             KeyCode::Char('j') | KeyCode::Down => match app.current_state {
                                 AppState::Dashboard => app.next_row(),
                                 AppState::Internal => app.next_internal_row(),
+                                AppState::Javascript => {
+                                    let len = app.js_urls_filtered_table_data.len();
+                                    let selected = app.js_urls_table_state.selected().unwrap_or(0);
+                                    if selected < len.saturating_sub(1) {
+                                        app.js_urls_table_state.select(Some(selected + 1));
+                                    } else {
+                                        let total_pages = (app.js_urls_full_filtered_table_data.len() + app.js_urls_page_size - 1) / app.js_urls_page_size;
+                                        if app.js_urls_current_page + 1 < total_pages {
+                                            app.js_urls_current_page += 1;
+                                            app.apply_js_urls_pagination();
+                                            app.js_urls_table_state.select(Some(0));
+                                        }
+                                    }
+                                }
                                 _ => {}
                             },
 
@@ -538,11 +582,24 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             KeyCode::Char(']') => match app.current_state {
                                 AppState::Dashboard => app.next_page(),
                                 AppState::Internal => app.next_internal_page(),
+                                AppState::Javascript => {
+                                    let total_pages = (app.js_urls_full_filtered_table_data.len() + app.js_urls_page_size - 1) / app.js_urls_page_size;
+                                    if app.js_urls_current_page + 1 < total_pages {
+                                        app.js_urls_current_page += 1;
+                                        app.apply_js_urls_pagination();
+                                    }
+                                }
                                 _ => {}
                             },
                             KeyCode::Char('[') => match app.current_state {
                                 AppState::Dashboard => app.previous_page(),
                                 AppState::Internal => app.previous_internal_page(),
+                                AppState::Javascript => {
+                                    if app.js_urls_current_page > 0 {
+                                        app.js_urls_current_page -= 1;
+                                        app.apply_js_urls_pagination();
+                                    }
+                                }
                                 _ => {}
                             },
 

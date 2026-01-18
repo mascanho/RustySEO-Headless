@@ -83,9 +83,9 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         AppState::Crawl => tabs::crawl::render(f, app, content_area),
         AppState::Internal => tabs::internal::render(f, app, content_area),
         AppState::Css => tabs::css::render(f, app, content_area),
+        AppState::Javascript => tabs::javascript::render(f, app, content_area),
         AppState::Redirects
         | AppState::Images
-        | AppState::Javascript
         | AppState::Keywords
         | AppState::CoreWebVitals
         | AppState::CustomSearch => {

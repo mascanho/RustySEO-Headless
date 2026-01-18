@@ -169,6 +169,16 @@ pub struct CssUrl {
     pub page_count: usize, // Number of pages that reference this CSS URL
 }
 
+#[derive(Debug, Clone)]
+pub struct JsUrl {
+    pub id: usize,
+    pub url: String,
+    pub script_type: String,
+    pub is_async: bool,
+    pub is_defer: bool,
+    pub page_count: usize,
+}
+
 pub struct App {
     pub sidebar_visible: bool,
     pub task_panel_visible: bool,
@@ -251,4 +261,14 @@ pub struct App {
     pub internal_search_query: String,
     pub show_internal_search: bool,
     pub url_to_status: HashMap<String, String>,
+    // Javascript URLs Tab State
+    pub js_urls_table_data: Vec<JsUrl>,
+    pub js_urls_table_state: ratatui::widgets::TableState,
+    pub js_urls_filtered_table_data: Vec<JsUrl>,
+    pub js_urls_full_filtered_table_data: Vec<JsUrl>,
+    pub js_urls_current_page: usize,
+    pub js_urls_page_size: usize,
+    pub js_urls_horizontal_scroll: usize,
+    pub js_urls_search_query: String,
+    pub show_js_urls_search: bool,
 }

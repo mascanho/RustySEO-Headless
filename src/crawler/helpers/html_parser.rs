@@ -26,6 +26,29 @@ pub struct CssInfo {
     pub css_urls: Vec<String>,
 }
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct ScriptInfo {
+    pub src: Option<String>,
+    pub script_type: String,
+    pub is_async: bool,
+    pub is_defer: bool,
+    pub is_module: bool,
+    pub integrity: Option<String>,
+    pub crossorigin: Option<String>,
+    pub inline_size: usize,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct JavascriptInfo {
+    pub total_size_bytes: Option<usize>,
+    pub total_size_formatted: String,
+    pub external_js_count: usize,
+    pub inline_js_size_bytes: Option<usize>,
+    pub inline_js_size_formatted: String,
+    pub js_urls: Vec<String>,
+    pub scripts: Vec<ScriptInfo>,
+}
+
 /// Comprehensive data structure representing a parsed web page
 ///
 /// This struct contains all relevant SEO and content analysis information
@@ -58,6 +81,7 @@ pub struct PageData {
     pub size: usize,
     pub word_count: Option<usize>,
     pub css: Option<CssInfo>,
+    pub javascript: Option<JavascriptInfo>,
 }
 
 /// Extract page elements and metadata from HTML document
@@ -210,6 +234,59 @@ pub fn extract_page_elements(document: &Html) -> PageData {
             },
         );
 
+    // Gets all the javascript info from the page
+    let javascript = document.select(&Selector::parse("script").unwrap()).fold(
+        JavascriptInfo {
+            total_size_bytes: None,
+            total_size_formatted: "".to_string(),
+            external_js_count: 0,
+            inline_js_size_bytes: None,
+            inline_js_size_formatted: "".to_string(),
+            js_urls: Vec::new(),
+            scripts: Vec::new(),
+        },
+        |mut acc, e| {
+            if e.value().name() == "script" {
+                let src = e.value().attr("src").map(|s| s.to_string());
+                let script_type = e.value().attr("type").unwrap_or("text/javascript").to_string();
+                let is_async = e.value().attr("async").is_some();
+                let is_defer = e.value().attr("defer").is_some();
+                let is_module = script_type == "module";
+                let integrity = e.value().attr("integrity").map(|s| s.to_string());
+                let crossorigin = e.value().attr("crossorigin").map(|s| s.to_string());
+                
+                let inline_content = if src.is_none() {
+                    e.text().collect::<String>()
+                } else {
+                    String::new()
+                };
+                let inline_size = inline_content.len();
+
+                if let Some(ref s) = src {
+                    acc.external_js_count += 1;
+                    acc.js_urls.push(s.clone());
+                } else {
+                    acc.inline_js_size_bytes =
+                        Some(acc.inline_js_size_bytes.unwrap_or(0) + inline_size);
+                    acc.inline_js_size_formatted =
+                        format!("{} B", acc.inline_js_size_bytes.unwrap());
+                }
+
+                acc.scripts.push(ScriptInfo {
+                    src,
+                    script_type,
+                    is_async,
+                    is_defer,
+                    is_module,
+                    integrity,
+                    crossorigin,
+                    inline_size,
+                });
+            }
+            acc
+        },
+    );
+
     // Construct and return the comprehensive page data structure
     PageData {
         id: 0,               // Will be set by calling code
@@ -237,6 +314,7 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         size,
         word_count,
         css: Some(css),
+        javascript: Some(javascript),
     }
 }
 

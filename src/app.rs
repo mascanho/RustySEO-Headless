@@ -115,6 +115,15 @@ impl Default for App {
             css_urls_search_query: String::new(),
             show_css_urls_search: false,
             url_to_status: HashMap::new(),
+            js_urls_table_data: Vec::new(),
+            js_urls_table_state: ratatui::widgets::TableState::default(),
+            js_urls_filtered_table_data: Vec::new(),
+            js_urls_full_filtered_table_data: Vec::new(),
+            js_urls_current_page: 0,
+            js_urls_page_size: 100,
+            js_urls_horizontal_scroll: 0,
+            js_urls_search_query: String::new(),
+            show_js_urls_search: false,
         }
     }
 }
@@ -235,6 +244,39 @@ impl App {
                 }
             }
 
+            // Collect JS URLs for JS URLs table
+            if let Some(js_info) = &data.javascript {
+                for script in &js_info.scripts {
+                    if let Some(js_url) = &script.src {
+                        // Normalize the JS URL if possible
+                        let normalized_js_url = crate::crawler::url_normalizer::normalize_url(js_url)
+                            .unwrap_or_else(|| js_url.clone());
+
+                        // Check if this URL is already in our collection
+                        let existing_index = self
+                            .js_urls_table_data
+                            .iter()
+                            .position(|js| js.url == normalized_js_url);
+
+                        if let Some(index) = existing_index {
+                            // Increment the page count for existing URL
+                            self.js_urls_table_data[index].page_count += 1;
+                        } else {
+                            // Add new unique JS URL
+                            let js_url_entry = crate::models::JsUrl {
+                                id: self.js_urls_table_data.len() + 1,
+                                url: normalized_js_url,
+                                script_type: script.script_type.clone(),
+                                is_async: script.is_async,
+                                is_defer: script.is_defer,
+                                page_count: 1,
+                            };
+                            self.js_urls_table_data.push(js_url_entry);
+                        }
+                    }
+                }
+            }
+
             self.url_to_status
                 .insert(data.url.clone(), data.status.clone());
             self.log(format!("Crawled: {}", data.url));
@@ -243,6 +285,8 @@ impl App {
         if !results.is_empty() {
             self.apply_filter();
             self.apply_internal_filter();
+            self.apply_css_urls_filter();
+            self.apply_js_urls_filter();
         }
 
         if crawl_finished {
@@ -257,6 +301,8 @@ impl App {
             if last_time.elapsed() > std::time::Duration::from_millis(300) {
                 self.apply_filter();
                 self.apply_internal_filter();
+                self.apply_css_urls_filter();
+                self.apply_js_urls_filter();
                 self.last_search_time = None;
             }
         }
@@ -905,6 +951,13 @@ impl App {
         self.css_urls_current_page = 0;
         self.css_urls_search_query.clear();
         self.show_css_urls_search = false;
+        self.js_urls_table_data.clear();
+        self.js_urls_filtered_table_data.clear();
+        self.js_urls_full_filtered_table_data.clear();
+        self.js_urls_table_state.select(None);
+        self.js_urls_current_page = 0;
+        self.js_urls_search_query.clear();
+        self.show_js_urls_search = false;
         self.crawl_progress = 0.0;
         self.is_crawling = true;
         self.logs_data
@@ -1213,6 +1266,51 @@ impl App {
                 } else {
                     self.css_urls_table_state
                         .select(Some(self.css_urls_filtered_table_data.len() - 1));
+                }
+            }
+        }
+    }
+
+    pub fn apply_js_urls_filter(&mut self) {
+        if self.js_urls_search_query.is_empty() {
+            if self.js_urls_full_filtered_table_data.len() != self.js_urls_table_data.len() {
+                self.js_urls_full_filtered_table_data = self.js_urls_table_data.clone();
+            }
+        } else {
+            let matcher = SkimMatcherV2::default();
+            let mut scored_data = Vec::new();
+            for js_url in &self.js_urls_table_data {
+                if let Some(score) = matcher.fuzzy_match(&js_url.url, &self.js_urls_search_query) {
+                    scored_data.push((score, js_url.clone()));
+                }
+            }
+            scored_data.sort_by(|a, b| b.0.cmp(&a.0));
+            self.js_urls_full_filtered_table_data =
+                scored_data.into_iter().map(|(_, js_url)| js_url).collect();
+        }
+
+        let total_pages = (self.js_urls_full_filtered_table_data.len() + self.js_urls_page_size - 1)
+            / self.js_urls_page_size;
+        if self.js_urls_current_page >= total_pages {
+            self.js_urls_current_page = total_pages.saturating_sub(1);
+        }
+
+        self.apply_js_urls_pagination();
+    }
+
+    pub fn apply_js_urls_pagination(&mut self) {
+        let start = self.js_urls_current_page * self.js_urls_page_size;
+        let end = (start + self.js_urls_page_size).min(self.js_urls_full_filtered_table_data.len());
+        self.js_urls_filtered_table_data =
+            self.js_urls_full_filtered_table_data[start..end].to_vec();
+
+        if let Some(selected) = self.js_urls_table_state.selected() {
+            if selected >= self.js_urls_filtered_table_data.len() {
+                if self.js_urls_filtered_table_data.is_empty() {
+                    self.js_urls_table_state.select(None);
+                } else {
+                    self.js_urls_table_state
+                        .select(Some(self.js_urls_filtered_table_data.len() - 1));
                 }
             }
         }
