@@ -277,9 +277,10 @@ pub fn render(
 
     let paragraph = Paragraph::new(content)
         .block(block.title(Span::styled(
-            "General Information ",
+            "Page Information ",
             Style::default().fg(Color::Yellow),
         )))
+        .style(Style::default().add_modifier(Modifier::empty()))
         .style(Style::default().fg(Color::White))
         .wrap(Wrap { trim: true })
         .scroll((scroll as u16, 0));
