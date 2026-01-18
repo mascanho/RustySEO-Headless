@@ -22,7 +22,10 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         app.filtered_table_data = app.table_data.clone();
     }
 
-    let header_titles = ["ID", "URL", "Word Count"];
+    let header_titles = [
+        "ID", "URL", "Word Count", "KW 1", "KW 2", "KW 3", "KW 4", "KW 5", "KW 6", "KW 7", "KW 8",
+        "KW 9", "KW 10",
+    ];
 
     let header = Row::new(header_titles.iter().map(|h| {
         Cell::from(format!(" {} ", h)).style(
@@ -52,15 +55,24 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
         let start = app.current_page * app.page_size;
         let full_idx = start + i;
-        let displayed_data = vec![
+        let mut displayed_data = vec![
             (full_idx + 1).to_string(), // Sequential ID
             data[1].clone(),            // URL
             data[18].clone(),           // Word Count
         ];
 
+        // Add Top 10 Keywords (Indices 23 to 32)
+        for j in 23..33 {
+            if let Some(kw) = data.get(j) {
+                displayed_data.push(kw.clone());
+            } else {
+                displayed_data.push(String::new());
+            }
+        }
+
         let cells = displayed_data.iter().enumerate().map(|(j, c)| {
-            let mut content = if j == 1 || j == 2 || j == 4 || j == 6 || j == 8 {
-                // URL, Title, H1, Desc, H2
+            let content = if j == 1 {
+                // URL
                 let content = c.as_str();
                 let char_count = content.chars().count();
                 if char_count > 60 {
@@ -81,119 +93,21 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
             let mut cell_style = Style::default();
 
-            if j == 10 {
-                // Status column
-                match content.as_str() {
-                    c if c.contains("200") => {
-                        content = format!("200");
-                        if !is_selected {
-                            cell_style = cell_style.fg(Color::Green);
-                        }
-                    }
-                    c if c.contains("404") => {
-                        content = format!("404");
-                        if !is_selected {
-                            cell_style = cell_style.fg(Color::Red);
-                        }
-                    }
-                    c if c.contains("301") || c.contains("302") => {
-                        content = format!("{}", c);
-                        if !is_selected {
-                            cell_style = cell_style.fg(Color::Blue);
-                        }
-                    }
-                    c if c.contains("500") => {
-                        content = format!("500");
-                        if !is_selected {
-                            cell_style = cell_style.fg(Color::Yellow);
-                        }
-                    }
-                    c if c.contains("403") => {
-                        content = format!("403");
-                        if !is_selected {
-                            cell_style = cell_style.fg(Color::Magenta);
-                        }
-                    }
-                    c if c.contains("503") => {
-                        content = format!("🚧 {}", c);
-                        if !is_selected {
-                            cell_style = cell_style.fg(Color::LightRed);
-                        }
-                    }
-                    _ => {
-                        content = format!("{}", c);
-                    }
-                }
-            }
-
-            if j == 11 {
-                // Mobile column
-                content = if content == "true" {
-                    "Yes".to_string()
-                } else {
-                    "No".to_string()
-                };
-            }
-
-            if j == 3 {
-                if let Ok(len) = c.parse::<usize>() {
-                    if len > 60 && !is_selected {
-                        cell_style = cell_style.fg(Color::Red);
-                    } else if len < 60 && !is_selected {
-                        cell_style = cell_style.fg(Color::Green);
-                    }
-                }
-            }
-
-            if j == 5 {
-                if let Ok(len) = c.parse::<usize>() {
-                    if len > 160 && !is_selected {
-                        cell_style = cell_style.fg(Color::Red);
-                    } else if len < 160 && !is_selected {
-                        cell_style = cell_style.fg(Color::Green);
-                    }
-                }
-            }
-
-            // Indexability column logic
-            if j == 13 {
-                if content.contains("noindex") {
-                    content = "Non-indexable".to_string();
-                    if !is_selected {
+            if j == 2 {
+                // Word count column
+                if let Ok(count) = content.trim().parse::<usize>() {
+                    if count > 1000 {
+                        cell_style = cell_style.fg(Color::Green).bold();
+                    } else if count < 200 {
                         cell_style = cell_style.fg(Color::Red);
                     }
-                } else {
-                    content = "Indexable".to_string();
-                    if !is_selected {
-                        cell_style = cell_style.fg(Color::Green);
-                    }
                 }
             }
 
-            let content = if j == 3 || j == 5 || j == 7 || j == 9 || j == 10 || j == 11 || j == 14 {
-                let w = match j {
-                    3 | 5 => 5,
-                    7 | 9 => 7,
-                    10 | 11 => 8,
-                    14 => 10,
-                    _ => unreachable!(),
-                };
-                let l = content.len();
-                if l < w {
-                    let left_pad = (w - l) / 2;
-                    let right_pad = w - l - left_pad;
-                    format!(
-                        "{}{}{}",
-                        " ".repeat(left_pad),
-                        content,
-                        " ".repeat(right_pad)
-                    )
-                } else {
-                    content
-                }
-            } else {
-                content
-            };
+            if j >= 3 {
+                // Keywords
+                cell_style = cell_style.fg(Color::Cyan);
+            }
 
             Cell::from(content).style(cell_style)
         });
@@ -201,23 +115,16 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         Row::new(cells).style(row_style).height(1)
     });
 
-    let widths = [
-        Constraint::Length(4),  // ID
-        Constraint::Min(55),    // URL
-        Constraint::Length(20), // Title
-        Constraint::Length(5),  // Title Len
-        Constraint::Length(20), // Desc
-        Constraint::Length(5),  // Desc Len
-        Constraint::Length(20), // H1
-        Constraint::Length(7),  // H1 Len
-        Constraint::Length(15), // H2
-        Constraint::Length(7),  // H2 Len
-        Constraint::Length(8),  // Status
-        Constraint::Length(8),  // Mobile
-        Constraint::Length(6),  // Lang
-        Constraint::Min(8),     // Indexable
-        Constraint::Length(10), // Canonicals
+    let mut widths = vec![
+        Constraint::Length(6),  // ID
+        Constraint::Min(40),    // URL
+        Constraint::Length(12), // Word Count
     ];
+
+    // Add 10 constraints for keywords
+    for _ in 0..10 {
+        widths.push(Constraint::Length(15));
+    }
 
     let total_pages = (app.full_filtered_table_data.len() + app.page_size - 1) / app.page_size;
     let scroll_indicator = if app.horizontal_scroll > 0 {

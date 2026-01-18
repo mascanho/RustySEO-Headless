@@ -171,7 +171,7 @@ impl App {
             page_data.id = current_id;
             self.page_data.push(page_data);
 
-            let row = vec![
+            let mut row = vec![
                 current_id.to_string(),
                 data.url.clone(),
                 data.title.clone(),
@@ -205,6 +205,14 @@ impl App {
                     .and_then(|css| css.css_urls.first())
                     .map_or("inline only".to_string(), |url| url.clone()),
             ];
+
+            // 2b. Add top 10 keywords to the row
+            let mut keywords = data.keywords.clone().unwrap_or_default();
+            keywords.resize(10, String::new()); // Ensure we have 10 slots
+            for kw in keywords {
+                row.push(kw);
+            }
+
             self.table_data.push(row);
 
             // Populate internal links table
