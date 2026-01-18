@@ -27,7 +27,7 @@ pub fn render(
         // Draw the main container block
         f.render_widget(
             content_block.title(Span::styled(
-                " CONFIGURATION ENGINE ",
+                " CRAWLER SETTINGS ",
                 Style::default()
                     .fg(Color::Yellow)
                     .add_modifier(Modifier::BOLD),
@@ -67,30 +67,28 @@ pub fn render(
             Row::new(vec![
                 Cell::from("  Domain Lock"),
                 Cell::from(if settings.crawler.stay_on_domain {
-                    " PROTECTED "
+                    "PROTECTED "
                 } else {
                     " OPEN "
                 })
-                .style(Style::default().fg(Color::Black).bg(
-                    if settings.crawler.stay_on_domain {
-                        Color::Green
-                    } else {
-                        Color::Red
-                    },
-                )),
+                .style(Style::default().fg(if settings.crawler.stay_on_domain {
+                    Color::Green
+                } else {
+                    Color::Red
+                })),
             ]),
             Row::new(vec![
                 Cell::from("  JavaScript"),
                 Cell::from(if settings.crawler.enable_javascript {
-                    " ENABLED "
+                    "ENABLED "
                 } else {
-                    " DISABLED "
+                    "DISABLED "
                 })
-                .style(Style::default().fg(Color::Black).bg(
+                .style(Style::default().fg(
                     if settings.crawler.enable_javascript {
                         Color::Green
                     } else {
-                        Color::Gray
+                        Color::Red
                     },
                 )),
             ]),
@@ -104,7 +102,7 @@ pub fn render(
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(border_color))
                 .title(Span::styled(
-                    " 󱐋 ENGINE ",
+                    " 🦀 ENGINE ",
                     Style::default().fg(Color::Yellow),
                 )),
         )
@@ -116,7 +114,7 @@ pub fn render(
             Row::new(vec![
                 Cell::from("  Theme"),
                 Cell::from(format!(" {} ", settings.ui.theme.clone()))
-                    .style(Style::default().fg(Color::Black).bg(Color::Cyan)),
+                    .style(Style::default().fg(Color::Blue)),
             ]),
             Row::new(vec![
                 Cell::from("  Refresh"),
@@ -172,7 +170,7 @@ pub fn render(
                 Cell::from(""),
             ]),
             Row::new(vec![
-                Cell::from("  ├─ API Key"),
+                Cell::from("  └─ API Key"),
                 Cell::from(if settings.connectors.pagespeed.api_key.is_empty() {
                     "MISSING"
                 } else {
@@ -185,21 +183,41 @@ pub fn render(
                         Color::Green
                     },
                 )),
-                Cell::from(""),
             ]),
-            Row::new(vec![Cell::from(if settings.connectors.pagespeed.status {
-                Color::Green
-            } else {
-                Color::Red
-            })]),
+            Row::new(vec![
+                Cell::from("  └─ Status"),
+                Cell::from(if settings.connectors.pagespeed.status {
+                    "ENABLED "
+                } else {
+                    "DISABLED "
+                })
+                .style(Style::default().fg(
+                    if settings.connectors.pagespeed.status {
+                        Color::Green
+                    } else {
+                        Color::Red
+                    },
+                )),
+            ]),
             Row::new(vec![
                 Cell::from(" SEARCH CONSOLE ").style(Style::default().fg(Color::Yellow)),
                 Cell::from(""),
             ]),
             Row::new(vec![
                 Cell::from("  ├─ Project"),
-                Cell::from(settings.connectors.search_console.project_name.clone())
-                    .style(Style::default().fg(Color::Blue)),
+                Cell::from(
+                    if settings.connectors.search_console.project_name.is_empty() {
+                        "NOT SET".to_string()
+                    } else {
+                        settings
+                            .connectors
+                            .search_console
+                            .project_name
+                            .clone()
+                            .to_string()
+                    },
+                )
+                .style(Style::default().fg(Color::Blue)),
             ]),
             Row::new(vec![
                 Cell::from("  └─ Status"),
@@ -231,6 +249,21 @@ pub fn render(
                     "MISSING"
                 } else {
                     "********"
+                })
+                .style(Style::default().fg(
+                    if settings.connectors.gemini.api_key.is_empty() {
+                        Color::Red
+                    } else {
+                        Color::Green
+                    },
+                )),
+            ]),
+            Row::new(vec![
+                Cell::from("  └─ Status"),
+                Cell::from(if settings.connectors.gemini.status {
+                    "CONNECTED"
+                } else {
+                    "DISCONNECTED"
                 })
                 .style(Style::default().fg(
                     if settings.connectors.gemini.api_key.is_empty() {

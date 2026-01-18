@@ -263,8 +263,9 @@ impl App {
                 for script in &js_info.scripts {
                     if let Some(js_url) = &script.src {
                         // Normalize the JS URL if possible
-                        let normalized_js_url = crate::crawler::url_normalizer::normalize_url(js_url)
-                            .unwrap_or_else(|| js_url.clone());
+                        let normalized_js_url =
+                            crate::crawler::url_normalizer::normalize_url(js_url)
+                                .unwrap_or_else(|| js_url.clone());
 
                         // Check if this URL is already in our collection
                         let existing_index = self
@@ -1303,7 +1304,8 @@ impl App {
                 scored_data.into_iter().map(|(_, js_url)| js_url).collect();
         }
 
-        let total_pages = (self.js_urls_full_filtered_table_data.len() + self.js_urls_page_size - 1)
+        let total_pages = (self.js_urls_full_filtered_table_data.len() + self.js_urls_page_size
+            - 1)
             / self.js_urls_page_size;
         if self.js_urls_current_page >= total_pages {
             self.js_urls_current_page = total_pages.saturating_sub(1);

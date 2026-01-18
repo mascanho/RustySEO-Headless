@@ -164,7 +164,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 let len = app.js_pages_list.len();
                                 if len > 0 {
                                     let i = match app.js_pages_state.selected() {
-                                        Some(i) => if i == 0 { len - 1 } else { i - 1 },
+                                        Some(i) => {
+                                            if i == 0 {
+                                                len - 1
+                                            } else {
+                                                i - 1
+                                            }
+                                        }
                                         None => 0,
                                     };
                                     app.js_pages_state.select(Some(i));
@@ -174,7 +180,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 let len = app.js_pages_list.len();
                                 if len > 0 {
                                     let i = match app.js_pages_state.selected() {
-                                        Some(i) => if i >= len - 1 { 0 } else { i + 1 },
+                                        Some(i) => {
+                                            if i >= len - 1 {
+                                                0
+                                            } else {
+                                                i + 1
+                                            }
+                                        }
                                         None => 0,
                                     };
                                     app.js_pages_state.select(Some(i));
@@ -189,7 +201,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 let len = app.css_pages_list.len();
                                 if len > 0 {
                                     let i = match app.css_pages_state.selected() {
-                                        Some(i) => if i == 0 { len - 1 } else { i - 1 },
+                                        Some(i) => {
+                                            if i == 0 {
+                                                len - 1
+                                            } else {
+                                                i - 1
+                                            }
+                                        }
                                         None => 0,
                                     };
                                     app.css_pages_state.select(Some(i));
@@ -199,7 +217,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 let len = app.css_pages_list.len();
                                 if len > 0 {
                                     let i = match app.css_pages_state.selected() {
-                                        Some(i) => if i >= len - 1 { 0 } else { i + 1 },
+                                        Some(i) => {
+                                            if i >= len - 1 {
+                                                0
+                                            } else {
+                                                i + 1
+                                            }
+                                        }
                                         None => 0,
                                     };
                                     app.css_pages_state.select(Some(i));
@@ -574,7 +598,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     } else if app.js_urls_current_page > 0 {
                                         app.js_urls_current_page -= 1;
                                         app.apply_js_urls_pagination();
-                                        app.js_urls_table_state.select(Some(app.js_urls_filtered_table_data.len().saturating_sub(1)));
+                                        app.js_urls_table_state.select(Some(
+                                            app.js_urls_filtered_table_data.len().saturating_sub(1),
+                                        ));
                                     }
                                 }
                                 AppState::Css => {
@@ -584,7 +610,11 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     } else if app.css_urls_current_page > 0 {
                                         app.css_urls_current_page -= 1;
                                         app.apply_css_urls_pagination();
-                                        app.css_urls_table_state.select(Some(app.css_urls_filtered_table_data.len().saturating_sub(1)));
+                                        app.css_urls_table_state.select(Some(
+                                            app.css_urls_filtered_table_data
+                                                .len()
+                                                .saturating_sub(1),
+                                        ));
                                     }
                                 }
                                 _ => {}
@@ -598,7 +628,11 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     if selected < len.saturating_sub(1) {
                                         app.js_urls_table_state.select(Some(selected + 1));
                                     } else {
-                                        let total_pages = (app.js_urls_full_filtered_table_data.len() + app.js_urls_page_size - 1) / app.js_urls_page_size;
+                                        let total_pages =
+                                            (app.js_urls_full_filtered_table_data.len()
+                                                + app.js_urls_page_size
+                                                - 1)
+                                                / app.js_urls_page_size;
                                         if app.js_urls_current_page + 1 < total_pages {
                                             app.js_urls_current_page += 1;
                                             app.apply_js_urls_pagination();
@@ -612,7 +646,11 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     if selected < len.saturating_sub(1) {
                                         app.css_urls_table_state.select(Some(selected + 1));
                                     } else {
-                                        let total_pages = (app.css_urls_full_filtered_table_data.len() + app.css_urls_page_size - 1) / app.css_urls_page_size;
+                                        let total_pages =
+                                            (app.css_urls_full_filtered_table_data.len()
+                                                + app.css_urls_page_size
+                                                - 1)
+                                                / app.css_urls_page_size;
                                         if app.css_urls_current_page + 1 < total_pages {
                                             app.css_urls_current_page += 1;
                                             app.apply_css_urls_pagination();
@@ -655,13 +693,17 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     }
                                 } else if app.current_state == AppState::Javascript {
                                     if let Some(selected) = app.js_urls_table_state.selected() {
-                                        if let Some(js_url) = app.js_urls_filtered_table_data.get(selected) {
+                                        if let Some(js_url) =
+                                            app.js_urls_filtered_table_data.get(selected)
+                                        {
                                             app.show_js_pages_for_url(js_url.url.clone());
                                         }
                                     }
                                 } else if app.current_state == AppState::Css {
                                     if let Some(selected) = app.css_urls_table_state.selected() {
-                                        if let Some(css_url) = app.css_urls_filtered_table_data.get(selected) {
+                                        if let Some(css_url) =
+                                            app.css_urls_filtered_table_data.get(selected)
+                                        {
                                             app.show_css_pages_for_url(css_url.url.clone());
                                         }
                                     }
@@ -685,7 +727,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 AppState::Dashboard => app.next_page(),
                                 AppState::Internal => app.next_internal_page(),
                                 AppState::Javascript => {
-                                    let total_pages = (app.js_urls_full_filtered_table_data.len() + app.js_urls_page_size - 1) / app.js_urls_page_size;
+                                    let total_pages = (app.js_urls_full_filtered_table_data.len()
+                                        + app.js_urls_page_size
+                                        - 1)
+                                        / app.js_urls_page_size;
                                     if app.js_urls_current_page + 1 < total_pages {
                                         app.js_urls_current_page += 1;
                                         app.apply_js_urls_pagination();
@@ -823,8 +868,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                         mouse.kind,
                         MouseEventKind::ScrollUp | MouseEventKind::ScrollDown
                     ) {
-                         // Handle mouse wheel scrolling on tables
-                         if app.current_state == AppState::Dashboard
+                        // Handle mouse wheel scrolling on tables
+                        if app.current_state == AppState::Dashboard
                             || app.current_state == AppState::Content
                             || app.current_state == AppState::Internal
                             || app.current_state == AppState::Javascript
@@ -843,14 +888,20 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                             } else if app.current_state == AppState::Internal {
                                                 app.previous_internal_row()
                                             } else if app.current_state == AppState::Javascript {
-                                                let selected = app.js_urls_table_state.selected().unwrap_or(0);
+                                                let selected =
+                                                    app.js_urls_table_state.selected().unwrap_or(0);
                                                 if selected > 0 {
-                                                    app.js_urls_table_state.select(Some(selected - 1));
+                                                    app.js_urls_table_state
+                                                        .select(Some(selected - 1));
                                                 }
                                             } else if app.current_state == AppState::Css {
-                                                let selected = app.css_urls_table_state.selected().unwrap_or(0);
+                                                let selected = app
+                                                    .css_urls_table_state
+                                                    .selected()
+                                                    .unwrap_or(0);
                                                 if selected > 0 {
-                                                    app.css_urls_table_state.select(Some(selected - 1));
+                                                    app.css_urls_table_state
+                                                        .select(Some(selected - 1));
                                                 }
                                             }
                                         }
@@ -861,15 +912,21 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                                 app.next_internal_row()
                                             } else if app.current_state == AppState::Javascript {
                                                 let len = app.js_urls_filtered_table_data.len();
-                                                let selected = app.js_urls_table_state.selected().unwrap_or(0);
+                                                let selected =
+                                                    app.js_urls_table_state.selected().unwrap_or(0);
                                                 if selected < len.saturating_sub(1) {
-                                                    app.js_urls_table_state.select(Some(selected + 1));
+                                                    app.js_urls_table_state
+                                                        .select(Some(selected + 1));
                                                 }
                                             } else if app.current_state == AppState::Css {
                                                 let len = app.css_urls_filtered_table_data.len();
-                                                let selected = app.css_urls_table_state.selected().unwrap_or(0);
+                                                let selected = app
+                                                    .css_urls_table_state
+                                                    .selected()
+                                                    .unwrap_or(0);
                                                 if selected < len.saturating_sub(1) {
-                                                    app.css_urls_table_state.select(Some(selected + 1));
+                                                    app.css_urls_table_state
+                                                        .select(Some(selected + 1));
                                                 }
                                             }
                                         }

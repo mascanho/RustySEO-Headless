@@ -1,7 +1,6 @@
 use scraper::{Html, Selector};
 use std::sync::LazyLock;
 
-
 use crate::crawler::helpers::image_utils::ImageInfo;
 use crate::crawler::helpers::keywords::extract_keywords;
 use crate::crawler::helpers::word_count::get_words;
@@ -126,7 +125,6 @@ static SCRIPT_SELECTOR: LazyLock<Selector> = LazyLock::new(|| Selector::parse("s
 /// # Returns
 /// A `PageData` struct containing all extracted information
 pub fn extract_page_elements(document: &Html) -> PageData {
-
     // Extract basic page metadata
     let title = extract_text_content(document, &TITLE_SELECTOR);
     let h1 = extract_text_content(document, &H1_SELECTOR);
@@ -134,10 +132,7 @@ pub fn extract_page_elements(document: &Html) -> PageData {
     let description = extract_meta_content(document, &DESC_SELECTOR);
 
     // Check for mobile viewport meta tag
-    let mobile = document
-        .select(&VIEWPORT_SELECTOR)
-        .next()
-        .is_some();
+    let mobile = document.select(&VIEWPORT_SELECTOR).next().is_some();
 
     // Extract page language from html tag
     let language = document
@@ -226,36 +221,33 @@ pub fn extract_page_elements(document: &Html) -> PageData {
     let word_count = Some(get_words(document));
 
     // GET THE CSS INFORMATION THAT IS POSSIBLE TO GRAB FROM THE HTML
-    let css = document
-        .select(&STYLE_SELECTOR)
-        .fold(
-            CssInfo {
-                total_size_bytes: Some(0),
-                total_size_formatted: "0 B".to_string(),
-                external_css_count: 0,
-                inline_css_size_bytes: Some(0),
-                inline_css_size_formatted: "0 B".to_string(),
-                css_urls: Vec::new(),
-            },
-            |mut acc, e| {
-                if e.value().name() == "link" {
-                    acc.external_css_count += 1;
-                    // Collect CSS URLs
-                    if let Some(href) = e.value().attr("href") {
-                        acc.css_urls.push(href.to_string());
-                    }
-                    // Size estimation for external CSS could be added here
-                } else if e.value().name() == "style" {
-                    let inline_css = e.text().collect::<String>();
-                    let inline_size = inline_css.len();
-                    acc.inline_css_size_bytes =
-                        Some(acc.inline_css_size_bytes.unwrap_or(0) + inline_size);
-                    acc.inline_css_size_formatted =
-                        format!("{} B", acc.inline_css_size_bytes.unwrap());
+    let css = document.select(&STYLE_SELECTOR).fold(
+        CssInfo {
+            total_size_bytes: Some(0),
+            total_size_formatted: "0 B".to_string(),
+            external_css_count: 0,
+            inline_css_size_bytes: Some(0),
+            inline_css_size_formatted: "0 B".to_string(),
+            css_urls: Vec::new(),
+        },
+        |mut acc, e| {
+            if e.value().name() == "link" {
+                acc.external_css_count += 1;
+                // Collect CSS URLs
+                if let Some(href) = e.value().attr("href") {
+                    acc.css_urls.push(href.to_string());
                 }
-                acc
-            },
-        );
+                // Size estimation for external CSS could be added here
+            } else if e.value().name() == "style" {
+                let inline_css = e.text().collect::<String>();
+                let inline_size = inline_css.len();
+                acc.inline_css_size_bytes =
+                    Some(acc.inline_css_size_bytes.unwrap_or(0) + inline_size);
+                acc.inline_css_size_formatted = format!("{} B", acc.inline_css_size_bytes.unwrap());
+            }
+            acc
+        },
+    );
 
     // Gets all the javascript info from the page
     let javascript = document.select(&SCRIPT_SELECTOR).fold(

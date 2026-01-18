@@ -24,8 +24,19 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     }
 
     let header_titles = [
-        "ID", "URL", "Word Count", "KW 1", "KW 2", "KW 3", "KW 4", "KW 5", "KW 6", "KW 7", "KW 8",
-        "KW 9", "KW 10",
+        "ID",
+        "URL",
+        "Word Count",
+        "KW 1",
+        "KW 2",
+        "KW 3",
+        "KW 4",
+        "KW 5",
+        "KW 6",
+        "KW 7",
+        "KW 8",
+        "KW 9",
+        "KW 10",
     ];
 
     let header = Row::new(header_titles.iter().map(|h| {
@@ -141,10 +152,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             Block::default()
                 .borders(Borders::ALL)
                 .title(Span::styled(
-                    format!(
-                        " Content Audit ({}) ",
-                        app.full_filtered_table_data.len()
-                    ),
+                    format!(" Content Audit ({}) ", app.full_filtered_table_data.len()),
                     Style::default()
                         .fg(Color::Yellow)
                         .add_modifier(Modifier::BOLD),
