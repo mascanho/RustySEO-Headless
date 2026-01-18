@@ -2,12 +2,36 @@ use scraper::Html;
 use std::collections::HashMap;
 
 pub fn extract_keywords(html: &Html) -> Vec<String> {
-    // 1. Get all text from body
-    let body_text = html
-        .select(&scraper::Selector::parse("body").unwrap())
-        .next()
-        .map(|e| e.text().collect::<String>())
-        .unwrap_or_default();
+    // 1. Get text from semantically relevant elements while avoiding duplication
+    // We'll use a blacklist of tags to skip instead of a whitelist of tags to include
+    // to ensure we get all text nodes in the body that aren't code/metadata.
+    let mut body_text = String::new();
+    let body_selector = scraper::Selector::parse("body").unwrap();
+    
+    if let Some(body) = html.select(&body_selector).next() {
+        for node in body.descendants() {
+            if let Some(text) = node.value().as_text() {
+                // Check ancestors to avoid script/style content
+                let mut is_blacklisted = false;
+                let mut parent = node.parent();
+                while let Some(p) = parent {
+                    if let Some(parent_elem) = p.value().as_element() {
+                        let name = parent_elem.name();
+                        if name == "script" || name == "style" || name == "noscript" || name == "svg" || name == "canvas" {
+                            is_blacklisted = true;
+                            break;
+                        }
+                    }
+                    parent = p.parent();
+                }
+
+                if !is_blacklisted {
+                    body_text.push_str(text);
+                    body_text.push(' ');
+                }
+            }
+        }
+    }
 
     // 2. Tokenize and normalize
     let words = body_text
