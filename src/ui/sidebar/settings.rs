@@ -185,7 +185,13 @@ pub fn render(
                         Color::Green
                     },
                 )),
+                Cell::from(""),
             ]),
+            Row::new(vec![Cell::from(if settings.connectors.pagespeed.status {
+                Color::Green
+            } else {
+                Color::Red
+            })]),
             Row::new(vec![
                 Cell::from(" SEARCH CONSOLE ").style(Style::default().fg(Color::Yellow)),
                 Cell::from(""),

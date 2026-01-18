@@ -1,14 +1,16 @@
-use scraper::Html;
+use scraper::{Html, Selector};
 use std::collections::HashMap;
+use std::sync::LazyLock;
+
+static BODY_SELECTOR: LazyLock<Selector> = LazyLock::new(|| Selector::parse("body").unwrap());
 
 pub fn extract_keywords(html: &Html) -> Vec<String> {
     // 1. Get text from semantically relevant elements while avoiding duplication
     // We'll use a blacklist of tags to skip instead of a whitelist of tags to include
     // to ensure we get all text nodes in the body that aren't code/metadata.
     let mut body_text = String::new();
-    let body_selector = scraper::Selector::parse("body").unwrap();
     
-    if let Some(body) = html.select(&body_selector).next() {
+    if let Some(body) = html.select(&BODY_SELECTOR).next() {
         for node in body.descendants() {
             if let Some(text) = node.value().as_text() {
                 // Check ancestors to avoid script/style content

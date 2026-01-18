@@ -54,6 +54,7 @@ pub struct ConnectorsConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PageSpeedConfig {
     pub api_key: String,
+    pub status: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -67,6 +68,7 @@ pub struct SearchConsoleConfig {
 pub struct GeminiConfig {
     pub api_key: String,
     pub model: String,
+    pub status: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -111,6 +113,7 @@ impl Default for AppSettings {
             connectors: ConnectorsConfig {
                 pagespeed: PageSpeedConfig {
                     api_key: "".to_string(),
+                    status: false,
                 },
                 search_console: SearchConsoleConfig {
                     token: "".to_string(),
@@ -120,6 +123,7 @@ impl Default for AppSettings {
                 gemini: GeminiConfig {
                     api_key: "".to_string(),
                     model: "gemini-pro".to_string(),
+                    status: false,
                 },
                 openai: OpenAiConfig {
                     api_key: "".to_string(),

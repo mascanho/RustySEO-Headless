@@ -1,4 +1,6 @@
 use scraper::{Html, Selector};
+use std::sync::LazyLock;
+
 
 use crate::crawler::helpers::image_utils::ImageInfo;
 use crate::crawler::helpers::keywords::extract_keywords;
@@ -86,6 +88,33 @@ pub struct PageData {
     pub keywords: Option<Vec<String>>,
 }
 
+// Define static CSS selectors for common page elements using LazyLock
+// This avoids parsing the selector strings on every call, improving performance during crawls
+static TITLE_SELECTOR: LazyLock<Selector> = LazyLock::new(|| Selector::parse("title").unwrap());
+static H1_SELECTOR: LazyLock<Selector> = LazyLock::new(|| Selector::parse("h1").unwrap());
+static H2_SELECTOR: LazyLock<Selector> = LazyLock::new(|| Selector::parse("h2").unwrap());
+static DESC_SELECTOR: LazyLock<Selector> =
+    LazyLock::new(|| Selector::parse("meta[name='description']").unwrap());
+static VIEWPORT_SELECTOR: LazyLock<Selector> =
+    LazyLock::new(|| Selector::parse("meta[name='viewport']").unwrap());
+static LANG_SELECTOR: LazyLock<Selector> = LazyLock::new(|| Selector::parse("html[lang]").unwrap());
+static ROBOTS_SELECTOR: LazyLock<Selector> =
+    LazyLock::new(|| Selector::parse("meta[name='robots']").unwrap());
+static AFREE_SELECTOR: LazyLock<Selector> = LazyLock::new(|| Selector::parse("a[href]").unwrap());
+static IMG_SELECTOR: LazyLock<Selector> = LazyLock::new(|| Selector::parse("img[src]").unwrap());
+static HEADING_SELECTOR: LazyLock<Selector> =
+    LazyLock::new(|| Selector::parse("h1,h2,h3,h4,h5,h6").unwrap());
+static SCHEMA_SELECTOR: LazyLock<Selector> =
+    LazyLock::new(|| Selector::parse("script[type='application/ld+json']").unwrap());
+static CONTENT_TYPE_SELECTOR: LazyLock<Selector> =
+    LazyLock::new(|| Selector::parse("meta[http-equiv=content-type]").unwrap());
+static CANONICAL_SELECTOR: LazyLock<Selector> =
+    LazyLock::new(|| Selector::parse("link[rel=canonical], link[rel=alternate]").unwrap());
+static BODY_SELECTOR: LazyLock<Selector> = LazyLock::new(|| Selector::parse("body").unwrap());
+static STYLE_SELECTOR: LazyLock<Selector> =
+    LazyLock::new(|| Selector::parse("link[rel='stylesheet'], style").unwrap());
+static SCRIPT_SELECTOR: LazyLock<Selector> = LazyLock::new(|| Selector::parse("script").unwrap());
+
 /// Extract page elements and metadata from HTML document
 ///
 /// This function parses the HTML document and extracts various SEO-relevant
@@ -97,27 +126,22 @@ pub struct PageData {
 /// # Returns
 /// A `PageData` struct containing all extracted information
 pub fn extract_page_elements(document: &Html) -> PageData {
-    // Define CSS selectors for common page elements
-    let title_selector = Selector::parse("title").unwrap();
-    let h1_selector = Selector::parse("h1").unwrap();
-    let h2_selector = Selector::parse("h2").unwrap();
-    let desc_selector = Selector::parse("meta[name='description']").unwrap();
 
     // Extract basic page metadata
-    let title = extract_text_content(document, &title_selector);
-    let h1 = extract_text_content(document, &h1_selector);
-    let h2 = extract_text_content(document, &h2_selector);
-    let description = extract_meta_content(document, &desc_selector);
+    let title = extract_text_content(document, &TITLE_SELECTOR);
+    let h1 = extract_text_content(document, &H1_SELECTOR);
+    let h2 = extract_text_content(document, &H2_SELECTOR);
+    let description = extract_meta_content(document, &DESC_SELECTOR);
 
     // Check for mobile viewport meta tag
     let mobile = document
-        .select(&Selector::parse("meta[name='viewport']").unwrap())
+        .select(&VIEWPORT_SELECTOR)
         .next()
         .is_some();
 
     // Extract page language from html tag
     let language = document
-        .select(&Selector::parse("html[lang]").unwrap())
+        .select(&LANG_SELECTOR)
         .next()
         .and_then(|e| e.value().attr("lang"))
         .map(|s| s.to_string())
@@ -125,7 +149,7 @@ pub fn extract_page_elements(document: &Html) -> PageData {
 
     // Extract robots meta tag for indexability
     let indexability = document
-        .select(&Selector::parse("meta[name='robots']").unwrap())
+        .select(&ROBOTS_SELECTOR)
         .next()
         .and_then(|e| e.value().attr("content"))
         .map(|s| s.to_string())
@@ -133,7 +157,7 @@ pub fn extract_page_elements(document: &Html) -> PageData {
 
     // Extract all links from the page
     let anchor_links: Vec<AnchorLink> = document
-        .select(&Selector::parse("a[href]").unwrap())
+        .select(&AFREE_SELECTOR)
         .map(|e| {
             let href = e.value().attr("href").unwrap().to_string();
             let text = e.text().collect::<String>().trim().to_string();
@@ -146,7 +170,7 @@ pub fn extract_page_elements(document: &Html) -> PageData {
 
     // Extract image information including size estimates
     let images: Vec<ImageInfo> = document
-        .select(&Selector::parse("img[src]").unwrap())
+        .select(&IMG_SELECTOR)
         .map(|e| {
             let src = e.value().attr("src").unwrap().to_string();
             let alt = e.value().attr("alt").unwrap_or("").to_string();
@@ -156,9 +180,8 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         .collect();
 
     // Extract all heading elements (h1-h6) with their levels
-    let heading_selector = Selector::parse("h1,h2,h3,h4,h5,h6").unwrap();
     let headings: Vec<(String, String)> = document
-        .select(&heading_selector)
+        .select(&HEADING_SELECTOR)
         .map(|e| {
             let tag = e.value().name().to_string();
             let text = e.text().collect::<String>();
@@ -167,24 +190,22 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         .collect();
 
     // Extract structured data (JSON-LD)
-    let schema_selector = Selector::parse("script[type='application/ld+json']").unwrap();
     let schema: Vec<String> = document
-        .select(&schema_selector)
+        .select(&SCHEMA_SELECTOR)
         .map(|e| e.text().collect::<String>())
         .collect();
 
     // Extract content type from meta tag, default to text/html
     let content_type = document
-        .select(&Selector::parse("meta[http-equiv=content-type]").unwrap())
+        .select(&CONTENT_TYPE_SELECTOR)
         .next()
         .and_then(|e| e.value().attr("content"))
         .map(|s| s.to_string())
         .unwrap_or_else(|| "text/html".to_string());
 
     // Extract canonical and alternate link tags
-    let canonical_selector = Selector::parse("link[rel=canonical], link[rel=alternate]").unwrap();
     let canonicals: Vec<(String, String, Option<String>)> = document
-        .select(&canonical_selector)
+        .select(&CANONICAL_SELECTOR)
         .map(|e| {
             let rel = e.value().attr("rel").unwrap().to_string();
             let href = e.value().attr("href").unwrap().to_string();
@@ -195,7 +216,7 @@ pub fn extract_page_elements(document: &Html) -> PageData {
 
     // Calculate content size (character count of body text)
     let size = document
-        .select(&Selector::parse("body").unwrap())
+        .select(&BODY_SELECTOR)
         .next()
         .map(|e| e.text().collect::<String>())
         .unwrap_or_default()
@@ -206,7 +227,7 @@ pub fn extract_page_elements(document: &Html) -> PageData {
 
     // GET THE CSS INFORMATION THAT IS POSSIBLE TO GRAB FROM THE HTML
     let css = document
-        .select(&Selector::parse("link[rel='stylesheet'], style").unwrap())
+        .select(&STYLE_SELECTOR)
         .fold(
             CssInfo {
                 total_size_bytes: Some(0),
@@ -237,7 +258,7 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         );
 
     // Gets all the javascript info from the page
-    let javascript = document.select(&Selector::parse("script").unwrap()).fold(
+    let javascript = document.select(&SCRIPT_SELECTOR).fold(
         JavascriptInfo {
             total_size_bytes: None,
             total_size_formatted: "".to_string(),
