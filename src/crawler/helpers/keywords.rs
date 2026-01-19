@@ -7,7 +7,7 @@ pub fn extract_keywords(html: &Html) -> Vec<String> {
     // to ensure we get all text nodes in the body that aren't code/metadata.
     let mut body_text = String::new();
     let body_selector = scraper::Selector::parse("body").unwrap();
-    
+
     if let Some(body) = html.select(&body_selector).next() {
         for node in body.descendants() {
             if let Some(text) = node.value().as_text() {
@@ -17,7 +17,12 @@ pub fn extract_keywords(html: &Html) -> Vec<String> {
                 while let Some(p) = parent {
                     if let Some(parent_elem) = p.value().as_element() {
                         let name = parent_elem.name();
-                        if name == "script" || name == "style" || name == "noscript" || name == "svg" || name == "canvas" {
+                        if name == "script"
+                            || name == "style"
+                            || name == "noscript"
+                            || name == "svg"
+                            || name == "canvas"
+                        {
                             is_blacklisted = true;
                             break;
                         }
@@ -41,13 +46,14 @@ pub fn extract_keywords(html: &Html) -> Vec<String> {
 
     // 3. Simple blocklist of common English stop words
     let stop_words = [
-        "the", "and", "for", "that", "with", "this", "from", "your", "have", "will", "been", "they",
-        "more", "when", "into", "their", "there", "what", "which", "some", "them", "then", "just",
-        "than", "were", "well", "only", "about", "could", "also", "would", "very", "every", "many",
-        "does", "ever", "most", "even", "such", "than", "here", "there", "where", "when", "look",
-        "they", "their", "them", "from", "each", "used", "your", "much", "time", "back", "true",
-        "work", "take", "name", "good", "used", "made", "both", "once", "still", "last", "long",
-        "find", "down", "come", "than", "away", "find", "come", "than", "down", "once", "both",
+        "the", "and", "for", "that", "with", "this", "from", "your", "have", "will", "been",
+        "they", "more", "when", "into", "their", "there", "what", "which", "some", "them", "then",
+        "just", "than", "were", "well", "only", "about", "could", "also", "would", "very", "every",
+        "many", "does", "ever", "most", "even", "such", "than", "here", "there", "where", "when",
+        "look", "they", "their", "them", "from", "each", "used", "your", "much", "time", "back",
+        "true", "work", "take", "name", "good", "used", "made", "both", "once", "still", "last",
+        "long", "find", "down", "come", "than", "away", "find", "come", "than", "down", "once",
+        "both",
     ];
 
     // 4. Count frequencies

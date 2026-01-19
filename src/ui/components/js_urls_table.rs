@@ -48,11 +48,7 @@ pub fn render_js_urls_table(f: &mut Frame, app: &mut App, area: Rect) {
     ];
 
     let total_pages = calculate_total_pages(app);
-    let pagination_info = format!(
-        " Page {} of {} ",
-        app.js_urls_current_page + 1,
-        total_pages
-    );
+    let pagination_info = format!(" Page {} of {} ", app.js_urls_current_page + 1, total_pages);
 
     let table = Table::new(rows, widths)
         .header(header)

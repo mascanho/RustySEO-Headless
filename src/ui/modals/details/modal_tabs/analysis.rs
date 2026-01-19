@@ -67,7 +67,8 @@ pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
                     keyword_rows.push(Row::new(vec![
                         Cell::from(format!(" #{} ", i + 1)),
                         Cell::from(format!(" {} ", word)).style(Style::default().fg(Color::Cyan)),
-                        Cell::from(format!(" {} ", freq)).style(Style::default().fg(Color::Yellow).bold()),
+                        Cell::from(format!(" {} ", freq))
+                            .style(Style::default().fg(Color::Yellow).bold()),
                     ]));
                 }
             }
