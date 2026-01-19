@@ -157,6 +157,22 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             }
                             _ => {}
                         }
+                    } else if app.show_content_search {
+                        match key.code {
+                            KeyCode::Enter | KeyCode::Esc => {
+                                app.show_content_search = false;
+                                app.apply_content_filter();
+                            }
+                            KeyCode::Char(c) => {
+                                app.content_search_query.push(c);
+                                app.last_search_time = Some(std::time::Instant::now());
+                            }
+                            KeyCode::Backspace => {
+                                app.content_search_query.pop();
+                                app.last_search_time = Some(std::time::Instant::now());
+                            }
+                            _ => {}
+                        }
                     } else if app.show_js_pages_modal {
                         match key.code {
                             KeyCode::Char('q') | KeyCode::Esc => app.close_js_pages_modal(),
@@ -261,6 +277,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             KeyCode::Left => {
                                 if app.current_state == AppState::Dashboard {
                                     app.scroll_left()
+                                } else if app.current_state == AppState::Content {
+                                    app.scroll_content_left()
                                 } else {
                                     app.move_cursor_left()
                                 }
@@ -268,6 +286,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             KeyCode::Right => {
                                 if app.current_state == AppState::Dashboard {
                                     app.scroll_right(50)
+                                } else if app.current_state == AppState::Content {
+                                    app.scroll_content_right(50)
                                 } else {
                                     app.move_cursor_right()
                                 }
@@ -572,6 +592,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     app.show_css_urls_search = true;
                                 } else if app.current_state == AppState::Javascript {
                                     app.show_js_urls_search = true;
+                                } else if app.current_state == AppState::Content {
+                                    app.show_content_search = true;
                                 }
                             }
 
@@ -589,7 +611,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             //     }
                             // }
                             KeyCode::Char('k') | KeyCode::Up => match app.current_state {
-                                AppState::Dashboard | AppState::Content => app.previous_row(),
+                                AppState::Dashboard => app.previous_row(),
+                                AppState::Content => app.previous_content_row(),
                                 AppState::Internal => app.previous_internal_row(),
                                 AppState::Javascript => {
                                     let selected = app.js_urls_table_state.selected().unwrap_or(0);
@@ -620,7 +643,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 _ => {}
                             },
                             KeyCode::Char('j') | KeyCode::Down => match app.current_state {
-                                AppState::Dashboard | AppState::Content => app.next_row(),
+                                AppState::Dashboard => app.next_row(),
+                                AppState::Content => app.next_content_row(),
                                 AppState::Internal => app.next_internal_row(),
                                 AppState::Javascript => {
                                     let len = app.js_urls_filtered_table_data.len();
@@ -725,6 +749,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
 
                             KeyCode::Char(']') => match app.current_state {
                                 AppState::Dashboard => app.next_page(),
+                                AppState::Content => app.next_content_page(),
                                 AppState::Internal => app.next_internal_page(),
                                 AppState::Javascript => {
                                     let total_pages = (app.js_urls_full_filtered_table_data.len()
@@ -740,6 +765,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             },
                             KeyCode::Char('[') => match app.current_state {
                                 AppState::Dashboard => app.previous_page(),
+                                AppState::Content => app.previous_content_page(),
                                 AppState::Internal => app.previous_internal_page(),
                                 AppState::Javascript => {
                                     if app.js_urls_current_page > 0 {
@@ -885,6 +911,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                         MouseEventKind::ScrollUp => {
                                             if app.current_state == AppState::Dashboard {
                                                 app.previous_row()
+                                            } else if app.current_state == AppState::Content {
+                                                app.previous_content_row()
                                             } else if app.current_state == AppState::Internal {
                                                 app.previous_internal_row()
                                             } else if app.current_state == AppState::Javascript {
@@ -908,6 +936,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                         MouseEventKind::ScrollDown => {
                                             if app.current_state == AppState::Dashboard {
                                                 app.next_row()
+                                            } else if app.current_state == AppState::Content {
+                                                app.next_content_row()
                                             } else if app.current_state == AppState::Internal {
                                                 app.next_internal_row()
                                             } else if app.current_state == AppState::Javascript {

@@ -275,6 +275,15 @@ pub struct App {
     pub js_urls_horizontal_scroll: usize,
     pub js_urls_search_query: String,
     pub show_js_urls_search: bool,
+    // Content Tab State
+    pub content_table_state: ratatui::widgets::TableState,
+    pub content_filtered_table_data: Vec<Vec<String>>,
+    pub content_full_filtered_table_data: Vec<Vec<String>>,
+    pub content_current_page: usize,
+    pub content_page_size: usize,
+    pub content_horizontal_scroll: usize,
+    pub content_search_query: String,
+    pub show_content_search: bool,
     // Javascript Pages Modal State
     pub show_js_pages_modal: bool,
     pub js_pages_list: Vec<String>,

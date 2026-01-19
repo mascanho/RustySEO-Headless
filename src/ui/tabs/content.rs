@@ -8,7 +8,7 @@ use ratatui::{
 
 use crate::models::App;
 
-/// Renders the Content tab with the same table as the Dashboard.
+/// Renders the Content tab with independent filtering and scrolling from the Dashboard.
 /// This allows for content-specific views and future customizations.
 pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     app.table_rect = Some(area);
@@ -16,11 +16,12 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     let border_color = Color::Rgb(40, 45, 60);
 
     // Ensure we have filtered data if it was just initialized
-    if app.filtered_table_data.is_empty()
+    if app.content_filtered_table_data.is_empty()
         && !app.table_data.is_empty()
-        && app.search_query.is_empty()
+        && app.content_search_query.is_empty()
     {
-        app.filtered_table_data = app.table_data.clone();
+        app.content_filtered_table_data = app.table_data.clone();
+        app.content_full_filtered_table_data = app.table_data.clone();
     }
 
     let header_titles = [
@@ -49,85 +50,98 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     }))
     .height(1);
 
-    let rows = app.filtered_table_data.iter().enumerate().map(|(i, data)| {
-        let is_selected = app.table_state.selected() == Some(i);
+    let rows = app
+        .content_filtered_table_data
+        .iter()
+        .enumerate()
+        .map(|(i, data)| {
+            let is_selected = app.content_table_state.selected() == Some(i);
 
-        let mut row_style = if i % 2 == 0 {
-            Style::default().bg(Color::Rgb(20, 20, 30))
-        } else {
-            Style::default().bg(Color::Rgb(25, 25, 40))
-        };
-
-        if is_selected {
-            row_style = row_style
-                .fg(Color::White)
-                .bg(accent_color)
-                .add_modifier(Modifier::BOLD);
-        }
-
-        let start = app.current_page * app.page_size;
-        let full_idx = start + i;
-        let mut displayed_data = vec![
-            (full_idx + 1).to_string(), // Sequential ID
-            data[1].clone(),            // URL
-            data[18].clone(),           // Word Count
-        ];
-
-        // Add Top 10 Keywords (Indices 23 to 32)
-        for j in 23..33 {
-            if let Some(kw) = data.get(j) {
-                displayed_data.push(kw.clone());
+            let mut row_style = if i % 2 == 0 {
+                Style::default().bg(Color::Rgb(20, 20, 30))
             } else {
-                displayed_data.push(String::new());
-            }
-        }
-
-        let cells = displayed_data.iter().enumerate().map(|(j, c)| {
-            let content = if j == 1 {
-                // URL
-                let content = c.as_str();
-                let char_count = content.chars().count();
-                if char_count > 60 {
-                    let start = app.horizontal_scroll.min(char_count.saturating_sub(50));
-                    let end = (start + 60).min(char_count);
-                    let sliced: String = content.chars().skip(start).take(end - start).collect();
-                    if start > 0 {
-                        format!("…{}", sliced)
-                    } else {
-                        sliced
-                    }
-                } else {
-                    content.to_string()
-                }
-            } else {
-                c.as_str().to_string()
+                Style::default().bg(Color::Rgb(25, 25, 40))
             };
 
-            let mut cell_style = Style::default();
+            if is_selected {
+                row_style = row_style
+                    .fg(Color::White)
+                    .bg(accent_color)
+                    .add_modifier(Modifier::BOLD);
+            }
 
-            if j == 2 {
-                // Word count column
-                if let Ok(count) = content.trim().parse::<usize>() {
-                    if count > 1000 {
-                        cell_style = cell_style.fg(Color::Green).bold();
-                    } else if count < 200 {
-                        cell_style = cell_style.fg(Color::Red);
-                    }
+            let start = app.content_current_page * app.content_page_size;
+            let full_idx = start + i;
+            let mut displayed_data = vec![
+                (full_idx + 1).to_string(), // Sequential ID
+                data[1].clone(),            // URL
+                data[18].clone(),           // Word Count
+            ];
+
+            // Add Top 10 Keywords (Indices 23 to 32)
+            for j in 23..33 {
+                if let Some(kw) = data.get(j) {
+                    displayed_data.push(kw.clone());
+                } else {
+                    displayed_data.push(String::new());
                 }
             }
 
-            if j >= 3 {
-                // Keywords
-                cell_style = cell_style.fg(Color::Cyan);
-            }
+            let cells = displayed_data.iter().enumerate().map(|(j, c)| {
+                let content = if j == 1 {
+                    // URL
+                    let content = c.as_str();
+                    let char_count = content.chars().count();
+                    if char_count > 60 {
+                        let start = app
+                            .content_horizontal_scroll
+                            .min(char_count.saturating_sub(50));
+                        let end = (start + 60).min(char_count);
+                        let sliced: String =
+                            content.chars().skip(start).take(end - start).collect();
+                        if start > 0 {
+                            format!("…{}", sliced)
+                        } else {
+                            sliced
+                        }
+                    } else {
+                        content.to_string()
+                    }
+                } else {
+                    c.as_str().to_string()
+                };
 
-            Cell::from(content).style(cell_style)
+                let mut cell_style = Style::default();
+
+                if j == 2 {
+                    // Word count column
+                    if let Ok(count) = content.trim().parse::<usize>() {
+                        if count > 1000 {
+                            cell_style = cell_style.fg(Color::Green).bold();
+                        } else if count < 200 {
+                            cell_style = cell_style.fg(Color::Red);
+                        }
+                    }
+                }
+
+                if j >= 3 {
+                    // Keywords
+                    cell_style = cell_style.fg(Color::Cyan);
+                }
+
+                Cell::from(content).style(cell_style)
+            });
+
+            Row::new(cells).style(row_style).height(1)
         });
 
-        Row::new(cells).style(row_style).height(1)
-    });
-
-    let max_id_width = app.full_filtered_table_data.len().to_string().len().max(2) as u16 + 2;
+    let max_id_width = app
+        .content_full_filtered_table_data
+        .len()
+        .to_string()
+        .len()
+        .max(2) as u16
+        + 2;
     let mut widths = vec![
         Constraint::Length(max_id_width), // ID
         Constraint::Min(40),              // URL
@@ -139,9 +153,10 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         widths.push(Constraint::Length(20));
     }
 
-    let total_pages = (app.full_filtered_table_data.len() + app.page_size - 1) / app.page_size;
-    let scroll_indicator = if app.horizontal_scroll > 0 {
-        format!(" [Scroll: {}] ", app.horizontal_scroll)
+    let total_pages = (app.content_full_filtered_table_data.len() + app.content_page_size - 1)
+        / app.content_page_size;
+    let scroll_indicator = if app.content_horizontal_scroll > 0 {
+        format!(" [Scroll: {}] ", app.content_horizontal_scroll)
     } else {
         String::new()
     };
@@ -152,7 +167,10 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             Block::default()
                 .borders(Borders::ALL)
                 .title(Span::styled(
-                    format!(" Content Audit ({}) ", app.full_filtered_table_data.len()),
+                    format!(
+                        " Content Audit ({}) ",
+                        app.content_full_filtered_table_data.len()
+                    ),
                     Style::default()
                         .fg(Color::Yellow)
                         .add_modifier(Modifier::BOLD),
@@ -161,7 +179,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                     Line::from(Span::styled(
                         format!(
                             " Page {} of {} {} ",
-                            app.current_page + 1,
+                            app.content_current_page + 1,
                             total_pages,
                             scroll_indicator
                         ),
@@ -174,10 +192,10 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         .column_spacing(1)
         .style(Style::default().bg(Color::Rgb(15, 15, 25)));
 
-    f.render_stateful_widget(table, area, &mut app.table_state);
+    f.render_stateful_widget(table, area, &mut app.content_table_state);
 
     // Floating Search Bar at bottom right
-    if app.show_search {
+    if app.show_content_search {
         let search_area = Rect {
             x: area.x + area.width.saturating_sub(40),
             y: area.y + area.height.saturating_sub(3),
@@ -194,7 +212,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 Style::default().fg(Color::Cyan).bold(),
             ));
 
-        let search_text = format!("> {}", app.search_query);
+        let search_text = format!("> {}", app.content_search_query);
         let search_paragraph = Paragraph::new(search_text)
             .block(search_block)
             .style(Style::default().fg(Color::White));

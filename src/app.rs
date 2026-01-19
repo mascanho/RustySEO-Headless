@@ -124,6 +124,14 @@ impl Default for App {
             js_urls_horizontal_scroll: 0,
             js_urls_search_query: String::new(),
             show_js_urls_search: false,
+            content_table_state: ratatui::widgets::TableState::default(),
+            content_filtered_table_data: Vec::new(),
+            content_full_filtered_table_data: Vec::new(),
+            content_current_page: 0,
+            content_page_size: 100,
+            content_horizontal_scroll: 0,
+            content_search_query: String::new(),
+            show_content_search: false,
             show_js_pages_modal: false,
             js_pages_list: Vec::new(),
             js_pages_state: ratatui::widgets::ListState::default(),
@@ -302,6 +310,7 @@ impl App {
             self.apply_internal_filter();
             self.apply_css_urls_filter();
             self.apply_js_urls_filter();
+            self.apply_content_filter();
         }
 
         if crawl_finished {
@@ -318,6 +327,7 @@ impl App {
                 self.apply_internal_filter();
                 self.apply_css_urls_filter();
                 self.apply_js_urls_filter();
+                self.apply_content_filter();
                 self.last_search_time = None;
             }
         }
@@ -973,6 +983,12 @@ impl App {
         self.js_urls_current_page = 0;
         self.js_urls_search_query.clear();
         self.show_js_urls_search = false;
+        self.content_table_state.select(None);
+        self.content_current_page = 0;
+        self.content_search_query.clear();
+        self.show_content_search = false;
+        self.content_filtered_table_data.clear();
+        self.content_full_filtered_table_data.clear();
         self.crawl_progress = 0.0;
         self.is_crawling = true;
         self.logs_data
@@ -1064,6 +1080,18 @@ impl App {
     pub fn scroll_right(&mut self, max_scroll: usize) {
         if self.horizontal_scroll < max_scroll {
             self.horizontal_scroll = self.horizontal_scroll.saturating_add(1);
+        }
+    }
+
+    pub fn scroll_content_left(&mut self) {
+        if self.content_horizontal_scroll > 0 {
+            self.content_horizontal_scroll = self.content_horizontal_scroll.saturating_sub(1);
+        }
+    }
+
+    pub fn scroll_content_right(&mut self, max_scroll: usize) {
+        if self.content_horizontal_scroll < max_scroll {
+            self.content_horizontal_scroll = self.content_horizontal_scroll.saturating_add(1);
         }
     }
 
@@ -1332,6 +1360,54 @@ impl App {
         }
     }
 
+    pub fn apply_content_filter(&mut self) {
+        if self.content_search_query.is_empty() {
+            // Only update if lengths differ to avoid redundant massive clones
+            if self.content_full_filtered_table_data.len() != self.table_data.len() {
+                self.content_full_filtered_table_data = self.table_data.clone();
+            }
+        } else {
+            let matcher = SkimMatcherV2::default();
+            let mut scored_data = Vec::new();
+            for row in &self.table_data {
+                let search_blob = format!("{} {} {}", row[1], row[2], row[6]);
+                if let Some(score) = matcher.fuzzy_match(&search_blob, &self.content_search_query) {
+                    scored_data.push((score, row.clone()));
+                }
+            }
+            scored_data.sort_by(|a, b| b.0.cmp(&a.0));
+            self.content_full_filtered_table_data =
+                scored_data.into_iter().map(|(_, row)| row).collect();
+        }
+
+        let total_pages = (self.content_full_filtered_table_data.len() + self.content_page_size
+            - 1)
+            / self.content_page_size;
+        if self.content_current_page >= total_pages {
+            self.content_current_page = total_pages.saturating_sub(1);
+        }
+
+        self.apply_content_pagination();
+    }
+
+    pub fn apply_content_pagination(&mut self) {
+        let start = self.content_current_page * self.content_page_size;
+        let end = (start + self.content_page_size).min(self.content_full_filtered_table_data.len());
+        self.content_filtered_table_data =
+            self.content_full_filtered_table_data[start..end].to_vec();
+
+        if let Some(selected) = self.content_table_state.selected() {
+            if selected >= self.content_filtered_table_data.len() {
+                if self.content_filtered_table_data.is_empty() {
+                    self.content_table_state.select(None);
+                } else {
+                    self.content_table_state
+                        .select(Some(self.content_filtered_table_data.len() - 1));
+                }
+            }
+        }
+    }
+
     pub fn next_internal_row(&mut self) {
         let len = self.internal_filtered_table_data.len();
         if len == 0 {
@@ -1398,6 +1474,74 @@ impl App {
         if self.internal_current_page > 0 {
             self.internal_current_page -= 1;
             self.apply_internal_pagination();
+        }
+    }
+
+    pub fn next_content_row(&mut self) {
+        let len = self.content_filtered_table_data.len();
+        if len == 0 {
+            return;
+        }
+        let i = match self.content_table_state.selected() {
+            Some(i) => {
+                if i >= len - 1 {
+                    let total_pages =
+                        (self.content_full_filtered_table_data.len() + self.content_page_size - 1)
+                            / self.content_page_size;
+                    if self.content_current_page + 1 < total_pages {
+                        self.content_current_page += 1;
+                        self.apply_content_pagination();
+                        0
+                    } else {
+                        len - 1
+                    }
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.content_table_state.select(Some(i));
+    }
+
+    pub fn previous_content_row(&mut self) {
+        let len = self.content_filtered_table_data.len();
+        if len == 0 {
+            return;
+        }
+        let i = match self.content_table_state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    if self.content_current_page > 0 {
+                        self.content_current_page -= 1;
+                        self.apply_content_pagination();
+                        self.content_filtered_table_data.len().saturating_sub(1)
+                    } else {
+                        0
+                    }
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.content_table_state.select(Some(i));
+    }
+
+    pub fn next_content_page(&mut self) {
+        let total_pages = (self.content_full_filtered_table_data.len() + self.content_page_size
+            - 1)
+            / self.content_page_size;
+        if self.content_current_page + 1 < total_pages {
+            self.content_current_page += 1;
+            self.apply_content_pagination();
+        }
+    }
+
+    pub fn previous_content_page(&mut self) {
+        if self.content_current_page > 0 {
+            self.content_current_page -= 1;
+            self.apply_content_pagination();
         }
     }
 
