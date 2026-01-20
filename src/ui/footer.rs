@@ -47,11 +47,11 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
     // Status / System Info
     let status_prefix = if app.is_crawling {
-        format!(" ⏳ {} ", app.input_url)
+        format!(" {} ", app.input_url)
     } else if app.crawl_progress >= 1.0 {
-        format!(" ✅ {} ", app.input_url)
+        format!(" {} ", app.input_url)
     } else {
-        " 💤 STATUS: IDLE ".to_string()
+        " STATUS: IDLE ".to_string()
     };
 
     let status_text = vec![Line::from(vec![
@@ -106,7 +106,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         },
         Span::styled(" | ", Style::default().fg(border_color)),
         Span::styled(
-            " ⚡ PSI: ",
+            " 📟 PSI: ",
             Style::default()
                 .fg(Color::Gray)
                 .add_modifier(Modifier::BOLD),

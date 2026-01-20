@@ -149,7 +149,7 @@ impl CrawlEngine {
         results
     }
 
-    /// Robust concurrent crawler logic using JoinSet for task management
+    /// concurrent crawler logic using JoinSet for task management
     pub async fn crawl_concurrently(
         &self,
         start_url: &str,
@@ -160,7 +160,7 @@ impl CrawlEngine {
             Err(_) => return,
         };
 
-        // Use our new queue module for breadth-first crawling
+        //  new queue module for breadth-first crawling
         let mut queue = crate::crawler::queue::CrawlQueue::new();
         queue.push(start_url.to_string(), None);
 
@@ -398,26 +398,47 @@ impl CrawlEngine {
                 // Efficiency: Skip non-HTML or non-OK pages
                 let is_html = page_data.content_type.to_lowercase().contains("text/html");
                 let is_ok = page_data.status.starts_with('2');
-                
-                let search_patterns = ["?s=", "?q=", "?search=", "?filter=", "?sort=", "?orderby=", "&s=", "&q=", "&search=", "&filter=", "&sort=", "&orderby="];
+
+                let search_patterns = [
+                    "?s=",
+                    "?q=",
+                    "?search=",
+                    "?filter=",
+                    "?sort=",
+                    "?orderby=",
+                    "&s=",
+                    "&q=",
+                    "&search=",
+                    "&filter=",
+                    "&sort=",
+                    "&orderby=",
+                ];
                 let url_lower = url.to_lowercase();
                 let has_search_params = search_patterns.iter().any(|p| url_lower.contains(p));
-                
+
                 // Best Practice: Skip localhost/private IPs as Google cannot reach them
-                let is_local = url_lower.contains("localhost") || url_lower.contains("127.0.0.1") || url_lower.contains("0.0.0.0") || url_lower.contains("//192.168.") || url_lower.contains("//10.");
-                
+                let is_local = url_lower.contains("localhost")
+                    || url_lower.contains("127.0.0.1")
+                    || url_lower.contains("0.0.0.0")
+                    || url_lower.contains("//192.168.")
+                    || url_lower.contains("//10.");
+
                 if is_html && is_ok && !has_search_params && !is_local {
                     tracing::info!("[CWV] Fetching PageSpeed for {}", url);
-                    
+
                     // Desktop
-                    match self.fetch_pagespeed_data(url, "desktop", &config.api_key).await {
+                    match self
+                        .fetch_pagespeed_data(url, "desktop", &config.api_key)
+                        .await
+                    {
                         Ok(cwv) => {
                             tracing::info!("[CWV] Desktop data received for {}", url);
                             page_data.cwv_desktop = Some(cwv);
                         }
                         Err(e) => {
                             tracing::error!("[CWV] Desktop failed for {}: {}", url, e);
-                            let mut err_data = crate::crawler::helpers::html_parser::CwvData::default();
+                            let mut err_data =
+                                crate::crawler::helpers::html_parser::CwvData::default();
                             err_data.performance_score = "Error".to_string();
                             err_data.fcp = e.to_string();
                             page_data.cwv_desktop = Some(err_data);
@@ -428,23 +449,35 @@ impl CrawlEngine {
                     tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
 
                     // Mobile
-                    match self.fetch_pagespeed_data(url, "mobile", &config.api_key).await {
+                    match self
+                        .fetch_pagespeed_data(url, "mobile", &config.api_key)
+                        .await
+                    {
                         Ok(cwv) => {
                             tracing::info!("[CWV] Mobile data received for {}", url);
                             page_data.cwv_mobile = Some(cwv);
                         }
                         Err(e) => {
                             tracing::error!("[CWV] Mobile failed for {}: {}", url, e);
-                            let mut err_data = crate::crawler::helpers::html_parser::CwvData::default();
+                            let mut err_data =
+                                crate::crawler::helpers::html_parser::CwvData::default();
                             err_data.performance_score = "Error".to_string();
                             err_data.fcp = e.to_string();
                             page_data.cwv_mobile = Some(err_data);
                         }
                     }
                 } else {
-                    let reason = if !is_html { "Skip:Type" } else if !is_ok { "Skip:Status" } else if is_local { "Skip:Local" } else { "Skip:Param" };
+                    let reason = if !is_html {
+                        "Not HTML"
+                    } else if !is_ok {
+                        "Skip:Status"
+                    } else if is_local {
+                        "Skip:Local"
+                    } else {
+                        "Skip:Param"
+                    };
                     tracing::info!("[CWV] {} for {}", reason, url);
-                    
+
                     let mut skip_data = crate::crawler::helpers::html_parser::CwvData::default();
                     skip_data.performance_score = reason.to_string();
                     skip_data.fcp = "---".to_string();
@@ -452,7 +485,7 @@ impl CrawlEngine {
                     skip_data.cls = "---".to_string();
                     skip_data.tbt = "---".to_string();
                     skip_data.speed_index = "---".to_string();
-                    
+
                     page_data.cwv_desktop = Some(skip_data.clone());
                     page_data.cwv_mobile = Some(skip_data);
                 }
@@ -470,7 +503,7 @@ impl CrawlEngine {
     ) -> Result<crate::crawler::helpers::html_parser::CwvData, String> {
         let mut api_url = Url::parse("https://www.googleapis.com/pagespeedonline/v5/runPagespeed")
             .map_err(|e| format!("URL parse failed: {}", e))?;
-        
+
         {
             let mut query = api_url.query_pairs_mut();
             query.append_pair("url", url);
@@ -479,7 +512,9 @@ impl CrawlEngine {
             query.append_pair("category", "performance");
         }
 
-        let response = self.client.get(api_url.as_str())
+        let response = self
+            .client
+            .get(api_url.as_str())
             .timeout(Duration::from_secs(60)) // PageSpeed is slow, needs longer than default 15s
             .send()
             .await
@@ -488,22 +523,39 @@ impl CrawlEngine {
         if !response.status().is_success() {
             let status = response.status();
             match response.text().await {
-                Ok(err_body) => return Err(format!("PageSpeed API error ({}): {}", status, err_body)),
-                Err(_) => return Err(format!("PageSpeed API error ({}): (could not read error body)", status)),
+                Ok(err_body) => {
+                    return Err(format!("PageSpeed API error ({}): {}", status, err_body));
+                }
+                Err(_) => {
+                    return Err(format!(
+                        "PageSpeed API error ({}): (could not read error body)",
+                        status
+                    ));
+                }
             };
         }
 
-        let json: serde_json::Value = response.json().await.map_err(|e| format!("JSON parse failed: {}", e))?;
+        let json: serde_json::Value = response
+            .json()
+            .await
+            .map_err(|e| format!("JSON parse failed: {}", e))?;
 
         let lighthouse = json.get("lighthouseResult").ok_or("No lighthouseResult")?;
         let categories = lighthouse.get("categories").ok_or("No categories")?;
-        let performance = categories.get("performance").ok_or("No performance category")?;
-        let score = performance.get("score").and_then(|v| v.as_f64()).unwrap_or(0.0) * 100.0;
+        let performance = categories
+            .get("performance")
+            .ok_or("No performance category")?;
+        let score = performance
+            .get("score")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0)
+            * 100.0;
 
         let audits = lighthouse.get("audits").ok_or("No audits")?;
 
         let get_display_value = |audit_name: &str| {
-            audits.get(audit_name)
+            audits
+                .get(audit_name)
                 .and_then(|a| a.get("displayValue"))
                 .and_then(|v| v.as_str())
                 .unwrap_or("N/A")
@@ -595,9 +647,11 @@ impl CrawlEngine {
         );
 
         let headers = headers_list;
-        
+
         // Extract content type from headers BEFORE consuming response
-        let content_type_header = response.headers().get("content-type")
+        let content_type_header = response
+            .headers()
+            .get("content-type")
             .and_then(|v| v.to_str().ok())
             .map(|s| s.to_string());
 
@@ -611,7 +665,7 @@ impl CrawlEngine {
         page_data.url = url.to_string();
         page_data.status = status;
         page_data.headers = headers;
-        
+
         // Prioritize HTTP header for content type
         if let Some(ct) = content_type_header {
             page_data.content_type = ct;

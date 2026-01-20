@@ -981,13 +981,19 @@ impl App {
         let loaded_settings = crate::models::AppSettings::load();
         let settings_path = crate::models::AppSettings::path();
         self.settings = Some(loaded_settings);
-        
-        let pconfig = self.settings.as_ref().map(|s| s.connectors.pagespeed.clone());
+
+        let pconfig = self
+            .settings
+            .as_ref()
+            .map(|s| s.connectors.pagespeed.clone());
         let status_info = match &pconfig {
             Some(c) => format!("status={}, key_len={}", c.status, c.api_key.len()),
             None => "None".to_string(),
         };
-        self.log(format!("SYSTEM - Settings loaded from: {:?}", settings_path));
+        self.log(format!(
+            "SYSTEM - Settings loaded from: {:?}",
+            settings_path
+        ));
         self.log(format!("SYSTEM - PageSpeed Config: {}", status_info));
 
         self.page_data.clear();

@@ -22,24 +22,17 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     }
 
     let header_titles = [
-        "ID",
-        "URL",
-        "D: Score",
-        "D: FCP",
-        "D: LCP",
-        "D: CLS",
-        "D: TBT",
-        "D: SI",
-        "M: Score",
-        "M: FCP",
-        "M: LCP",
-        "M: CLS",
-        "M: TBT",
-        "M: SI",
+        "ID", "URL", "D: Score", "D: FCP", "D: LCP", "D: CLS", "D: TBT", "D: SI", "M: Score",
+        "M: FCP", "M: LCP", "M: CLS", "M: TBT", "M: SI",
     ];
 
-    let header = Row::new(header_titles.iter().map(|h| {
-        Cell::from(format!(" {} ", h)).style(
+    let header = Row::new(header_titles.iter().enumerate().map(|(i, h)| {
+        let align = if i == 1 {
+            Alignment::Left
+        } else {
+            Alignment::Center
+        };
+        Cell::from(Line::from(format!(" {} ", h)).alignment(align)).style(
             Style::default()
                 .add_modifier(Modifier::BOLD)
                 .fg(accent_color)
@@ -66,7 +59,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
         let start = app.current_page * app.page_size;
         let full_idx = start + i;
-        
+
         let displayed_data = vec![
             (full_idx + 1).to_string(), // 0: Sequential ID
             data[1].clone(),            // 1: URL
@@ -120,7 +113,12 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 }
             }
 
-            Cell::from(content).style(cell_style)
+            let align = if j == 1 {
+                Alignment::Left
+            } else {
+                Alignment::Center
+            };
+            Cell::from(Line::from(content).alignment(align)).style(cell_style)
         });
 
         Row::new(cells).style(row_style).height(1)

@@ -64,12 +64,12 @@ pub struct CwvData {
 impl Default for CwvData {
     fn default() -> Self {
         Self {
-            fcp: "Pending...".to_string(),
-            lcp: "Pending...".to_string(),
-            cls: "Pending...".to_string(),
-            tbt: "Pending...".to_string(),
-            speed_index: "Pending...".to_string(),
-            performance_score: "Pending...".to_string(),
+            fcp: "...".to_string(),
+            lcp: "...".to_string(),
+            cls: "...".to_string(),
+            tbt: "...".to_string(),
+            speed_index: "...".to_string(),
+            performance_score: "...".to_string(),
         }
     }
 }
