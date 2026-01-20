@@ -47,9 +47,9 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
     // Status / System Info
     let status_prefix = if app.is_crawling {
-        format!(" {} ", app.input_url)
+        format!("⏳ {} ", app.input_url)
     } else if app.crawl_progress >= 1.0 {
-        format!(" {} ", app.input_url)
+        format!("✅ {} ", app.input_url)
     } else {
         " STATUS: IDLE ".to_string()
     };
@@ -67,7 +67,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 let total_filtered = app.full_filtered_table_data.len();
                 let _total_pages = (total_filtered + app.page_size - 1) / app.page_size;
                 format!(
-                    " 🔗 URLs: {}",
+                    " URLs: {}",
                     total_filtered,
                     // app.current_page + 1,
                     // total_pages
@@ -77,19 +77,19 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         ),
         Span::styled(" | ", Style::default().fg(border_color)),
         Span::styled(
-            format!(" 📜 Logs(L): {} ", app.logs_data.len()),
+            format!(" Logs(L): {} ", app.logs_data.len()),
             Style::default().fg(Color::Yellow),
         ),
         Span::styled(" | ", Style::default().fg(border_color)),
         Span::styled(
-            " 🤖 AI(A) ",
+            " AI(A) ",
             Style::default()
                 .fg(Color::Rgb(200, 100, 255))
                 .add_modifier(Modifier::BOLD),
         ),
         Span::styled(" | ", Style::default().fg(border_color)),
         Span::styled(
-            " ⚡ JS: ",
+            " JS: ",
             Style::default()
                 .fg(Color::Gray)
                 .add_modifier(Modifier::BOLD),
@@ -106,7 +106,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         },
         Span::styled(" | ", Style::default().fg(border_color)),
         Span::styled(
-            " 📟 PSI: ",
+            " PSI: ",
             Style::default()
                 .fg(Color::Gray)
                 .add_modifier(Modifier::BOLD),
@@ -139,7 +139,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         if app.current_state == AppState::Dashboard {
             if app.show_search {
                 Span::styled(
-                    " 🔍 FINDING... ",
+                    " FINDING... ",
                     Style::default()
                         .fg(Color::Rgb(255, 170, 0))
                         .add_modifier(Modifier::BOLD)
@@ -147,13 +147,13 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 )
             } else if !app.search_query.is_empty() {
                 Span::styled(
-                    format!(" 🔍 FILTER: '{}' ", app.search_query),
+                    format!(" FILTER: '{}' ", app.search_query),
                     Style::default()
                         .fg(Color::Rgb(255, 170, 0))
                         .add_modifier(Modifier::BOLD),
                 )
             } else {
-                Span::styled(" 🔍 FIND(Ctrl+F) ", Style::default().fg(Color::DarkGray))
+                Span::styled(" FIND(Ctrl+F) ", Style::default().fg(Color::DarkGray))
             }
         } else {
             Span::raw("")
@@ -163,7 +163,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         } else {
             Span::raw("")
         },
-        Span::styled(" ⌨️  Help: '?' ", Style::default().fg(Color::Gray)),
+        Span::styled(" Help: '?' ", Style::default().fg(Color::Gray)),
     ])];
 
     let p = Paragraph::new(status_text)
