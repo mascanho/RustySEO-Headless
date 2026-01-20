@@ -82,9 +82,9 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 // URL
                 let content = c.as_str();
                 let char_count = content.chars().count();
-                if char_count > 40 {
+                if char_count > 80 {
                     let start = app.horizontal_scroll.min(char_count.saturating_sub(30));
-                    let end = (start + 40).min(char_count);
+                    let end = (start + 80).min(char_count);
                     let sliced: String = content.chars().skip(start).take(end - start).collect();
                     if start > 0 {
                         format!("…{}", sliced)
