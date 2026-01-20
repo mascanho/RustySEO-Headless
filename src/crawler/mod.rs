@@ -1,4 +1,5 @@
 pub mod engine;
+pub mod fetching;
 pub mod helpers;
 pub mod queue;
 pub mod sitemap;
