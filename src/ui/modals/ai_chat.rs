@@ -10,6 +10,30 @@ use crate::ai::gemini;
 use crate::models::App;
 use crate::ui::centered_rect;
 
+fn wrap_line(line: &str, width: usize) -> Vec<String> {
+    let mut result = vec![];
+    let mut current = String::new();
+    for word in line.split_whitespace() {
+        if current.len() + word.len() + 1 > width {
+            if !current.is_empty() {
+                result.push(current);
+                current = word.to_string();
+            } else {
+                result.push(word.to_string());
+            }
+        } else {
+            if !current.is_empty() {
+                current.push(' ');
+            }
+            current.push_str(word);
+        }
+    }
+    if !current.is_empty() {
+        result.push(current);
+    }
+    result
+}
+
 pub async fn send_message(app: &mut App) -> Result<String, Box<dyn std::error::Error>> {
     if app.ai_input.trim().is_empty() {
         return Err("Empty message".into());
@@ -61,6 +85,8 @@ pub fn render(f: &mut Frame, app: &mut App) {
     let history_area = chunks[0];
     let input_area = chunks[1];
 
+    let text_width = history_area.width.saturating_sub(6) as usize; // borders 2 + indent 4
+
     // 1. Render Chat History as scrollable Paragraph
     let mut chat_lines: Vec<Line> = Vec::new();
     for msg in &app.ai_chat_history {
@@ -92,32 +118,37 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
         chat_lines.push(header);
         for line in msg.content.lines() {
-            chat_lines.push(Line::from(vec![
-                Span::raw("    "),
-                Span::styled(line, content_style),
-            ]));
+            let wrapped = wrap_line(line, text_width);
+            for w in wrapped {
+                chat_lines.push(Line::from(vec![
+                    Span::raw("    "),
+                    Span::styled(w, content_style),
+                ]));
+            }
         }
         chat_lines.push(Line::from(""));
     }
 
-    let chat_text = Text::from(chat_lines);
+    // Calculate visual content height (now accurate since lines are wrapped)
+    let content_height = chat_lines.len();
+    let visible_height = (history_area.height.saturating_sub(2)) as usize; // Subtract borders
 
     // Auto-scroll to bottom if enabled
-    let visible_height = history_area.height.saturating_sub(2) as usize; // Subtract borders
-    let total_lines = chat_text.lines.len();
     if app.ai_chat_auto_scroll {
-        if total_lines > visible_height {
-            app.ai_chat_scroll = total_lines - visible_height;
+        if content_height > visible_height {
+            app.ai_chat_scroll = content_height - visible_height;
         } else {
             app.ai_chat_scroll = 0;
         }
     } else {
         // Clamp manual scroll
-        let max_scroll = total_lines.saturating_sub(visible_height);
+        let max_scroll = content_height.saturating_sub(visible_height);
         if app.ai_chat_scroll > max_scroll {
             app.ai_chat_scroll = max_scroll;
         }
     }
+
+    let chat_text = Text::from(chat_lines);
 
     let history_block = Block::default()
         .borders(Borders::ALL)
