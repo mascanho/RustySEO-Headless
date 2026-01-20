@@ -83,6 +83,8 @@ impl Default for App {
             ai_input: String::new(),
             ai_chat_history: vec![],
             ai_chat_state: ratatui::widgets::ListState::default(),
+            ai_chat_scroll: 0,
+            ai_chat_auto_scroll: true,
             show_search: false,
             search_query: String::new(),
             filtered_table_data: Vec::new(),

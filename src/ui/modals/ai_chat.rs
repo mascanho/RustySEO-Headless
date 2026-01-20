@@ -2,8 +2,8 @@ use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style, Stylize},
-    text::{Line, Span},
-    widgets::{Block, Borders, Clear, List, ListItem, Paragraph},
+    text::{Line, Span, Text},
+    widgets::{Block, Borders, Clear, Paragraph},
 };
 
 use crate::ai::gemini;
@@ -32,6 +32,9 @@ pub async fn send_message(app: &mut App) -> Result<String, Box<dyn std::error::E
         content: response.clone(),
     });
 
+    // Enable auto-scroll after new message
+    app.ai_chat_auto_scroll = true;
+
     // Clear input
     app.ai_input.clear();
 
@@ -58,54 +61,68 @@ pub fn render(f: &mut Frame, app: &mut App) {
     let history_area = chunks[0];
     let input_area = chunks[1];
 
-    // 1. Render Chat History
-    let history_items: Vec<ListItem> = app
-        .ai_chat_history
-        .iter()
-        .map(|msg| {
-            let (role_label, role_style, content_style) = if msg.role == "user" {
-                (
-                    " 👤 YOU ",
-                    Style::default()
-                        .fg(Color::Cyan)
-                        .add_modifier(Modifier::BOLD),
-                    Style::default().fg(Color::White),
-                )
-            } else {
-                (
-                    " 🤖 AI  ",
-                    Style::default()
-                        .fg(accent_color)
-                        .add_modifier(Modifier::BOLD),
-                    Style::default().fg(Color::Rgb(200, 200, 220)),
-                )
-            };
+    // 1. Render Chat History as scrollable Paragraph
+    let mut chat_lines: Vec<Line> = Vec::new();
+    for msg in &app.ai_chat_history {
+        let (role_label, role_style, content_style) = if msg.role == "user" {
+            (
+                " 👤 YOU ",
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+                Style::default().fg(Color::White),
+            )
+        } else {
+            (
+                " 🤖 AI  ",
+                Style::default()
+                    .fg(accent_color)
+                    .add_modifier(Modifier::BOLD),
+                Style::default().fg(Color::Rgb(200, 200, 220)),
+            )
+        };
 
-            let header = Line::from(vec![
-                Span::styled(role_label, role_style),
-                Span::styled(
-                    " ─────────────────────────────────",
-                    Style::default().fg(border_color),
-                ),
-            ]);
+        let header = Line::from(vec![
+            Span::styled(role_label, role_style),
+            Span::styled(
+                " ─────────────────────────────────",
+                Style::default().fg(border_color),
+            ),
+        ]);
 
-            let mut lines = vec![header];
-            for line in msg.content.lines() {
-                lines.push(Line::from(vec![
-                    Span::raw("    "),
-                    Span::styled(line, content_style),
-                ]));
-            }
-            lines.push(Line::from(""));
+        chat_lines.push(header);
+        for line in msg.content.lines() {
+            chat_lines.push(Line::from(vec![
+                Span::raw("    "),
+                Span::styled(line, content_style),
+            ]));
+        }
+        chat_lines.push(Line::from(""));
+    }
 
-            ListItem::new(lines)
-        })
-        .collect();
+    let chat_text = Text::from(chat_lines);
+
+    // Auto-scroll to bottom if enabled
+    let visible_height = history_area.height.saturating_sub(2) as usize; // Subtract borders
+    let total_lines = chat_text.lines.len();
+    if app.ai_chat_auto_scroll {
+        if total_lines > visible_height {
+            app.ai_chat_scroll = total_lines - visible_height;
+        } else {
+            app.ai_chat_scroll = 0;
+        }
+    } else {
+        // Clamp manual scroll
+        let max_scroll = total_lines.saturating_sub(visible_height);
+        if app.ai_chat_scroll > max_scroll {
+            app.ai_chat_scroll = max_scroll;
+        }
+    }
 
     let history_block = Block::default()
         .borders(Borders::ALL)
         .title(Span::styled(
-            " 🤖 RustyAI Copilot ",
+            " 🤖 RustySEO  ",
             Style::default()
                 .fg(accent_color)
                 .add_modifier(Modifier::BOLD),
@@ -113,11 +130,11 @@ pub fn render(f: &mut Frame, app: &mut App) {
         .border_style(Style::default().fg(accent_color))
         .bg(Color::Rgb(15, 15, 25));
 
-    let history_list = List::new(history_items)
+    let history_paragraph = Paragraph::new(chat_text)
         .block(history_block)
-        .style(Style::default().fg(Color::White));
+        .scroll((app.ai_chat_scroll as u16, 0));
 
-    f.render_widget(history_list, history_area);
+    f.render_widget(history_paragraph, history_area);
 
     // 2. Render Input Area
     let input_block = Block::default()

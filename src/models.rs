@@ -230,6 +230,8 @@ pub struct App {
     pub ai_input: String,
     pub ai_chat_history: Vec<ChatLog>,
     pub ai_chat_state: ratatui::widgets::ListState,
+    pub ai_chat_scroll: usize,
+    pub ai_chat_auto_scroll: bool,
     pub show_search: bool,
     pub search_query: String,
     pub filtered_table_data: Vec<Vec<String>>,

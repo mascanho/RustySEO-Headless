@@ -322,6 +322,26 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                 KeyCode::Char(c) => {
                                     app.ai_input.push(c);
                                 }
+                                KeyCode::PageUp => {
+                                    app.ai_chat_auto_scroll = false;
+                                    if app.ai_chat_scroll > 0 {
+                                        app.ai_chat_scroll = app.ai_chat_scroll.saturating_sub(5);
+                                    }
+                                }
+                                KeyCode::PageDown => {
+                                    app.ai_chat_auto_scroll = false;
+                                    app.ai_chat_scroll += 5;
+                                }
+                                KeyCode::Up => {
+                                    app.ai_chat_auto_scroll = false;
+                                    if app.ai_chat_scroll > 0 {
+                                        app.ai_chat_scroll -= 1;
+                                    }
+                                }
+                                KeyCode::Down => {
+                                    app.ai_chat_auto_scroll = false;
+                                    app.ai_chat_scroll += 1;
+                                }
                                 _ => {}
                             }
                             continue;
