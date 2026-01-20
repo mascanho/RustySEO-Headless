@@ -1,9 +1,9 @@
 use ratatui::{
+    Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Borders, Gauge, Paragraph},
-    Frame,
 };
 
 use crate::app::AppState;
@@ -47,7 +47,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
     // Status / System Info
     let status_prefix = if app.is_crawling {
-        format!(" 🔄 {} ", app.input_url)
+        format!(" ⏳ {} ", app.input_url)
     } else if app.crawl_progress >= 1.0 {
         format!(" ✅ {} ", app.input_url)
     } else {
@@ -114,7 +114,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         if app
             .settings
             .as_ref()
-            .map(|s| s.crawler.enable_javascript)
+            .map(|s| s.connectors.pagespeed.status)
             .unwrap_or(false)
         {
             Span::styled(format!("{}", "ON"), Style::default().fg(Color::Green))
