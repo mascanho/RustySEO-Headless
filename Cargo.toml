@@ -26,3 +26,4 @@ headless_chrome = { version = "1.0", features = ["fetch"] }
 rig-core = "0.28"
 rusqlite = { version = "0.38", features = ["bundled"] }
 publicsuffix = "2.2"
+notify = "6.1.1"

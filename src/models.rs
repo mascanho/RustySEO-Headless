@@ -295,3 +295,6 @@ pub struct App {
     pub css_pages_list: Vec<String>,
     pub css_pages_state: ratatui::widgets::ListState,
 }
+
+// ENGINE MODELES AND TYPES
+//
