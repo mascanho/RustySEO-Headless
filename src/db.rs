@@ -1,6 +1,6 @@
 use crate::crawler::PageData;
 use directories::ProjectDirs;
-use rusqlite::{Connection, Result as SqliteResult, params};
+use rusqlite::{Connection, Result as SqliteResult};
 use std::fs;
 use std::path::PathBuf;
 
@@ -26,7 +26,7 @@ pub fn init_db() {
             id INTEGER PRIMARY KEY,
             data TEXT NOT NULL
         )",
-        [],
+        (),
     )
     .expect("Failed to create pages table");
     conn.execute(
@@ -36,7 +36,7 @@ pub fn init_db() {
             end_time TEXT,
             total_pages INTEGER DEFAULT 0
         )",
-        [],
+        (),
     )
     .expect("Failed to create crawl_sessions table");
 }
@@ -86,7 +86,7 @@ pub fn save_page_data(page_data: &PageData) -> SqliteResult<()> {
     })?;
     conn.execute(
         "INSERT OR REPLACE INTO pages (id, data) VALUES (?1, ?2)",
-        params![page_data.id, data],
+        (&(page_data.id as i64), &data),
     )?;
     Ok(())
 }
@@ -94,9 +94,11 @@ pub fn save_page_data(page_data: &PageData) -> SqliteResult<()> {
 pub fn load_page_data(id: usize) -> Option<PageData> {
     let conn = Connection::open(get_db_path()).ok()?;
     let data: String = conn
-        .query_row("SELECT data FROM pages WHERE id = ?1", params![id], |row| {
-            row.get(0)
-        })
+        .query_row(
+            "SELECT data FROM pages WHERE id = ?1",
+            (&(id as i64),),
+            |row| row.get(0),
+        )
         .ok()?;
     serde_json::from_str(&data).ok()
 }
@@ -105,7 +107,7 @@ pub fn load_all_page_data() -> Vec<PageData> {
     let conn = Connection::open(get_db_path()).unwrap();
     let mut stmt = conn.prepare("SELECT data FROM pages ORDER BY id").unwrap();
     let page_iter = stmt
-        .query_map([], |row| {
+        .query_map((), |row| {
             let data: String = row.get(0)?;
             let page_data: PageData = serde_json::from_str(&data).unwrap();
             Ok(page_data)
@@ -116,14 +118,14 @@ pub fn load_all_page_data() -> Vec<PageData> {
 
 pub fn clear_page_data() -> SqliteResult<()> {
     let conn = Connection::open(get_db_path())?;
-    conn.execute("DELETE FROM pages", [])?;
+    conn.execute("DELETE FROM pages", ())?;
     Ok(())
 }
 
 pub fn get_page_count() -> usize {
     let conn = Connection::open(get_db_path()).unwrap();
     let count: i64 = conn
-        .query_row("SELECT COUNT(*) FROM pages", [], |row| row.get(0))
+        .query_row("SELECT COUNT(*) FROM pages", (), |row| row.get(0))
         .unwrap_or(0);
     count as usize
 }

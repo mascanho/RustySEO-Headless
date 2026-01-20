@@ -12,6 +12,7 @@ use ratatui::{
 };
 use std::{error::Error, io};
 
+pub mod ai;
 pub mod app;
 pub mod cli;
 pub mod crawler;
