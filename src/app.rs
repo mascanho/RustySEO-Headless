@@ -531,9 +531,9 @@ impl App {
         }
     }
 
-    pub fn submit_ai_message(&mut self) {
+    pub async fn submit_ai_message(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         if self.ai_input.trim().is_empty() {
-            return;
+            return Ok(());
         }
 
         let user_msg = crate::models::ChatLog {
@@ -544,24 +544,18 @@ impl App {
         let input = self.ai_input.clone();
         self.ai_input.clear();
 
-        // Simulate AI thinking/response
-        let response = if input.to_lowercase().contains("hi")
-            || input.to_lowercase().contains("hello")
-        {
-            "Hello! I am your RustySEO AI assistant. How can I help you analyze your crawl today?"
-                .to_string()
-        } else if input.to_lowercase().contains("page") || input.to_lowercase().contains("url") {
-            format!(
-                "You have crawled {} pages so far. Would you like me to analyze the status codes or heading structures for you?",
-                self.page_data.len()
-            )
-        } else {
-            "I'm currently processing your request. In a real implementation, I would analyze your SEO data and provide actionable insights!".to_string()
+        // Get AI response using Gemini
+        let settings = self.settings.as_ref().ok_or("Settings not loaded")?;
+        let response = match crate::ai::gemini::ask(&input, settings).await {
+            Ok(resp) => resp,
+            Err(e) => {
+                format!("Error: {}", e)
+            }
         };
 
         self.ai_chat_history.push(crate::models::ChatLog {
             role: "assistant".to_string(),
-            content: response.to_string(),
+            content: response,
         });
 
         // Scroll to bottom
@@ -569,6 +563,8 @@ impl App {
             self.ai_chat_state
                 .select(Some(self.ai_chat_history.len() - 1));
         }
+
+        Ok(())
     }
 
     pub fn clear_ai_chat(&mut self) {

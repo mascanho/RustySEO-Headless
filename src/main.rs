@@ -67,7 +67,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         app.settings = Some(settings);
         app.log_receiver = Some(log_rx);
         app.bookmarks = db::load_bookmarks();
-        let res = run_app(&mut terminal, &mut app);
+        let res = run_app(&mut terminal, &mut app).await;
 
         // restore terminal
         disable_raw_mode()?;
@@ -85,7 +85,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 }
 
-fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<()> {
+async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<()> {
     let tick_rate = std::time::Duration::from_millis(100);
 
     loop {
@@ -311,7 +311,11 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                         if app.show_ai_modal {
                             match key.code {
                                 KeyCode::Char('q') | KeyCode::Esc => app.show_ai_modal = false,
-                                KeyCode::Enter => app.submit_ai_message(),
+                                KeyCode::Enter => {
+                                    if let Err(e) = app.submit_ai_message().await {
+                                        app.logs_data.push(format!("AI Error: {}", e));
+                                    }
+                                }
                                 KeyCode::Backspace => {
                                     app.ai_input.pop();
                                 }

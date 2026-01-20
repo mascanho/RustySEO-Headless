@@ -6,8 +6,37 @@ use ratatui::{
     widgets::{Block, Borders, Clear, List, ListItem, Paragraph},
 };
 
+use crate::ai::gemini;
 use crate::models::App;
 use crate::ui::centered_rect;
+
+pub async fn send_message(app: &mut App) -> Result<String, Box<dyn std::error::Error>> {
+    if app.ai_input.trim().is_empty() {
+        return Err("Empty message".into());
+    }
+
+    let settings = app.settings.as_ref().ok_or("Settings not loaded")?;
+
+    // Add user message to history
+    app.ai_chat_history.push(crate::models::ChatLog {
+        role: "user".to_string(),
+        content: app.ai_input.clone(),
+    });
+
+    // Get AI response
+    let response = gemini::ask(&app.ai_input, settings).await?;
+
+    // Add AI response to history
+    app.ai_chat_history.push(crate::models::ChatLog {
+        role: "assistant".to_string(),
+        content: response.clone(),
+    });
+
+    // Clear input
+    app.ai_input.clear();
+
+    Ok(response)
+}
 
 pub fn render(f: &mut Frame, app: &mut App) {
     let area = f.area();
