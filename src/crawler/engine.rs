@@ -382,26 +382,54 @@ impl CrawlEngine {
         // Acquire semaphore permit
         let _permit = self.semaphore.acquire().await.map_err(|e| e.to_string())?;
 
-        // Logic split for JS crawling
-        if self.enable_javascript {
+        let mut page_data = if self.enable_javascript {
             if let Some(ref browser) = self.browser {
-                return self.fetch_js(url, base_url, browser.clone()).await;
+                self.fetch_js(url, base_url, browser.clone()).await?
+            } else {
+                self.fetch_standard(url, base_url, referer).await?
             }
-        }
-
-        let mut page_data = self.fetch_standard(url, base_url, referer).await?;
+        } else {
+            self.fetch_standard(url, base_url, referer).await?
+        };
 
         // Handle PageSpeed if enabled
         if let Some(ref config) = self.pagespeed_config {
             if config.status && !config.api_key.is_empty() {
-                tracing::info!("[CWV] Fetching PageSpeed for {}", url);
-                // Desktop
-                if let Ok(cwv) = self.fetch_pagespeed_data(url, "desktop", &config.api_key).await {
-                    page_data.cwv_desktop = Some(cwv);
-                }
-                // Mobile
-                if let Ok(cwv) = self.fetch_pagespeed_data(url, "mobile", &config.api_key).await {
-                    page_data.cwv_mobile = Some(cwv);
+                // Efficiency: Skip non-HTML or non-OK pages
+                let is_html = page_data.content_type.to_lowercase().contains("text/html");
+                let is_ok = page_data.status.starts_with('2');
+                
+                // Skip URLs that look like search or filter results to save quota
+                let search_patterns = ["?s=", "?q=", "?search=", "?filter=", "?sort=", "?orderby=", "&s=", "&q=", "&search=", "&filter=", "&sort=", "&orderby="];
+                let url_lower = url.to_lowercase();
+                let has_search_params = search_patterns.iter().any(|p| url_lower.contains(p));
+
+                if is_html && is_ok && !has_search_params {
+                    tracing::info!("[CWV] Fetching PageSpeed for {}", url);
+                    
+                    // Desktop
+                    match self.fetch_pagespeed_data(url, "desktop", &config.api_key).await {
+                        Ok(cwv) => {
+                            tracing::info!("[CWV] Desktop data received for {}", url);
+                            page_data.cwv_desktop = Some(cwv);
+                        }
+                        Err(e) => tracing::error!("[CWV] Desktop failed for {}: {}", url, e),
+                    }
+
+                    // Best Practice: Small delay between requests to avoid rate limits on free keys
+                    tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+
+                    // Mobile
+                    match self.fetch_pagespeed_data(url, "mobile", &config.api_key).await {
+                        Ok(cwv) => {
+                            tracing::info!("[CWV] Mobile data received for {}", url);
+                            page_data.cwv_mobile = Some(cwv);
+                        }
+                        Err(e) => tracing::error!("[CWV] Mobile failed for {}: {}", url, e),
+                    }
+                } else {
+                    tracing::info!("[CWV] PageSpeed skipped for {} (is_html={}, is_ok={}, has_params={})", 
+                        url, is_html, is_ok, has_search_params);
                 }
             }
         }
@@ -415,17 +443,31 @@ impl CrawlEngine {
         strategy: &str,
         api_key: &str,
     ) -> Result<crate::crawler::helpers::html_parser::CwvData, String> {
-        let api_url = format!(
-            "https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url={}&key={}&strategy={}",
-            url, api_key, strategy
-        );
-
-        let response = self.client.get(&api_url).send().await.map_err(|e| e.to_string())?;
-        if !response.status().is_success() {
-            return Err(format!("PageSpeed API error: {}", response.status()));
+        let mut api_url = Url::parse("https://www.googleapis.com/pagespeedonline/v5/runPagespeed")
+            .map_err(|e| format!("URL parse failed: {}", e))?;
+        
+        {
+            let mut query = api_url.query_pairs_mut();
+            query.append_pair("url", url);
+            query.append_pair("key", api_key);
+            query.append_pair("strategy", strategy);
+            query.append_pair("category", "performance");
         }
 
-        let json: serde_json::Value = response.json().await.map_err(|e| e.to_string())?;
+        let response = self.client.get(api_url.as_str())
+            .send()
+            .await
+            .map_err(|e| format!("Request failed: {}", e))?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            match response.text().await {
+                Ok(err_body) => return Err(format!("PageSpeed API error ({}): {}", status, err_body)),
+                Err(_) => return Err(format!("PageSpeed API error ({}): (could not read error body)", status)),
+            };
+        }
+
+        let json: serde_json::Value = response.json().await.map_err(|e| format!("JSON parse failed: {}", e))?;
 
         let lighthouse = json.get("lighthouseResult").ok_or("No lighthouseResult")?;
         let categories = lighthouse.get("categories").ok_or("No categories")?;
@@ -527,6 +569,11 @@ impl CrawlEngine {
         );
 
         let headers = headers_list;
+        
+        // Extract content type from headers BEFORE consuming response
+        let content_type_header = response.headers().get("content-type")
+            .and_then(|v| v.to_str().ok())
+            .map(|s| s.to_string());
 
         let html_content = response
             .text()
@@ -538,6 +585,11 @@ impl CrawlEngine {
         page_data.url = url.to_string();
         page_data.status = status;
         page_data.headers = headers;
+        
+        // Prioritize HTTP header for content type
+        if let Some(ct) = content_type_header {
+            page_data.content_type = ct;
+        }
 
         // Store all original links as outlinks before filtering
         page_data.outlinks = page_data

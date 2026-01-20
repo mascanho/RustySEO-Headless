@@ -1,9 +1,9 @@
 use ratatui::{
-    Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Borders, Gauge, Paragraph},
+    Frame,
 };
 
 use crate::app::AppState;
@@ -90,6 +90,23 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         Span::styled(" | ", Style::default().fg(border_color)),
         Span::styled(
             " ⚡ JS: ",
+            Style::default()
+                .fg(Color::Gray)
+                .add_modifier(Modifier::BOLD),
+        ),
+        if app
+            .settings
+            .as_ref()
+            .map(|s| s.crawler.enable_javascript)
+            .unwrap_or(false)
+        {
+            Span::styled(format!("{}", "ON"), Style::default().fg(Color::Green))
+        } else {
+            Span::styled(format!("{}", "OFF"), Style::default().fg(Color::Red))
+        },
+        Span::styled(" | ", Style::default().fg(border_color)),
+        Span::styled(
+            " ⚡ PSI: ",
             Style::default()
                 .fg(Color::Gray)
                 .add_modifier(Modifier::BOLD),

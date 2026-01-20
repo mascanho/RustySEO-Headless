@@ -978,7 +978,17 @@ impl App {
         }
 
         // Reload settings before starting crawl to get latest values
-        self.settings = Some(crate::models::AppSettings::load());
+        let loaded_settings = crate::models::AppSettings::load();
+        let settings_path = crate::models::AppSettings::path();
+        self.settings = Some(loaded_settings);
+        
+        let pconfig = self.settings.as_ref().map(|s| s.connectors.pagespeed.clone());
+        let status_info = match &pconfig {
+            Some(c) => format!("status={}, key_len={}", c.status, c.api_key.len()),
+            None => "None".to_string(),
+        };
+        self.log(format!("SYSTEM - Settings loaded from: {:?}", settings_path));
+        self.log(format!("SYSTEM - PageSpeed Config: {}", status_info));
 
         self.page_data.clear();
         self.table_data.clear();
@@ -1024,7 +1034,7 @@ impl App {
             .as_ref()
             .map(|s| s.crawler.concurrency)
             .unwrap_or(10);
-        let pagespeed_config = self.settings.as_ref().map(|s| s.connectors.pagespeed.clone());
+        let pagespeed_config = pconfig;
         let enable_javascript = self
             .settings
             .as_ref()

@@ -51,7 +51,7 @@ pub struct JavascriptInfo {
     pub scripts: Vec<ScriptInfo>,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CwvData {
     pub fcp: String,
     pub lcp: String,
@@ -59,6 +59,19 @@ pub struct CwvData {
     pub tbt: String,
     pub speed_index: String,
     pub performance_score: String,
+}
+
+impl Default for CwvData {
+    fn default() -> Self {
+        Self {
+            fcp: "...".to_string(),
+            lcp: "...".to_string(),
+            cls: "...".to_string(),
+            tbt: "...".to_string(),
+            speed_index: "...".to_string(),
+            performance_score: "...".to_string(),
+        }
+    }
 }
 
 /// Comprehensive data structure representing a parsed web page
