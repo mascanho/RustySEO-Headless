@@ -87,7 +87,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                     let end = (start + 80).min(char_count);
                     let sliced: String = content.chars().skip(start).take(end - start).collect();
                     if start > 0 {
-                        format!("…{}", sliced)
+                        format!("{}...", sliced)
                     } else {
                         sliced
                     }
