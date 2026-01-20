@@ -6,7 +6,7 @@ use ratatui::{
     widgets::{Block, Borders, Clear, Paragraph},
 };
 
-use crate::ai::gemini;
+use crate::ai::{gemini, openai};
 use crate::models::App;
 use crate::ui::centered_rect;
 
@@ -47,8 +47,12 @@ pub async fn send_message(app: &mut App) -> Result<String, Box<dyn std::error::E
         content: app.ai_input.clone(),
     });
 
-    // Get AI response
-    let response = gemini::ask(&app.ai_input, settings).await?;
+    // Get AI response DEPENDING ONE THE MODEL SELECTED
+    let response = match settings.provider.llm.as_str() {
+        "gemini" => gemini::ask(&app.ai_input, settings).await?,
+        "chatgpt" => openai::ask(&app.ai_input, settings).await?,
+        _ => return Err("Unsupported AI model".into()),
+    };
 
     // Add AI response to history
     app.ai_chat_history.push(crate::models::ChatLog {
