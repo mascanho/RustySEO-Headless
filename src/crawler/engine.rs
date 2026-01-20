@@ -28,6 +28,7 @@ pub struct CrawlEngine {
     stats: crate::crawler::stats::CrawlStats,
     enable_javascript: bool,
     browser: Option<Arc<Browser>>,
+    pagespeed_config: Option<crate::models::PageSpeedConfig>,
 }
 
 impl std::fmt::Debug for CrawlEngine {
@@ -43,6 +44,7 @@ impl std::fmt::Debug for CrawlEngine {
             .field("stats", &self.stats)
             .field("enable_javascript", &self.enable_javascript)
             .field("browser", &self.browser.is_some())
+            .field("pagespeed", &self.pagespeed_config.is_some())
             .finish()
     }
 }
@@ -74,7 +76,13 @@ impl CrawlEngine {
             stats: crate::crawler::stats::CrawlStats::new(),
             enable_javascript: false,
             browser: None,
+            pagespeed_config: None,
         }
+    }
+
+    pub fn with_pagespeed(mut self, config: Option<crate::models::PageSpeedConfig>) -> Self {
+        self.pagespeed_config = config;
+        self
     }
 
     pub fn with_javascript(mut self, enable: bool) -> Self {
@@ -381,6 +389,75 @@ impl CrawlEngine {
             }
         }
 
+        let mut page_data = self.fetch_standard(url, base_url, referer).await?;
+
+        // Handle PageSpeed if enabled
+        if let Some(ref config) = self.pagespeed_config {
+            if config.status && !config.api_key.is_empty() {
+                tracing::info!("[CWV] Fetching PageSpeed for {}", url);
+                // Desktop
+                if let Ok(cwv) = self.fetch_pagespeed_data(url, "desktop", &config.api_key).await {
+                    page_data.cwv_desktop = Some(cwv);
+                }
+                // Mobile
+                if let Ok(cwv) = self.fetch_pagespeed_data(url, "mobile", &config.api_key).await {
+                    page_data.cwv_mobile = Some(cwv);
+                }
+            }
+        }
+
+        Ok(page_data)
+    }
+
+    async fn fetch_pagespeed_data(
+        &self,
+        url: &str,
+        strategy: &str,
+        api_key: &str,
+    ) -> Result<crate::crawler::helpers::html_parser::CwvData, String> {
+        let api_url = format!(
+            "https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url={}&key={}&strategy={}",
+            url, api_key, strategy
+        );
+
+        let response = self.client.get(&api_url).send().await.map_err(|e| e.to_string())?;
+        if !response.status().is_success() {
+            return Err(format!("PageSpeed API error: {}", response.status()));
+        }
+
+        let json: serde_json::Value = response.json().await.map_err(|e| e.to_string())?;
+
+        let lighthouse = json.get("lighthouseResult").ok_or("No lighthouseResult")?;
+        let categories = lighthouse.get("categories").ok_or("No categories")?;
+        let performance = categories.get("performance").ok_or("No performance category")?;
+        let score = performance.get("score").and_then(|v| v.as_f64()).unwrap_or(0.0) * 100.0;
+
+        let audits = lighthouse.get("audits").ok_or("No audits")?;
+
+        let get_display_value = |audit_name: &str| {
+            audits.get(audit_name)
+                .and_then(|a| a.get("displayValue"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("N/A")
+                .to_string()
+        };
+
+        Ok(crate::crawler::helpers::html_parser::CwvData {
+            fcp: get_display_value("first-contentful-paint"),
+            lcp: get_display_value("largest-contentful-paint"),
+            cls: get_display_value("cumulative-layout-shift"),
+            tbt: get_display_value("total-blocking-time"),
+            speed_index: get_display_value("speed-index"),
+            performance_score: format!("{:.0}", score),
+        })
+    }
+
+    async fn fetch_standard(
+        &self,
+        url: &str,
+        base_url: &Url,
+        referer: Option<String>,
+    ) -> Result<PageData, String> {
         let user_agent = self.pick_random_user_agent();
         tracing::debug!("[UA] Using agent: {} for {}", user_agent, url);
 

@@ -4,11 +4,11 @@ use crossterm::{
         self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers, MouseEventKind,
     },
     execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{
-    Terminal,
     backend::{Backend, CrosstermBackend},
+    Terminal,
 };
 use std::{error::Error, io};
 
@@ -612,7 +612,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             //     }
                             // }
                             KeyCode::Char('k') | KeyCode::Up => match app.current_state {
-                                AppState::Dashboard => app.previous_row(),
+                                AppState::Dashboard | AppState::CoreWebVitals => app.previous_row(),
                                 AppState::Content => app.previous_content_row(),
                                 AppState::Internal => app.previous_internal_row(),
                                 AppState::Javascript => {
@@ -644,7 +644,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 _ => {}
                             },
                             KeyCode::Char('j') | KeyCode::Down => match app.current_state {
-                                AppState::Dashboard => app.next_row(),
+                                AppState::Dashboard | AppState::CoreWebVitals => app.next_row(),
                                 AppState::Content => app.next_content_row(),
                                 AppState::Internal => app.next_internal_row(),
                                 AppState::Javascript => {
@@ -690,14 +690,16 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             KeyCode::Char('t') => {
                                 // Jump to top
                                 match app.current_state {
-                                    AppState::Dashboard => app.table_state.select(Some(0)),
+                                    AppState::Dashboard | AppState::CoreWebVitals => {
+                                        app.table_state.select(Some(0))
+                                    }
                                     _ => {}
                                 }
                             }
                             KeyCode::Char('G') => {
                                 // Jump to bottom
                                 match app.current_state {
-                                    AppState::Dashboard => {
+                                    AppState::Dashboard | AppState::CoreWebVitals => {
                                         if !app.table_data.is_empty() {
                                             app.table_state.select(Some(app.table_data.len() - 1));
                                         }
@@ -707,7 +709,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             }
 
                             KeyCode::Enter => {
-                                if app.current_state == AppState::Dashboard {
+                                if app.current_state == AppState::Dashboard
+                                    || app.current_state == AppState::CoreWebVitals
+                                {
                                     app.validate_table_state();
                                     if let Some(selected) = app.table_state.selected() {
                                         if selected < app.table_data.len()
@@ -743,13 +747,15 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                             && selected < app.page_data.len()
                                         {
                                             app.show_dashboard_menu = true;
+                                        } else if selected == app.table_data.len() {
+                                            app.show_dashboard_menu = true;
                                         }
                                     }
                                 }
                             }
 
                             KeyCode::Char(']') => match app.current_state {
-                                AppState::Dashboard => app.next_page(),
+                                AppState::Dashboard | AppState::CoreWebVitals => app.next_page(),
                                 AppState::Content => app.next_content_page(),
                                 AppState::Internal => app.next_internal_page(),
                                 AppState::Javascript => {
@@ -765,7 +771,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 _ => {}
                             },
                             KeyCode::Char('[') => match app.current_state {
-                                AppState::Dashboard => app.previous_page(),
+                                AppState::Dashboard | AppState::CoreWebVitals => {
+                                    app.previous_page()
+                                }
                                 AppState::Content => app.previous_content_page(),
                                 AppState::Internal => app.previous_internal_page(),
                                 AppState::Javascript => {
@@ -897,6 +905,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                     ) {
                         // Handle mouse wheel scrolling on tables
                         if app.current_state == AppState::Dashboard
+                            || app.current_state == AppState::CoreWebVitals
                             || app.current_state == AppState::Content
                             || app.current_state == AppState::Internal
                             || app.current_state == AppState::Javascript
@@ -910,7 +919,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 {
                                     match mouse.kind {
                                         MouseEventKind::ScrollUp => {
-                                            if app.current_state == AppState::Dashboard {
+                                            if app.current_state == AppState::Dashboard
+                                                || app.current_state == AppState::CoreWebVitals
+                                            {
                                                 app.previous_row()
                                             } else if app.current_state == AppState::Content {
                                                 app.previous_content_row()
@@ -935,7 +946,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                             }
                                         }
                                         MouseEventKind::ScrollDown => {
-                                            if app.current_state == AppState::Dashboard {
+                                            if app.current_state == AppState::Dashboard
+                                                || app.current_state == AppState::CoreWebVitals
+                                            {
                                                 app.next_row()
                                             } else if app.current_state == AppState::Content {
                                                 app.next_content_row()

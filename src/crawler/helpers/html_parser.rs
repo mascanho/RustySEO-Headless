@@ -51,6 +51,16 @@ pub struct JavascriptInfo {
     pub scripts: Vec<ScriptInfo>,
 }
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]
+pub struct CwvData {
+    pub fcp: String,
+    pub lcp: String,
+    pub cls: String,
+    pub tbt: String,
+    pub speed_index: String,
+    pub performance_score: String,
+}
+
 /// Comprehensive data structure representing a parsed web page
 ///
 /// This struct contains all relevant SEO and content analysis information
@@ -85,6 +95,8 @@ pub struct PageData {
     pub css: Option<CssInfo>,
     pub javascript: Option<JavascriptInfo>,
     pub keywords: Option<Vec<String>>,
+    pub cwv_desktop: Option<CwvData>,
+    pub cwv_mobile: Option<CwvData>,
 }
 
 // Define static CSS selectors for common page elements using LazyLock
@@ -337,6 +349,8 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         css: Some(css),
         javascript: Some(javascript),
         keywords: Some(keywords),
+        cwv_desktop: None,
+        cwv_mobile: None,
     }
 }
 

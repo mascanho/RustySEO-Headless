@@ -221,6 +221,23 @@ impl App {
                 row.push(kw);
             }
 
+            // 2c. Add CWV data
+            let d = data.cwv_desktop.clone().unwrap_or_default();
+            row.push(d.performance_score);
+            row.push(d.fcp);
+            row.push(d.lcp);
+            row.push(d.cls);
+            row.push(d.tbt);
+            row.push(d.speed_index);
+
+            let m = data.cwv_mobile.clone().unwrap_or_default();
+            row.push(m.performance_score);
+            row.push(m.fcp);
+            row.push(m.lcp);
+            row.push(m.cls);
+            row.push(m.tbt);
+            row.push(m.speed_index);
+
             self.table_data.push(row);
 
             // Populate internal links table
@@ -1007,6 +1024,7 @@ impl App {
             .as_ref()
             .map(|s| s.crawler.concurrency)
             .unwrap_or(10);
+        let pagespeed_config = self.settings.as_ref().map(|s| s.connectors.pagespeed.clone());
         let enable_javascript = self
             .settings
             .as_ref()
@@ -1021,7 +1039,8 @@ impl App {
                 .await
                 .with_max_pages(max_pages)
                 .with_concurrency(concurrency)
-                .with_javascript(enable_javascript);
+                .with_javascript(enable_javascript)
+                .with_pagespeed(pagespeed_config);
 
             let (tokio_tx, mut tokio_rx) = tokio::sync::mpsc::channel(100);
             let engine_clone = engine.clone();
