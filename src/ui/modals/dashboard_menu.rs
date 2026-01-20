@@ -1,9 +1,9 @@
 use ratatui::{
-    Frame,
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style, Stylize},
     text::Span,
     widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph},
+    Frame,
 };
 
 use crate::models::App;
@@ -22,7 +22,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         .border_style(Style::default().fg(border_color))
         .bg(Color::Rgb(15, 15, 25))
         .title(Span::styled(
-            " 📋 Actions Menu ",
+            " Actions Menu ",
             Style::default()
                 .fg(Color::Yellow)
                 .add_modifier(Modifier::BOLD),
@@ -42,13 +42,14 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     // Menu items
     let items = vec![
-        ListItem::new("📋 Copy URL"),
-        ListItem::new("🌐 Open URL in Browser"),
-        ListItem::new("🔍 Check Keywords"),
-        ListItem::new("📊 View SEO Score"),
-        ListItem::new("🔗 Extract Links"),
-        ListItem::new("📸 Screenshot"),
-        ListItem::new("📝 Export Data"),
+        ListItem::new(" Copy URL"),
+        ListItem::new(" Open URL in Browser"),
+        ListItem::new(" Open in Google"),
+        ListItem::new(" Check Keywords"),
+        ListItem::new(" View SEO Score"),
+        ListItem::new(" Extract Links"),
+        ListItem::new(" Screenshot"),
+        ListItem::new(" Export Data"),
     ];
 
     let mut menu_state = ListState::default();
