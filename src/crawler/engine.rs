@@ -399,12 +399,14 @@ impl CrawlEngine {
                 let is_html = page_data.content_type.to_lowercase().contains("text/html");
                 let is_ok = page_data.status.starts_with('2');
                 
-                // Skip URLs that look like search or filter results to save quota
                 let search_patterns = ["?s=", "?q=", "?search=", "?filter=", "?sort=", "?orderby=", "&s=", "&q=", "&search=", "&filter=", "&sort=", "&orderby="];
                 let url_lower = url.to_lowercase();
                 let has_search_params = search_patterns.iter().any(|p| url_lower.contains(p));
-
-                if is_html && is_ok && !has_search_params {
+                
+                // Best Practice: Skip localhost/private IPs as Google cannot reach them
+                let is_local = url_lower.contains("localhost") || url_lower.contains("127.0.0.1") || url_lower.contains("0.0.0.0") || url_lower.contains("//192.168.") || url_lower.contains("//10.");
+                
+                if is_html && is_ok && !has_search_params && !is_local {
                     tracing::info!("[CWV] Fetching PageSpeed for {}", url);
                     
                     // Desktop
@@ -413,7 +415,13 @@ impl CrawlEngine {
                             tracing::info!("[CWV] Desktop data received for {}", url);
                             page_data.cwv_desktop = Some(cwv);
                         }
-                        Err(e) => tracing::error!("[CWV] Desktop failed for {}: {}", url, e),
+                        Err(e) => {
+                            tracing::error!("[CWV] Desktop failed for {}: {}", url, e);
+                            let mut err_data = crate::crawler::helpers::html_parser::CwvData::default();
+                            err_data.performance_score = "Error".to_string();
+                            err_data.fcp = e.to_string();
+                            page_data.cwv_desktop = Some(err_data);
+                        }
                     }
 
                     // Best Practice: Small delay between requests to avoid rate limits on free keys
@@ -425,11 +433,28 @@ impl CrawlEngine {
                             tracing::info!("[CWV] Mobile data received for {}", url);
                             page_data.cwv_mobile = Some(cwv);
                         }
-                        Err(e) => tracing::error!("[CWV] Mobile failed for {}: {}", url, e),
+                        Err(e) => {
+                            tracing::error!("[CWV] Mobile failed for {}: {}", url, e);
+                            let mut err_data = crate::crawler::helpers::html_parser::CwvData::default();
+                            err_data.performance_score = "Error".to_string();
+                            err_data.fcp = e.to_string();
+                            page_data.cwv_mobile = Some(err_data);
+                        }
                     }
                 } else {
-                    tracing::info!("[CWV] PageSpeed skipped for {} (is_html={}, is_ok={}, has_params={})", 
-                        url, is_html, is_ok, has_search_params);
+                    let reason = if !is_html { "Skip:Type" } else if !is_ok { "Skip:Status" } else if is_local { "Skip:Local" } else { "Skip:Param" };
+                    tracing::info!("[CWV] {} for {}", reason, url);
+                    
+                    let mut skip_data = crate::crawler::helpers::html_parser::CwvData::default();
+                    skip_data.performance_score = reason.to_string();
+                    skip_data.fcp = "---".to_string();
+                    skip_data.lcp = "---".to_string();
+                    skip_data.cls = "---".to_string();
+                    skip_data.tbt = "---".to_string();
+                    skip_data.speed_index = "---".to_string();
+                    
+                    page_data.cwv_desktop = Some(skip_data.clone());
+                    page_data.cwv_mobile = Some(skip_data);
                 }
             }
         }
@@ -455,6 +480,7 @@ impl CrawlEngine {
         }
 
         let response = self.client.get(api_url.as_str())
+            .timeout(Duration::from_secs(60)) // PageSpeed is slow, needs longer than default 15s
             .send()
             .await
             .map_err(|e| format!("Request failed: {}", e))?;
