@@ -1,6 +1,6 @@
 use directories::ProjectDirs;
-use fuzzy_matcher::FuzzyMatcher;
 use fuzzy_matcher::skim::SkimMatcherV2;
+use fuzzy_matcher::FuzzyMatcher;
 use serde_json;
 use std::collections::HashMap;
 use std::sync::mpsc;
@@ -548,11 +548,17 @@ impl App {
 
         // Get AI response using Gemini
         let settings = self.settings.as_ref().ok_or("Settings not loaded")?;
-        let response = match crate::ai::gemini::ask(&input, settings).await {
-            Ok(resp) => resp,
-            Err(e) => {
-                format!("Error: {}", e)
-            }
+
+        let response = match settings.provider.llm.to_lowercase().as_str() {
+            "gemini" => match crate::ai::gemini::ask(&input, settings).await {
+                Ok(resp) => resp,
+                Err(e) => format!("Error: {}", e),
+            },
+            "openai" => match crate::ai::openai::ask(&input, settings).await {
+                Ok(resp) => resp,
+                Err(e) => format!("Error: {}", e),
+            },
+            _ => return Err("Unsupported AI model".into()),
         };
 
         self.ai_chat_history.push(crate::models::ChatLog {

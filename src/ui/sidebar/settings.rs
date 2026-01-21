@@ -1,10 +1,10 @@
 use crate::models::App;
 use ratatui::{
-    Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Paragraph, Row, Table},
+    Frame,
 };
 
 pub fn render(
@@ -47,7 +47,7 @@ pub fn render(
         let sections = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(6), // Engine
+                Constraint::Length(7), // Engine
                 Constraint::Length(5), // Viewport
                 Constraint::Length(5), // System
                 Constraint::Min(0),    // Internal
@@ -86,6 +86,21 @@ pub fn render(
                 })
                 .style(Style::default().fg(
                     if settings.crawler.enable_javascript {
+                        Color::Green
+                    } else {
+                        Color::Red
+                    },
+                )),
+            ]),
+            Row::new(vec![
+                Cell::from("  PSI "),
+                Cell::from(if settings.connectors.pagespeed.status {
+                    "ENABLED "
+                } else {
+                    "DISABLED "
+                })
+                .style(Style::default().fg(
+                    if settings.connectors.pagespeed.status {
                         Color::Green
                     } else {
                         Color::Red
@@ -298,27 +313,12 @@ pub fn render(
                 )),
             ]),
             Row::new(vec![
-                Cell::from(" SELECTED PROVIDER ").style(Style::default().fg(Color::Yellow)),
+                Cell::from(" ACTIVE PROVIDER ").style(Style::default().fg(Color::Yellow)),
                 Cell::from(""),
             ]),
             Row::new(vec![
                 Cell::from("  ├─ Model"),
                 Cell::from(settings.provider.llm.clone()).style(Style::default().fg(Color::Green)),
-            ]),
-            Row::new(vec![
-                Cell::from("  └─ API Key"),
-                Cell::from(if settings.connectors.openai.api_key.is_empty() {
-                    "MISSING"
-                } else {
-                    "********"
-                })
-                .style(Style::default().fg(
-                    if settings.connectors.openai.api_key.is_empty() {
-                        Color::Red
-                    } else {
-                        Color::Green
-                    },
-                )),
             ]),
         ];
 
