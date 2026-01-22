@@ -8,4 +8,6 @@ pub mod javascript;
 pub mod logs;
 pub mod reports;
 pub mod custom_extractor;
+pub mod images;
+
 

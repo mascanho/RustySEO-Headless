@@ -198,6 +198,17 @@ pub struct ExtractionTableEntry {
     pub snippet: String,
 }
 
+/// Entry for the Images results table
+#[derive(Debug, Clone)]
+pub struct ImageTableEntry {
+    pub id: usize,
+    pub url: String,
+    pub alt: String,
+    pub status: String,
+    pub size: String,
+    pub page_count: usize,
+}
+
 pub struct App {
     pub sidebar_visible: bool,
     pub task_panel_visible: bool,
@@ -320,6 +331,16 @@ pub struct App {
     pub extractor_horizontal_scroll: usize,
     pub extractor_search_query: String,
     pub show_extractor_search: bool,
+    // Images Tab State
+    pub images_table_data: Vec<ImageTableEntry>,
+    pub images_table_state: ratatui::widgets::TableState,
+    pub images_filtered_table_data: Vec<ImageTableEntry>,
+    pub images_full_filtered_table_data: Vec<ImageTableEntry>,
+    pub images_current_page: usize,
+    pub images_page_size: usize,
+    pub images_horizontal_scroll: usize,
+    pub images_search_query: String,
+    pub show_images_search: bool,
 }
 
 // ENGINE MODELES AND TYPES

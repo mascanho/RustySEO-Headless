@@ -151,6 +151,16 @@ impl Default for App {
             extractor_horizontal_scroll: 0,
             extractor_search_query: String::new(),
             show_extractor_search: false,
+            // Images Tab State
+            images_table_data: Vec::new(),
+            images_table_state: ratatui::widgets::TableState::default(),
+            images_filtered_table_data: Vec::new(),
+            images_full_filtered_table_data: Vec::new(),
+            images_current_page: 0,
+            images_page_size: 100,
+            images_horizontal_scroll: 0,
+            images_search_query: String::new(),
+            show_images_search: false,
         }
     }
 }
@@ -345,6 +355,24 @@ impl App {
                 }
             }
 
+            // Collect Images for Images table
+            for image in &data.images {
+                let normalized_img_url = image.src.clone();
+                
+                if let Some(existing) = self.images_table_data.iter_mut().find(|i| i.url == normalized_img_url) {
+                    existing.page_count += 1;
+                } else {
+                     self.images_table_data.push(crate::models::ImageTableEntry {
+                        id: self.images_table_data.len() + 1,
+                        url: normalized_img_url,
+                        alt: image.alt.clone(),
+                        status: "-".to_string(),
+                        size: image.size_formatted.clone(),
+                        page_count: 1,
+                    });
+                }
+            }
+
             self.url_to_status
                 .insert(data.url.clone(), data.status.clone());
             self.log(format!("Crawled: {}", data.url));
@@ -374,6 +402,7 @@ impl App {
                 self.apply_css_urls_filter();
                 self.apply_js_urls_filter();
                 self.apply_extractor_filter();
+                self.apply_images_filter();
                 self.apply_content_filter();
                 self.last_search_time = None;
             }
@@ -1837,4 +1866,129 @@ impl App {
         };
         self.extractor_table_state.select(Some(i));
     }
+
+    pub fn apply_images_filter(&mut self) {
+        if self.images_search_query.is_empty() {
+             if self.images_full_filtered_table_data.len() != self.images_table_data.len() {
+                self.images_full_filtered_table_data = self.images_table_data.clone();
+             }
+        } else {
+            let matcher = SkimMatcherV2::default();
+            let mut scored_data = Vec::new();
+            
+            for entry in &self.images_table_data {
+                let search_blob = format!("{} {}", entry.url, entry.alt);
+                 if let Some(score) = matcher.fuzzy_match(&search_blob, &self.images_search_query) {
+                    scored_data.push((score, entry.clone()));
+                }
+            }
+            
+            scored_data.sort_by(|a, b| b.0.cmp(&a.0));
+            self.images_full_filtered_table_data =
+                scored_data.into_iter().map(|(_, row)| row).collect();
+        }
+
+        let total_pages = (self.images_full_filtered_table_data.len() + self.images_page_size
+            - 1)
+            / self.images_page_size;
+        
+        if self.images_current_page >= total_pages && total_pages > 0 {
+            self.images_current_page = total_pages.saturating_sub(1);
+        } else if total_pages == 0 {
+            self.images_current_page = 0;
+        }
+
+        self.apply_images_pagination();
+    }
+
+    pub fn apply_images_pagination(&mut self) {
+        let start = self.images_current_page * self.images_page_size;
+        let end = (start + self.images_page_size).min(self.images_full_filtered_table_data.len());
+        
+        if start < self.images_full_filtered_table_data.len() {
+            self.images_filtered_table_data = 
+                self.images_full_filtered_table_data[start..end].to_vec();
+        } else {
+            self.images_filtered_table_data = Vec::new();
+        }
+        
+         if let Some(selected) = self.images_table_state.selected() {
+            if selected >= self.images_filtered_table_data.len() {
+                if self.images_filtered_table_data.is_empty() {
+                     self.images_table_state.select(None);
+                } else {
+                     self.images_table_state.select(Some(self.images_filtered_table_data.len() - 1));
+                }
+            }
+        }
+    }
+
+    pub fn next_images_page(&mut self) {
+        let total_pages = (self.images_full_filtered_table_data.len() + self.images_page_size - 1)
+            / self.images_page_size;
+        if self.images_current_page + 1 < total_pages {
+            self.images_current_page += 1;
+            self.apply_images_pagination();
+        }
+    }
+
+    pub fn previous_images_page(&mut self) {
+        if self.images_current_page > 0 {
+            self.images_current_page -= 1;
+            self.apply_images_pagination();
+        }
+    }
+    
+    pub fn next_images_row(&mut self) {
+        let len = self.images_filtered_table_data.len();
+        if len == 0 {
+            return;
+        }
+        let i = match self.images_table_state.selected() {
+            Some(i) => {
+                if i >= len - 1 {
+                     let total_pages = (self.images_full_filtered_table_data.len()
+                        + self.images_page_size
+                        - 1)
+                        / self.images_page_size;
+                    if self.images_current_page + 1 < total_pages {
+                         self.images_current_page += 1;
+                         self.apply_images_pagination();
+                         0
+                    } else {
+                         len - 1
+                    }
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.images_table_state.select(Some(i));
+    }
+
+    pub fn previous_images_row(&mut self) {
+        let len = self.images_filtered_table_data.len();
+        if len == 0 {
+            return;
+        }
+        let i = match self.images_table_state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    if self.images_current_page > 0 {
+                        self.images_current_page -= 1;
+                        self.apply_images_pagination();
+                        self.images_filtered_table_data.len() - 1
+                    } else {
+                        0
+                    }
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.images_table_state.select(Some(i));
+    }
+
 }
