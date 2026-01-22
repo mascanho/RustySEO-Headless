@@ -1,7 +1,7 @@
 use scraper::{Html, Selector};
 use std::sync::LazyLock;
 
-use crate::crawler::helpers::extractor::text;
+use crate::crawler::helpers::extractor::{extract_with_details, ExtractionResult};
 use crate::crawler::helpers::image_utils::ImageInfo;
 use crate::crawler::helpers::keywords::extract_keywords;
 use crate::crawler::helpers::word_count::get_words;
@@ -119,7 +119,7 @@ pub struct PageData {
     pub keywords: Option<Vec<String>>,
     pub cwv_desktop: Option<CwvData>,
     pub cwv_mobile: Option<CwvData>,
-    pub extraction: Option<Vec<String>>,
+    pub extraction: Option<ExtractionResult>,
 }
 
 // Define static CSS selectors for common page elements using LazyLock
@@ -351,7 +351,7 @@ pub fn extract_page_elements(document: &Html) -> PageData {
     // IF THE EXTRACTOR IS ACTIVATED THEN WE CALL THE EXTRACTOR WITH THE CONFIGURED TEXT
     let extraction = if APP_SETTINGS.crawler.extractor {
         let extractor_text = &APP_SETTINGS.crawler.extractor_text;
-        Some(text(extractor_text, document))
+        Some(extract_with_details(extractor_text, document))
     } else {
         None
     };

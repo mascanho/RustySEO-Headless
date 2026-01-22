@@ -189,6 +189,15 @@ pub struct JsUrl {
     pub page_count: usize,
 }
 
+/// Entry for the Custom Search extraction results table
+#[derive(Debug, Clone)]
+pub struct ExtractionTableEntry {
+    pub id: usize,
+    pub url: String,
+    pub element: String,
+    pub snippet: String,
+}
+
 pub struct App {
     pub sidebar_visible: bool,
     pub task_panel_visible: bool,
@@ -301,6 +310,16 @@ pub struct App {
     pub show_css_pages_modal: bool,
     pub css_pages_list: Vec<String>,
     pub css_pages_state: ratatui::widgets::ListState,
+    // Custom Search/Extractor Tab State
+    pub extractor_table_data: Vec<ExtractionTableEntry>,
+    pub extractor_table_state: ratatui::widgets::TableState,
+    pub extractor_filtered_table_data: Vec<ExtractionTableEntry>,
+    pub extractor_full_filtered_table_data: Vec<ExtractionTableEntry>,
+    pub extractor_current_page: usize,
+    pub extractor_page_size: usize,
+    pub extractor_horizontal_scroll: usize,
+    pub extractor_search_query: String,
+    pub show_extractor_search: bool,
 }
 
 // ENGINE MODELES AND TYPES

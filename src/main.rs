@@ -188,6 +188,22 @@ async fn run_app<B: Backend>(
                             }
                             _ => {}
                         }
+                    } else if app.show_extractor_search {
+                         match key.code {
+                            KeyCode::Enter | KeyCode::Esc => {
+                                app.show_extractor_search = false;
+                                app.apply_extractor_filter();
+                            }
+                            KeyCode::Char(c) => {
+                                app.extractor_search_query.push(c);
+                                app.last_search_time = Some(std::time::Instant::now());
+                            }
+                            KeyCode::Backspace => {
+                                app.extractor_search_query.pop();
+                                app.last_search_time = Some(std::time::Instant::now());
+                            }
+                            _ => {}
+                        }
                     } else if app.show_js_pages_modal {
                         match key.code {
                             KeyCode::Char('q') | KeyCode::Esc => app.close_js_pages_modal(),
@@ -633,6 +649,8 @@ async fn run_app<B: Backend>(
                                     app.show_js_urls_search = true;
                                 } else if app.current_state == AppState::Content {
                                     app.show_content_search = true;
+                                } else if app.current_state == AppState::CustomExtractor {
+                                    app.show_extractor_search = true;
                                 }
                             }
 
@@ -653,6 +671,7 @@ async fn run_app<B: Backend>(
                                 AppState::Dashboard | AppState::CoreWebVitals => app.previous_row(),
                                 AppState::Content => app.previous_content_row(),
                                 AppState::Internal => app.previous_internal_row(),
+                                AppState::CustomExtractor => app.previous_extractor_row(),
                                 AppState::Javascript => {
                                     let selected = app.js_urls_table_state.selected().unwrap_or(0);
                                     if selected > 0 {
@@ -685,6 +704,7 @@ async fn run_app<B: Backend>(
                                 AppState::Dashboard | AppState::CoreWebVitals => app.next_row(),
                                 AppState::Content => app.next_content_row(),
                                 AppState::Internal => app.next_internal_row(),
+                                AppState::CustomExtractor => app.next_extractor_row(),
                                 AppState::Javascript => {
                                     let len = app.js_urls_filtered_table_data.len();
                                     let selected = app.js_urls_table_state.selected().unwrap_or(0);
@@ -796,6 +816,7 @@ async fn run_app<B: Backend>(
                                 AppState::Dashboard | AppState::CoreWebVitals => app.next_page(),
                                 AppState::Content => app.next_content_page(),
                                 AppState::Internal => app.next_internal_page(),
+                                AppState::CustomExtractor => app.next_extractor_page(),
                                 AppState::Javascript => {
                                     let total_pages = (app.js_urls_full_filtered_table_data.len()
                                         + app.js_urls_page_size
@@ -814,6 +835,7 @@ async fn run_app<B: Backend>(
                                 }
                                 AppState::Content => app.previous_content_page(),
                                 AppState::Internal => app.previous_internal_page(),
+                                AppState::CustomExtractor => app.previous_extractor_page(),
                                 AppState::Javascript => {
                                     if app.js_urls_current_page > 0 {
                                         app.js_urls_current_page -= 1;

@@ -141,6 +141,16 @@ impl Default for App {
             show_css_pages_modal: false,
             css_pages_list: Vec::new(),
             css_pages_state: ratatui::widgets::ListState::default(),
+            // Custom Search/Extractor Tab State
+            extractor_table_data: Vec::new(),
+            extractor_table_state: ratatui::widgets::TableState::default(),
+            extractor_filtered_table_data: Vec::new(),
+            extractor_full_filtered_table_data: Vec::new(),
+            extractor_current_page: 0,
+            extractor_page_size: 100,
+            extractor_horizontal_scroll: 0,
+            extractor_search_query: String::new(),
+            show_extractor_search: false,
         }
     }
 }
@@ -320,6 +330,21 @@ impl App {
                 }
             }
 
+            // Collect Extraction Results for Custom Search table
+            if let Some(extraction) = &data.extraction {
+                if extraction.found {
+                    for match_item in &extraction.matches {
+                         let entry = crate::models::ExtractionTableEntry {
+                            id: self.extractor_table_data.len() + 1,
+                            url: data.url.clone(),
+                            element: match_item.element.clone(),
+                            snippet: match_item.snippet.clone(),
+                        };
+                        self.extractor_table_data.push(entry);
+                    }
+                }
+            }
+
             self.url_to_status
                 .insert(data.url.clone(), data.status.clone());
             self.log(format!("Crawled: {}", data.url));
@@ -330,6 +355,7 @@ impl App {
             self.apply_internal_filter();
             self.apply_css_urls_filter();
             self.apply_js_urls_filter();
+            self.apply_extractor_filter();
             self.apply_content_filter();
         }
 
@@ -347,6 +373,7 @@ impl App {
                 self.apply_internal_filter();
                 self.apply_css_urls_filter();
                 self.apply_js_urls_filter();
+                self.apply_extractor_filter();
                 self.apply_content_filter();
                 self.last_search_time = None;
             }
@@ -1448,6 +1475,64 @@ impl App {
         }
     }
 
+    pub fn apply_extractor_filter(&mut self) {
+        if self.extractor_search_query.is_empty() {
+             // Only update if lengths differ to avoid redundant massive clones
+             if self.extractor_full_filtered_table_data.len() != self.extractor_table_data.len() {
+                self.extractor_full_filtered_table_data = self.extractor_table_data.clone();
+             }
+        } else {
+            let matcher = SkimMatcherV2::default();
+            let mut scored_data = Vec::new();
+            
+            for entry in &self.extractor_table_data {
+                let search_blob = format!("{} {} {}", entry.url, entry.element, entry.snippet);
+                 if let Some(score) = matcher.fuzzy_match(&search_blob, &self.extractor_search_query) {
+                    scored_data.push((score, entry.clone()));
+                }
+            }
+            
+            scored_data.sort_by(|a, b| b.0.cmp(&a.0));
+            self.extractor_full_filtered_table_data =
+                scored_data.into_iter().map(|(_, row)| row).collect();
+        }
+
+        let total_pages = (self.extractor_full_filtered_table_data.len() + self.extractor_page_size
+            - 1)
+            / self.extractor_page_size;
+        
+        // Handle pagination reset if search reduced pages
+        if self.extractor_current_page >= total_pages && total_pages > 0 {
+            self.extractor_current_page = total_pages.saturating_sub(1);
+        } else if total_pages == 0 {
+            self.extractor_current_page = 0;
+        }
+
+        self.apply_extractor_pagination();
+    }
+
+    pub fn apply_extractor_pagination(&mut self) {
+        let start = self.extractor_current_page * self.extractor_page_size;
+        let end = (start + self.extractor_page_size).min(self.extractor_full_filtered_table_data.len());
+        
+        if start < self.extractor_full_filtered_table_data.len() {
+            self.extractor_filtered_table_data = 
+                self.extractor_full_filtered_table_data[start..end].to_vec();
+        } else {
+            self.extractor_filtered_table_data = Vec::new();
+        }
+
+        if let Some(selected) = self.extractor_table_state.selected() {
+            if selected >= self.extractor_filtered_table_data.len() {
+                if self.extractor_filtered_table_data.is_empty() {
+                     self.extractor_table_state.select(None);
+                } else {
+                     self.extractor_table_state.select(Some(self.extractor_filtered_table_data.len() - 1));
+                }
+            }
+        }
+    }
+
     pub fn next_internal_row(&mut self) {
         let len = self.internal_filtered_table_data.len();
         if len == 0 {
@@ -1683,5 +1768,73 @@ impl App {
         self.show_css_pages_modal = false;
         self.css_pages_list.clear();
         self.css_pages_state.select(None);
+    }
+
+    pub fn next_extractor_page(&mut self) {
+        let total_pages = (self.extractor_full_filtered_table_data.len() + self.extractor_page_size - 1)
+            / self.extractor_page_size;
+        if self.extractor_current_page + 1 < total_pages {
+            self.extractor_current_page += 1;
+            self.apply_extractor_pagination();
+        }
+    }
+
+    pub fn previous_extractor_page(&mut self) {
+        if self.extractor_current_page > 0 {
+            self.extractor_current_page -= 1;
+            self.apply_extractor_pagination();
+        }
+    }
+
+    pub fn next_extractor_row(&mut self) {
+        let len = self.extractor_filtered_table_data.len();
+        if len == 0 {
+            return;
+        }
+        let i = match self.extractor_table_state.selected() {
+            Some(i) => {
+                if i >= len - 1 {
+                     let total_pages = (self.extractor_full_filtered_table_data.len()
+                        + self.extractor_page_size
+                        - 1)
+                        / self.extractor_page_size;
+                    if self.extractor_current_page + 1 < total_pages {
+                         self.extractor_current_page += 1;
+                         self.apply_extractor_pagination();
+                         0
+                    } else {
+                         len - 1
+                    }
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.extractor_table_state.select(Some(i));
+    }
+
+    pub fn previous_extractor_row(&mut self) {
+        let len = self.extractor_filtered_table_data.len();
+        if len == 0 {
+            return;
+        }
+        let i = match self.extractor_table_state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    if self.extractor_current_page > 0 {
+                        self.extractor_current_page -= 1;
+                        self.apply_extractor_pagination();
+                        self.extractor_filtered_table_data.len() - 1
+                    } else {
+                        0
+                    }
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.extractor_table_state.select(Some(i));
     }
 }

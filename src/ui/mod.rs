@@ -85,7 +85,8 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         AppState::Css => tabs::css::render(f, app, content_area),
         AppState::Javascript => tabs::javascript::render(f, app, content_area),
         AppState::CoreWebVitals => tabs::cwv::render(f, app, content_area),
-        AppState::Redirects | AppState::Images | AppState::Keywords | AppState::CustomExtractor => {
+        AppState::CustomExtractor => tabs::custom_extractor::render(f, app, content_area),
+        AppState::Redirects | AppState::Images | AppState::Keywords => {
             let block = Block::default()
                 .borders(Borders::ALL)
                 .title(format!(" {:?} ", app.current_state))
