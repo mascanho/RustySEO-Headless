@@ -345,15 +345,15 @@ pub fn extract_page_elements(document: &Html) -> PageData {
     );
 
     // GETS THE KEYWORDS FROM THE CRAWLED PAGE
-    let keywords = extract_keywords(&document);
+    let keywords = extract_keywords(document);
 
     // GETS THE EXTRACTION FROM THE CRAWLED PAGE
-
-    // IF THE EXTRACTOR IS ACTIVATED THEN WE CALL THE EXTRACTOR
+    // IF THE EXTRACTOR IS ACTIVATED THEN WE CALL THE EXTRACTOR WITH THE CONFIGURED TEXT
     let extraction = if APP_SETTINGS.crawler.extractor {
-        Some(text("text", document))
+        let extractor_text = &APP_SETTINGS.crawler.extractor_text;
+        Some(text(extractor_text, document))
     } else {
-        Some(vec!["empty".to_string()])
+        None
     };
 
     // Construct and return the comprehensive page data structure

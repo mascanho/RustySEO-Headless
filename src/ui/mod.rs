@@ -54,7 +54,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         "Javascript",
         "Keywords",
         "CWV",
-        "CustomSearch",
+        "Custom Extractor",
         "Reports",
         "Content",
     ];
@@ -85,7 +85,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         AppState::Css => tabs::css::render(f, app, content_area),
         AppState::Javascript => tabs::javascript::render(f, app, content_area),
         AppState::CoreWebVitals => tabs::cwv::render(f, app, content_area),
-        AppState::Redirects | AppState::Images | AppState::Keywords | AppState::CustomSearch => {
+        AppState::Redirects | AppState::Images | AppState::Keywords | AppState::CustomExtractor => {
             let block = Block::default()
                 .borders(Borders::ALL)
                 .title(format!(" {:?} ", app.current_state))

@@ -5,7 +5,7 @@ use std::sync::mpsc::Receiver;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AppSettings {
     pub crawler: CrawlerConfig,
     pub ui: UiConfig,
@@ -14,7 +14,7 @@ pub struct AppSettings {
     pub provider: LLMprovider,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CrawlerConfig {
     pub max_pages: usize,
     pub concurrency: usize,
@@ -28,9 +28,11 @@ pub struct CrawlerConfig {
     pub max_memory_pages: usize,
     #[serde(default)]
     pub extractor: bool,
+    #[serde(default)]
+    pub extractor_text: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct UiConfig {
     pub theme: String,
     pub show_logs_on_start: bool,
@@ -38,14 +40,14 @@ pub struct UiConfig {
     pub refresh_rate_ms: u64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SystemConfig {
     pub database_path: String,
     pub log_level: String,
     pub export_format: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ConnectorsConfig {
     pub pagespeed: PageSpeedConfig,
     pub search_console: SearchConsoleConfig,
@@ -53,33 +55,33 @@ pub struct ConnectorsConfig {
     pub openai: OpenAiConfig,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PageSpeedConfig {
     pub api_key: String,
     pub status: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SearchConsoleConfig {
     pub token: String,
     pub project_id: String,
     pub project_name: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct GeminiConfig {
     pub api_key: String,
     pub model: String,
     pub status: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct OpenAiConfig {
     pub api_key: String,
     pub model: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct LLMprovider {
     pub llm: String,
 }
@@ -97,6 +99,7 @@ impl Default for AppSettings {
                 enable_javascript: false,
                 max_memory_pages: 1000,
                 extractor: false,
+                extractor_text: "".to_string(),
             },
             ui: UiConfig {
                 theme: "Oceanic".to_string(),
@@ -226,6 +229,7 @@ pub struct App {
     pub crawl_receiver: Option<Receiver<crate::crawler::CrawlMessage>>,
     pub is_crawling: bool,
     pub settings: Option<AppSettings>,
+    pub settings_receiver: Option<Receiver<()>>,
     pub log_receiver: Option<Receiver<String>>,
     pub show_logs: bool,
     pub logs_height: u16,

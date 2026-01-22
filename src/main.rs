@@ -26,23 +26,14 @@ use crate::{
     app::AppState, cli::Cli, crawler::CrawlEngine, models::App, settings::utils::open::edit_file,
     ui::ui,
 };
-use std::sync::mpsc;
+
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     // Logging initialization moved to after TUI setup to capture logs in app
     let log_rx = logging::init();
 
-    // Channel for settings updates
-    let (settings_tx, settings_rx) = mpsc::channel();
 
-    // Spawn file watcher for settings
-    std::thread::spawn(move || {
-        if let Err(e) = settings::watcher::watch_settings(settings_tx) {
-            // You might want to log this error
-            eprintln!("Failed to watch settings: {}", e);
-        }
-    });
 
     // SPAWN SOME IO TASKS TO NOT SLOW DOWN THE UI
     tokio::task::spawn(async move {
@@ -79,7 +70,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
         app.settings = Some(settings);
         app.log_receiver = Some(log_rx);
         app.bookmarks = db::load_bookmarks();
-        let res = run_app(&mut terminal, &mut app, settings_rx).await;
+        
+        // Initialize the settings file watcher for real-time settings updates
+        let (settings_tx, settings_rx) = std::sync::mpsc::channel();
+        let _settings_watcher = settings::watcher::init_settings_watcher(settings_tx);
+        app.settings_receiver = Some(settings_rx);
+        
+        let res = run_app(&mut terminal, &mut app).await;
 
         // restore terminal
         disable_raw_mode()?;
@@ -100,16 +97,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
 async fn run_app<B: Backend>(
     terminal: &mut Terminal<B>,
     app: &mut App,
-    settings_rx: mpsc::Receiver<()>,
 ) -> io::Result<()> {
     let tick_rate = std::time::Duration::from_millis(100);
 
     loop {
         // Check for settings changes
-        if settings_rx.try_recv().is_ok() {
-            app.settings = Some(crate::models::AppSettings::load());
-            // You might want to trigger a UI redraw or update other parts of the app
-        }
+        app.reload_settings_if_changed();
         terminal.draw(|f| ui(f, app)).expect("Something went wrong");
 
         if event::poll(tick_rate)? {
@@ -853,7 +846,7 @@ async fn run_app<B: Backend>(
                             KeyCode::Char('7') => app.current_state = AppState::Javascript,
                             KeyCode::Char('8') => app.current_state = AppState::Keywords,
                             KeyCode::Char('9') => app.current_state = AppState::CoreWebVitals,
-                            KeyCode::Char('0') => app.current_state = AppState::CustomSearch,
+                            KeyCode::Char('0') => app.current_state = AppState::CustomExtractor,
                             _ => {}
                         }
                     }
@@ -913,7 +906,7 @@ async fn run_app<B: Backend>(
                                         6 => AppState::Javascript,
                                         7 => AppState::Keywords,
                                         8 => AppState::CoreWebVitals,
-                                        9 => AppState::CustomSearch,
+                                        9 => AppState::CustomExtractor,
                                         10 => AppState::Reports,
                                         11 => AppState::Content,
                                         _ => app.current_state,

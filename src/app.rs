@@ -21,7 +21,7 @@ pub enum AppState {
     Javascript,
     Keywords,
     CoreWebVitals,
-    CustomSearch,
+    CustomExtractor,
     Reports,
     Content,
 }
@@ -76,6 +76,7 @@ impl Default for App {
             crawl_receiver: None,
             is_crawling: false,
             settings: Some(AppSettings::default()),
+            settings_receiver: None,
             log_receiver: None,
             show_logs: false,
             logs_height: 18,
@@ -904,8 +905,8 @@ impl App {
             AppState::Css => AppState::Javascript,
             AppState::Javascript => AppState::Keywords,
             AppState::Keywords => AppState::CoreWebVitals,
-            AppState::CoreWebVitals => AppState::CustomSearch,
-            AppState::CustomSearch => AppState::Reports,
+            AppState::CoreWebVitals => AppState::CustomExtractor,
+            AppState::CustomExtractor => AppState::Reports,
             AppState::Reports => AppState::Content,
             AppState::Content => AppState::Dashboard,
         }
@@ -922,8 +923,8 @@ impl App {
             AppState::Javascript => AppState::Css,
             AppState::Keywords => AppState::Javascript,
             AppState::CoreWebVitals => AppState::Keywords,
-            AppState::CustomSearch => AppState::CoreWebVitals,
-            AppState::Reports => AppState::CustomSearch,
+            AppState::CustomExtractor => AppState::CoreWebVitals,
+            AppState::Reports => AppState::CustomExtractor,
             AppState::Content => AppState::Reports,
         }
     }
@@ -939,7 +940,7 @@ impl App {
             AppState::Javascript => 6,
             AppState::Keywords => 7,
             AppState::CoreWebVitals => 8,
-            AppState::CustomSearch => 9,
+            AppState::CustomExtractor => 9,
             AppState::Reports => 10,
             AppState::Content => 11,
         }
@@ -1585,9 +1586,50 @@ impl App {
     }
 
     pub fn reload_settings_if_changed(&mut self) {
+        // First, check if we received any file change notifications from the watcher
+        let mut should_reload = false;
+
+        if let Some(ref rx) = self.settings_receiver {
+            // Non-blocking check for settings change events
+            // Drain all pending events (in case multiple were queued)
+            loop {
+                match rx.try_recv() {
+                    Ok(()) => {
+                        should_reload = true;
+                    }
+                    Err(std::sync::mpsc::TryRecvError::Empty) => break,
+                    Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                        // Watcher died, fall back to mtime checking
+                        should_reload = self.check_settings_mtime();
+                        break;
+                    }
+                }
+            }
+        } else {
+            // No watcher connected, fall back to mtime checking
+            should_reload = self.check_settings_mtime();
+        }
+
+        if should_reload {
+            let current_settings = AppSettings::load();
+
+            // Only update if settings actually changed (using PartialEq to compare ALL fields)
+            let settings_changed = self
+                .settings
+                .as_ref()
+                .map_or(true, |stored| stored != &current_settings);
+
+            if settings_changed {
+                self.settings = Some(current_settings);
+                self.log("Settings reloaded from file");
+            }
+        }
+    }
+
+    /// Fallback mtime-based check for settings changes
+    fn check_settings_mtime(&mut self) -> bool {
         let settings_path = AppSettings::path();
 
-        // Get file modification time - cheap operation, no file read
         if let Ok(metadata) = std::fs::metadata(&settings_path) {
             if let Ok(mtime) = metadata.modified() {
                 // Only reload if file was modified since last check
@@ -1595,26 +1637,12 @@ impl App {
                     .last_settings_mtime
                     .map_or(true, |last_mtime| mtime > last_mtime)
                 {
-                    let current_settings = AppSettings::load();
-
-                    // Only update if settings actually changed
-                    let settings_changed = self.settings.as_ref().map_or(true, |stored| {
-                        stored.crawler.max_pages != current_settings.crawler.max_pages
-                            || stored.crawler.concurrency != current_settings.crawler.concurrency
-                            || stored.crawler.stay_on_domain
-                                != current_settings.crawler.stay_on_domain
-                            || stored.ui.theme != current_settings.ui.theme
-                            || stored.ui.refresh_rate_ms != current_settings.ui.refresh_rate_ms
-                    });
-                    if settings_changed {
-                        self.settings = Some(current_settings);
-                        self.log("Settings reloaded from file");
-                    }
-
                     self.last_settings_mtime = Some(mtime);
+                    return true;
                 }
             }
         }
+        false
     }
 
     pub fn show_js_pages_for_url(&mut self, js_url: String) {
