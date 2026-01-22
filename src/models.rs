@@ -26,6 +26,8 @@ pub struct CrawlerConfig {
     pub enable_javascript: bool,
     #[serde(default)]
     pub max_memory_pages: usize,
+    #[serde(default)]
+    pub extractor: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -94,6 +96,7 @@ impl Default for AppSettings {
                 timeout_seconds: 15,
                 enable_javascript: false,
                 max_memory_pages: 1000,
+                extractor: false,
             },
             ui: UiConfig {
                 theme: "Oceanic".to_string(),

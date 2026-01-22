@@ -47,7 +47,7 @@ pub fn render(
         let sections = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(7), // Engine
+                Constraint::Length(9), // Engine
                 Constraint::Length(5), // Viewport
                 Constraint::Length(5), // System
                 Constraint::Min(0),    // Internal
@@ -92,6 +92,7 @@ pub fn render(
                     },
                 )),
             ]),
+            // PSI
             Row::new(vec![
                 Cell::from("  PSI "),
                 Cell::from(if settings.connectors.pagespeed.status {
@@ -106,6 +107,21 @@ pub fn render(
                         Color::Red
                     },
                 )),
+            ]),
+            // EXTRACTION
+            //NOTE: This needs to be improved
+            Row::new(vec![
+                Cell::from("  Extraction "),
+                Cell::from(if settings.crawler.extractor {
+                    "ENABLED "
+                } else {
+                    "DISABLED "
+                })
+                .style(Style::default().fg(if settings.crawler.extractor {
+                    Color::Green
+                } else {
+                    Color::Red
+                })),
             ]),
         ];
         let engine_table = Table::new(

@@ -1,21 +1,30 @@
 use scraper::{Html, Selector};
 use std::sync::LazyLock;
 
+use crate::crawler::helpers::extractor::text;
 use crate::crawler::helpers::image_utils::ImageInfo;
 use crate::crawler::helpers::keywords::extract_keywords;
 use crate::crawler::helpers::word_count::get_words;
+use crate::models::AppSettings;
 
 /// Comprehensive data structure representing a parsed web page
 ///
 /// This struct contains all relevant SEO and content analysis information
 /// extracted from an HTML document, including metadata, content metrics,
 /// links, images, and structured data.
-/// Comprehensive data structure representing a link found on a page
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct AnchorLink {
     pub href: String,
     pub text: String,
     pub rel: String,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct ExtractorInfo {
+    pub url: String,
+    pub title: String,
+    pub description: String,
+    pub status: String,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -110,6 +119,7 @@ pub struct PageData {
     pub keywords: Option<Vec<String>>,
     pub cwv_desktop: Option<CwvData>,
     pub cwv_mobile: Option<CwvData>,
+    pub extraction: Option<Vec<String>>,
 }
 
 // Define static CSS selectors for common page elements using LazyLock
@@ -138,6 +148,9 @@ static BODY_SELECTOR: LazyLock<Selector> = LazyLock::new(|| Selector::parse("bod
 static STYLE_SELECTOR: LazyLock<Selector> =
     LazyLock::new(|| Selector::parse("link[rel='stylesheet'], style").unwrap());
 static SCRIPT_SELECTOR: LazyLock<Selector> = LazyLock::new(|| Selector::parse("script").unwrap());
+
+// LAZY LOAD THE SETTINGS WITH THE EXTRACTION AND THE EXTRACTOR
+static APP_SETTINGS: LazyLock<AppSettings> = LazyLock::new(|| AppSettings::load());
 
 /// Extract page elements and metadata from HTML document
 ///
@@ -331,7 +344,17 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         },
     );
 
+    // GETS THE KEYWORDS FROM THE CRAWLED PAGE
     let keywords = extract_keywords(&document);
+
+    // GETS THE EXTRACTION FROM THE CRAWLED PAGE
+
+    // IF THE EXTRACTOR IS ACTIVATED THEN WE CALL THE EXTRACTOR
+    let extraction = if APP_SETTINGS.crawler.extractor {
+        Some(text("text", document))
+    } else {
+        Some(vec!["empty".to_string()])
+    };
 
     // Construct and return the comprehensive page data structure
     PageData {
@@ -364,6 +387,7 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         keywords: Some(keywords),
         cwv_desktop: None,
         cwv_mobile: None,
+        extraction,
     }
 }
 

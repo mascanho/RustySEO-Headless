@@ -1,4 +1,5 @@
 pub mod content;
+pub mod extractor;
 pub mod html_parser;
 pub mod image_utils;
 pub mod keywords;
