@@ -1,15 +1,12 @@
 use crate::models::App;
-use tui_piechart::{PieChart, PieSlice};
 use ratatui::{
-    Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
-    widgets::{
-        Block, Borders, Cell, Gauge, Paragraph, Row, Sparkline, Table, Wrap,
-    },
+    widgets::{Block, Borders, Cell, Gauge, Paragraph, Row, Sparkline, Table, Wrap},
+    Frame,
 };
-
+use tui_piechart::{PieChart, PieSlice};
 
 // --- Data Structures ---
 
@@ -82,14 +79,12 @@ struct SeoMetrics {
     total_schema_objects: usize,
 
     // Language
-
     pages_with_lang: usize,
 
     // Calculated for Visuals
     health_score: u16,
     word_count_distribution: Vec<u64>,
     page_size_distribution: Vec<u64>,
-
 }
 
 // --- Main Render Function ---
@@ -317,6 +312,9 @@ fn collect_metrics(pages: &[crate::crawler::PageData]) -> SeoMetrics {
 
 // --- Render Functions ---
 
+const ACCENT_COLOR: Color = Color::Rgb(80, 140, 255);
+const DEFAULT_COLOR: Color = Color::Rgb(40, 45, 60);
+
 fn render_header_stats(f: &mut Frame, area: Rect, m: &SeoMetrics, accent: Color) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -326,7 +324,7 @@ fn render_header_stats(f: &mut Frame, area: Rect, m: &SeoMetrics, accent: Color)
     // 1. Health Score Gauge
     let gauge = Gauge::default()
         .block(Block::default().borders(Borders::NONE))
-        .gauge_style(Style::default().fg(Color::Blue).bg(Color::Rgb(30, 30, 40)))
+        .gauge_style(Style::default().fg(ACCENT_COLOR).bg(Color::Rgb(30, 30, 40)))
         .ratio(m.health_score as f64 / 100.0)
         .label(Span::styled(
             format!(" Site Health: {}% ", m.health_score),
