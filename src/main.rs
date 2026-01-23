@@ -4,14 +4,15 @@ use crossterm::{
         self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers, MouseEventKind,
     },
     execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{
-    Terminal,
     backend::{Backend, CrosstermBackend},
+    Terminal,
 };
 use std::{error::Error, io};
 
+// Local modules
 pub mod ai;
 pub mod app;
 pub mod cli;
@@ -19,6 +20,7 @@ pub mod crawler;
 pub mod db;
 pub mod logging;
 pub mod models;
+pub mod server;
 pub mod settings;
 pub mod ui;
 
