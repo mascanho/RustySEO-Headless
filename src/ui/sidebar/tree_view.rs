@@ -7,6 +7,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, List, ListItem},
 };
+
 use std::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
@@ -217,6 +218,8 @@ pub fn build_tree_structure(page_data: &[PageData]) -> TreeNode {
     root
 }
 
+const ACCENT_COLOR: Color = Color::Rgb(80, 140, 255);
+
 pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block) {
     let tree_root = build_tree_structure(&app.page_data);
 
@@ -243,8 +246,8 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block) {
         )))
         .highlight_style(
             Style::default()
-                .fg(Color::Black)
-                .bg(Color::White)
+                .fg(Color::White)
+                .bg(ACCENT_COLOR)
                 .add_modifier(Modifier::BOLD),
         );
 

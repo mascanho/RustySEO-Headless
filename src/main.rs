@@ -887,7 +887,8 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             },
 
                             // Quick jumps
-                            KeyCode::Char('o') => app.set_sidebar_tab(0),
+                            KeyCode::Char('g') => app.set_sidebar_tab(0),
+                            KeyCode::Char('w') => app.set_sidebar_tab(5),
                             KeyCode::Char('s') => app.set_sidebar_tab(1),
                             KeyCode::Char('e') | KeyCode::Char('E') => {
                                 if app.sidebar_visible && app.sidebar_tab == 1 {

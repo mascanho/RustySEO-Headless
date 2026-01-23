@@ -40,7 +40,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     app.sidebar_tab_rect = Some(sidebar_tab_area);
 
-    let sidebar_titles = vec!["Overview", "Settings", "Filter", "Act", "Bookmarks", "Tree"];
+    let sidebar_titles = vec!["General", "Settings", "Filter", "Act", "Bookmarks", "Tree"];
     let sidebar_tabs = Tabs::new(sidebar_titles)
         .block(
             Block::default()
