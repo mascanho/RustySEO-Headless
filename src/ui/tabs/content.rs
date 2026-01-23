@@ -1,9 +1,9 @@
 use ratatui::{
-    Frame,
     layout::{Alignment, Constraint, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table},
+    Frame,
 };
 
 use crate::models::App;
@@ -129,7 +129,14 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                     cell_style = cell_style.fg(Color::Cyan);
                 }
 
-                Cell::from(content).style(cell_style)
+                let cell_content = if j == 2 {
+                    // Word count column - center the text
+                    Cell::from(Line::from(content).alignment(Alignment::Center)).style(cell_style)
+                } else {
+                    Cell::from(content).style(cell_style)
+                };
+
+                cell_content
             });
 
             Row::new(cells).style(row_style).height(1)
