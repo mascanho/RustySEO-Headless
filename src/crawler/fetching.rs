@@ -317,7 +317,7 @@ async fn fetch_pagespeed_data(
 }
 
 async fn apply_jitter() {
-    let jitter = rand::thread_rng().gen_range(100..=500);
+    let jitter = rand::rng().random_range(100..=500);
     sleep(Duration::from_millis(jitter)).await;
 }
 
@@ -325,6 +325,6 @@ fn pick_random_user_agent(user_agents: &[String]) -> String {
     if user_agents.is_empty() {
         "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)".to_string()
     } else {
-        user_agents[rand::thread_rng().gen_range(0..user_agents.len())].clone()
+        user_agents[rand::rng().random_range(0..user_agents.len())].clone()
     }
 }

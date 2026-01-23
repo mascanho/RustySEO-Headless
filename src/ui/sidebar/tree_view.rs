@@ -7,7 +7,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, List, ListItem},
 };
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
 pub struct TreeNode {
@@ -43,7 +43,7 @@ impl TreeNode {
         self.children.push(child);
     }
 
-    pub fn render_tree_line(&self, is_selected: bool) -> Line {
+    pub fn render_tree_line(&self, is_selected: bool) -> Line<'_> {
         let mut spans = Vec::new();
 
         // Add indentation based on level
@@ -91,9 +91,9 @@ impl TreeNode {
         Line::from(spans)
     }
 
-    pub fn flatten_to_list(
-        &self,
-        items: &mut Vec<ListItem>,
+    pub fn flatten_to_list<'a>(
+        &'a self,
+        items: &mut Vec<ListItem<'a>>,
         selected_index: usize,
         current_index: &mut usize,
     ) {
@@ -125,7 +125,7 @@ pub fn build_tree_structure(page_data: &[PageData]) -> TreeNode {
     }
 
     // Group pages by domain/path
-    let mut domain_map: HashMap<String, Vec<&PageData>> = HashMap::new();
+    let mut domain_map: BTreeMap<String, Vec<&PageData>> = BTreeMap::new();
 
     for page in page_data {
         if let Ok(url) = url::Url::parse(&page.url) {
@@ -150,7 +150,7 @@ pub fn build_tree_structure(page_data: &[PageData]) -> TreeNode {
         );
 
         // Group by path segments
-        let mut path_map: HashMap<String, Vec<&PageData>> = HashMap::new();
+        let mut path_map: BTreeMap<String, Vec<&PageData>> = BTreeMap::new();
 
         for page in pages {
             if let Ok(url) = url::Url::parse(&page.url) {
@@ -167,7 +167,10 @@ pub fn build_tree_structure(page_data: &[PageData]) -> TreeNode {
         }
 
         // Create path nodes
-        for (path, path_pages) in path_map {
+        for (path, mut path_pages) in path_map {
+            // Sort pages within the path by URL for stability
+            path_pages.sort_by(|a, b| a.url.cmp(&b.url));
+
             let mut path_node = TreeNode::new(
                 format!("path-{}-{}", domain, path),
                 format!(

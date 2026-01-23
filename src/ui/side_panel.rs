@@ -18,9 +18,6 @@ pub fn render(f: &mut Frame, app: &mut App) {
         return;
     }
 
-    let accent_color = Color::Rgb(80, 140, 255);
-    let border_color = Color::Rgb(40, 45, 60);
-
     let area = f.area();
 
     let width = (area.width / 3).max(35).min(area.width);
@@ -49,12 +46,12 @@ pub fn render(f: &mut Frame, app: &mut App) {
             Block::default()
                 .borders(Borders::ALL)
                 .title(Span::styled(
-                    " SIDEPANEL ",
+                    " DRAW SIDEBAR ",
                     Style::default()
                         .fg(Color::Yellow)
                         .add_modifier(Modifier::BOLD),
                 ))
-                .border_style(Style::default().fg(border_color))
+                .border_style(Style::default().fg(BORDER_COLOR))
                 .bg(Color::Rgb(15, 15, 25)),
         )
         .select(app.sidebar_tab)
@@ -66,25 +63,25 @@ pub fn render(f: &mut Frame, app: &mut App) {
                 .add_modifier(Modifier::BOLD)
                 .add_modifier(Modifier::REVERSED),
         )
-        .divider(Span::styled(" | ", Style::default().fg(border_color)));
+        .divider(Span::styled(" | ", Style::default().fg(BORDER_COLOR)));
 
     f.render_widget(sidebar_tabs, sidebar_tab_area);
 
     // Sidebar Content based on tab
     let content_block = Block::default()
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(border_color))
+        .border_style(Style::default().fg(BORDER_COLOR))
         .bg(Color::Rgb(15, 15, 25));
 
     match app.sidebar_tab {
-        0 => summary::render(f, app, sidebar_content_area, content_block, accent_color),
+        0 => summary::render(f, app, sidebar_content_area, content_block, ACCENT_COLOR),
         1 => settings::render(
             f,
             app,
             sidebar_content_area,
             content_block,
-            accent_color,
-            border_color,
+            ACCENT_COLOR,
+            BORDER_COLOR,
         ),
         2 => filters::render(f, app, sidebar_content_area, content_block),
         3 => actions::render(f, app, sidebar_content_area, content_block),
@@ -93,8 +90,8 @@ pub fn render(f: &mut Frame, app: &mut App) {
             app,
             sidebar_content_area,
             content_block,
-            accent_color,
-            border_color,
+            ACCENT_COLOR,
+            BORDER_COLOR,
         ),
         5 => tree_view::render(f, app, sidebar_content_area, content_block),
         _ => {}
