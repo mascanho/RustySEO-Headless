@@ -1,11 +1,15 @@
 use crate::models::App;
+use tui_piechart::{PieChart, PieSlice};
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::{Color, Modifier, Style},
+    style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, Borders, Cell, Paragraph, Row, Table, Wrap},
+    widgets::{
+        Block, Borders, Cell, Gauge, Paragraph, Row, Sparkline, Table, Wrap,
+    },
 };
+
 
 // --- Data Structures ---
 
@@ -78,7 +82,14 @@ struct SeoMetrics {
     total_schema_objects: usize,
 
     // Language
+
     pages_with_lang: usize,
+
+    // Calculated for Visuals
+    health_score: u16,
+    word_count_distribution: Vec<u64>,
+    page_size_distribution: Vec<u64>,
+
 }
 
 // --- Main Render Function ---
@@ -100,8 +111,8 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block, ac
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(4),  // Header Stats
-            Constraint::Length(8),  // HTTP Status Health
+            Constraint::Length(6),  // Header Stats (Gauge + Key Metrics)
+            Constraint::Length(12), // Charts Area
             Constraint::Length(11), // SEO Fundamentals
             Constraint::Length(8),  // Content Structure
             Constraint::Min(0),     // Images, Resources & Performance
@@ -110,7 +121,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block, ac
         .split(inner_area);
 
     render_header_stats(f, chunks[0], &metrics, accent_color);
-    render_http_health(f, chunks[1], &metrics);
+    render_charts_area(f, chunks[1], &metrics);
     render_seo_fundamentals(f, chunks[2], &metrics);
     render_content_structure(f, chunks[3], &metrics);
     render_technical_details(f, chunks[4], &metrics);
@@ -272,6 +283,33 @@ fn collect_metrics(pages: &[crate::crawler::PageData]) -> SeoMetrics {
         if !page.language.is_empty() {
             m.pages_with_lang += 1;
         }
+
+        // Collect for Sparklines (cap at 100 recent/sample for display)
+        // We push all, let the renderer slice it or we sample here.
+        // For simplicity, let's just push all and we'll slice in render.
+        m.word_count_distribution
+            .push(page.word_count.unwrap_or(0) as u64);
+        m.page_size_distribution.push(page.size as u64);
+    }
+
+    // Calculate Health Score (0-100)
+    // Base 100, deduct penalties
+    if m.total_pages > 0 {
+        let error_rate = (m.status_4xx + m.status_5xx) as f64 / m.total_pages as f64;
+        let warning_rate = (m.status_3xx) as f64 / m.total_pages as f64;
+        let missing_meta_rate = (m.total_pages - m.pages_with_title + m.total_pages
+            - m.pages_with_desc
+            + m.missing_h1) as f64
+            / (3.0 * m.total_pages as f64);
+
+        let mut score = 100.0;
+        score -= error_rate * 40.0; // Heavy penalty for errors
+        score -= warning_rate * 10.0; // Slight penalty for redirects
+        score -= missing_meta_rate * 20.0; // Penalty for missing SEO basics
+
+        m.health_score = score.clamp(0.0, 100.0) as u16;
+    } else {
+        m.health_score = 100;
     }
 
     m
@@ -280,6 +318,23 @@ fn collect_metrics(pages: &[crate::crawler::PageData]) -> SeoMetrics {
 // --- Render Functions ---
 
 fn render_header_stats(f: &mut Frame, area: Rect, m: &SeoMetrics, accent: Color) {
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(1), Constraint::Length(4)])
+        .split(area);
+
+    // 1. Health Score Gauge
+    let gauge = Gauge::default()
+        .block(Block::default().borders(Borders::NONE))
+        .gauge_style(Style::default().fg(Color::Blue).bg(Color::Rgb(30, 30, 40)))
+        .ratio(m.health_score as f64 / 100.0)
+        .label(Span::styled(
+            format!(" Site Health: {}% ", m.health_score),
+            Style::default().fg(Color::White).bold(),
+        ));
+    f.render_widget(gauge, chunks[0]);
+
+    // 2. Key Stats Cards
     let layout = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
@@ -288,7 +343,7 @@ fn render_header_stats(f: &mut Frame, area: Rect, m: &SeoMetrics, accent: Color)
             Constraint::Percentage(25),
             Constraint::Percentage(25),
         ])
-        .split(area);
+        .split(chunks[1]);
 
     let cards = [
         ("PAGES", m.total_pages.to_string(), Color::Cyan),
@@ -314,7 +369,7 @@ fn render_header_stats(f: &mut Frame, area: Rect, m: &SeoMetrics, accent: Color)
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .border_style(Style::default().fg(Color::Rgb(40, 40, 50))),
+                    .border_style(Style::default().fg(Color::Rgb(60, 60, 75))),
             )
             .alignment(Alignment::Center);
 
@@ -322,76 +377,88 @@ fn render_header_stats(f: &mut Frame, area: Rect, m: &SeoMetrics, accent: Color)
     }
 }
 
-fn render_http_health(f: &mut Frame, area: Rect, m: &SeoMetrics) {
-    let block = Block::default()
-        .borders(Borders::TOP | Borders::BOTTOM)
-        .border_style(Style::default().fg(Color::Rgb(50, 50, 70)))
-        .title(Span::styled(
-            " HTTP STATUS ",
-            Style::default()
-                .fg(Color::Green)
-                .add_modifier(Modifier::BOLD),
-        ));
-
-    let inner = block.inner(area);
-    f.render_widget(block, area);
-
+fn render_charts_area(f: &mut Frame, area: Rect, m: &SeoMetrics) {
     let layout = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage(25),
-            Constraint::Percentage(25),
-            Constraint::Percentage(25),
-            Constraint::Percentage(25),
-        ])
-        .margin(1)
-        .split(inner);
+        .constraints([Constraint::Percentage(40), Constraint::Percentage(60)])
+        .split(area);
 
-    let cards = [
-        ("2xx", m.status_2xx, Color::Green, "Success"),
-        ("3xx", m.status_3xx, Color::Cyan, "Redirect"),
-        ("4xx", m.status_4xx, Color::Yellow, "Client"),
-        ("5xx", m.status_5xx, Color::Red, "Server"),
+    // Left: HTTP Status Pie Chart
+    render_http_status_chart(f, layout[0], m);
+
+    // Right: Distributions
+    render_distributions(f, layout[1], m);
+}
+
+fn render_http_status_chart(f: &mut Frame, area: Rect, m: &SeoMetrics) {
+    let label_2xx = format!("2xx ({})", m.status_2xx);
+    let label_3xx = format!("3xx ({})", m.status_3xx);
+    let label_4xx = format!("4xx ({})", m.status_4xx);
+    let label_5xx = format!("5xx ({})", m.status_5xx);
+
+    let slices = vec![
+        PieSlice::new(&label_2xx, m.status_2xx as f64, Color::Green),
+        PieSlice::new(&label_3xx, m.status_3xx as f64, Color::Cyan),
+        PieSlice::new(&label_4xx, m.status_4xx as f64, Color::Yellow),
+        PieSlice::new(&label_5xx, m.status_5xx as f64, Color::Red),
     ];
 
-    for (i, (code, count, color, label)) in cards.iter().enumerate() {
-        let percentage = if m.total_pages > 0 {
-            (count * 100) / m.total_pages
-        } else {
-            0
-        };
+    let pie_chart = PieChart::new(slices)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::Rgb(50, 50, 70)))
+                .title(" Status Codes "),
+        )
+        .show_legend(true)
+        .show_percentages(true);
 
-        let text = vec![
-            Line::from(Span::styled(
-                *code,
-                Style::default()
-                    .fg(Color::DarkGray)
-                    .add_modifier(Modifier::BOLD),
-            )),
-            Line::from(Span::styled(
-                count.to_string(),
-                Style::default().fg(*color).add_modifier(Modifier::BOLD),
-            )),
-            Line::from(Span::styled(
-                format!("{}%", percentage),
-                Style::default().fg(Color::DarkGray),
-            )),
-            Line::from(Span::styled(
-                *label,
-                Style::default().fg(Color::Rgb(80, 80, 90)),
-            )),
-        ];
+    f.render_widget(pie_chart, area);
+}
 
-        let p = Paragraph::new(text)
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .border_style(Style::default().fg(Color::Rgb(40, 40, 50))),
-            )
-            .alignment(Alignment::Center);
+fn render_distributions(f: &mut Frame, area: Rect, m: &SeoMetrics) {
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(area);
 
-        f.render_widget(p, layout[i]);
-    }
+    // Word Count Sparkline
+    let wc_block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Rgb(50, 50, 70)))
+        .title(" Word Count Trend ");
+
+    let wc_data = if m.word_count_distribution.len() > 100 {
+        &m.word_count_distribution[m.word_count_distribution.len() - 100..]
+    } else {
+        &m.word_count_distribution
+    };
+
+    let wc_sparkline = Sparkline::default()
+        .block(wc_block)
+        .data(wc_data)
+        .style(Style::default().fg(Color::Magenta));
+
+    f.render_widget(wc_sparkline, chunks[0]);
+
+    // Page Size Sparkline
+    let ps_block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Rgb(50, 50, 70)))
+        .title(" Page Size Trend ");
+
+    let ps_data = if m.page_size_distribution.len() > 100 {
+        &m.page_size_distribution[m.page_size_distribution.len() - 100..]
+    } else {
+        &m.page_size_distribution
+    };
+
+    let ps_sparkline = Sparkline::default()
+        .block(ps_block)
+        .data(ps_data)
+        .style(Style::default().fg(Color::Yellow));
+
+    f.render_widget(ps_sparkline, chunks[1]);
 }
 
 fn render_seo_fundamentals(f: &mut Frame, area: Rect, m: &SeoMetrics) {

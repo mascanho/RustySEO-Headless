@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-ratatui = "0.30"
+ratatui = "0.29"
 crossterm = "0.29"
 reqwest = { version = "0.13", features = ["blocking", "json"] }
 scraper = "0.25"
@@ -27,3 +27,4 @@ rig-core = "0.28"
 rusqlite = { version = "0.38", features = ["bundled"] }
 publicsuffix = "2.2"
 notify = "6.1.1"
+tui-piechart = "0.2.8"
