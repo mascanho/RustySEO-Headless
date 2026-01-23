@@ -586,7 +586,7 @@ impl App {
     }
 
     pub fn set_sidebar_tab(&mut self, index: usize) {
-        if index < 5 {
+        if index < 6 {
             self.sidebar_tab = index;
             self.sidebar_visible = true;
         }
@@ -692,7 +692,7 @@ impl App {
 
     pub fn previous_sidebar_tab(&mut self) {
         self.sidebar_tab = if self.sidebar_tab == 0 {
-            4
+            5
         } else {
             self.sidebar_tab - 1
         };
