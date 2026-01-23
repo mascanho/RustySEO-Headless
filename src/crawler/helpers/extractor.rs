@@ -31,11 +31,11 @@ static TEXT_SELECTOR: LazyLock<Selector> = LazyLock::new(|| {
 });
 
 /// Searches for a text string in the HTML document's visible text content
-/// 
+///
 /// # Arguments
 /// * `query` - The text string to search for (case-insensitive)
 /// * `html` - The parsed HTML document to search in
-/// 
+///
 /// # Returns
 /// An `ExtractionResult` containing match information including element details
 pub fn search_text(query: &str, html: &Html) -> ExtractionResult {
@@ -47,32 +47,32 @@ pub fn search_text(query: &str, html: &Html) -> ExtractionResult {
             matches: vec![],
         };
     }
-    
+
     let query_lower = query.to_lowercase();
     let mut matches = Vec::new();
     let mut seen_texts = std::collections::HashSet::new();
-    
+
     // Search through all text-containing elements
     for element in html.select(&TEXT_SELECTOR) {
         let text_content: String = element.text().collect();
         let text_trimmed = text_content.trim();
-        
+
         // Skip empty or already seen content
         if text_trimmed.is_empty() || seen_texts.contains(text_trimmed) {
             continue;
         }
-        
+
         let text_lower = text_trimmed.to_lowercase();
-        
+
         // Check if this element contains the search text
         if text_lower.contains(&query_lower) {
             seen_texts.insert(text_trimmed.to_string());
-            
+
             let tag_name = element.value().name().to_string();
-            
+
             // Create a snippet with context around the match
             let snippet = create_snippet(text_trimmed, &query_lower, 80);
-            
+
             matches.push(ExtractionMatch {
                 element: tag_name,
                 snippet,
@@ -80,9 +80,9 @@ pub fn search_text(query: &str, html: &Html) -> ExtractionResult {
             });
         }
     }
-    
+
     let count = matches.len();
-    
+
     ExtractionResult {
         found: count > 0,
         search_text: query.to_string(),
@@ -94,25 +94,28 @@ pub fn search_text(query: &str, html: &Html) -> ExtractionResult {
 /// Creates a snippet of text around the matched query
 fn create_snippet(text: &str, query_lower: &str, max_len: usize) -> String {
     let text_lower = text.to_lowercase();
-    
+
     if let Some(pos) = text_lower.find(query_lower) {
         let start = pos.saturating_sub(30);
         let end = (pos + query_lower.len() + 30).min(text.len());
-        
+
         let mut snippet: String = text.chars().skip(start).take(end - start).collect();
-        
+
         if start > 0 {
             snippet = format!("...{}", snippet);
         }
         if end < text.len() {
             snippet = format!("{}...", snippet);
         }
-        
+
         // Truncate if still too long
         if snippet.len() > max_len {
-            snippet = format!("{}...", snippet.chars().take(max_len - 3).collect::<String>());
+            snippet = format!(
+                "{}...",
+                snippet.chars().take(max_len - 3).collect::<String>()
+            );
         }
-        
+
         snippet
     } else {
         // Fallback: just truncate the text
@@ -125,17 +128,20 @@ fn create_snippet(text: &str, query_lower: &str, max_len: usize) -> String {
 }
 
 /// Legacy function for backwards compatibility - returns a Vec<String> with match info
-/// 
+///
 /// # Arguments
 /// * `query` - The text string to search for
 /// * `html` - The parsed HTML document to search in
-/// 
+///
 /// # Returns
 /// A vector containing the matched text if found, empty vector otherwise
 pub fn text(query: &str, html: &Html) -> Vec<String> {
     let result = search_text(query, html);
     if result.found {
-        vec![format!("Found '{}' ({} occurrences)", result.search_text, result.count)]
+        vec![format!(
+            "Found '{}' ({} occurrences)",
+            result.search_text, result.count
+        )]
     } else if query.is_empty() {
         vec!["No extractor text configured".to_string()]
     } else {
@@ -144,11 +150,11 @@ pub fn text(query: &str, html: &Html) -> Vec<String> {
 }
 
 /// Full extraction with detailed matches - used by the Custom Search tab
-/// 
+///
 /// # Arguments
 /// * `query` - The text string to search for
 /// * `html` - The parsed HTML document to search in
-/// 
+///
 /// # Returns
 /// An ExtractionResult with detailed match information
 pub fn extract_with_details(query: &str, html: &Html) -> ExtractionResult {

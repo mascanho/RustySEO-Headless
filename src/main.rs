@@ -606,6 +606,31 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                     KeyCode::BackTab => app.previous_sidebar_tab(),
                                     _ => {}
                                 }
+                            } else if app.sidebar_tab == 5 {
+                                // Tree View handling
+                                match key.code {
+                                    KeyCode::Up => {
+                                        app.tree_view_previous();
+                                    }
+                                    KeyCode::Down => {
+                                        app.tree_view_next();
+                                    }
+                                    KeyCode::Enter | KeyCode::Char(' ') => {
+                                        app.tree_view_toggle_expand();
+                                    }
+                                    KeyCode::Char('E') => {
+                                        app.tree_view_expand_all();
+                                    }
+                                    KeyCode::Char('C') => {
+                                        app.tree_view_collapse_all();
+                                    }
+                                    KeyCode::Esc => {
+                                        app.sidebar_visible = false;
+                                    }
+                                    KeyCode::Tab => app.next_sidebar_tab(),
+                                    KeyCode::BackTab => app.previous_sidebar_tab(),
+                                    _ => {}
+                                }
                             } else {
                                 match key.code {
                                     KeyCode::Esc | KeyCode::Char('h') | KeyCode::Left => {

@@ -1,7 +1,7 @@
 use scraper::{Html, Selector};
 use std::sync::LazyLock;
 
-use crate::crawler::helpers::extractor::{extract_with_details, ExtractionResult};
+use crate::crawler::helpers::extractor::{ExtractionResult, extract_with_details};
 use crate::crawler::helpers::image_utils::ImageInfo;
 use crate::crawler::helpers::keywords::extract_keywords;
 use crate::crawler::helpers::word_count::get_words;

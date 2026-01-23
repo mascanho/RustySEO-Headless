@@ -1,6 +1,6 @@
 use crate::models::AppSettings;
 use reqwest::Client;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 pub async fn ask(
     question: &str,

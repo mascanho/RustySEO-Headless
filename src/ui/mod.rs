@@ -70,6 +70,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         .highlight_style(
             Style::default()
                 .fg(accent_color)
+                .bg(Color::White)
                 .add_modifier(Modifier::BOLD)
                 .add_modifier(Modifier::REVERSED),
         )

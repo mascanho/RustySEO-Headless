@@ -23,14 +23,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         app.images_full_filtered_table_data = app.images_table_data.clone();
     }
 
-    let header_titles = [
-        "ID",
-        "Image URL",
-        "Alt Text",
-        "Status",
-        "Size",
-        "Pages",
-    ];
+    let header_titles = ["ID", "Image URL", "Alt Text", "Status", "Size", "Pages"];
 
     let header = Row::new(header_titles.iter().map(|h| {
         Cell::from(format!(" {} ", h)).style(
@@ -75,12 +68,12 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         });
 
     let widths = vec![
-        Constraint::Length(6),            // ID
-        Constraint::Percentage(40),       // URL
-        Constraint::Percentage(25),       // Alt
-        Constraint::Length(8),            // Status
-        Constraint::Length(10),           // Size
-        Constraint::Length(6),            // Pages
+        Constraint::Length(6),      // ID
+        Constraint::Percentage(40), // URL
+        Constraint::Percentage(25), // Alt
+        Constraint::Length(8),      // Status
+        Constraint::Length(10),     // Size
+        Constraint::Length(6),      // Pages
     ];
 
     let total_pages = (app.images_full_filtered_table_data.len() + app.images_page_size - 1)
@@ -92,10 +85,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             Block::default()
                 .borders(Borders::ALL)
                 .title(Span::styled(
-                    format!(
-                        " Images ({}) ",
-                        app.images_full_filtered_table_data.len()
-                    ),
+                    format!(" Images ({}) ", app.images_full_filtered_table_data.len()),
                     Style::default()
                         .fg(Color::Yellow)
                         .add_modifier(Modifier::BOLD),

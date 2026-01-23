@@ -1,7 +1,7 @@
 use crate::models::App;
 use ratatui::{
     Frame,
-    layout::{Constraint, Direction, Layout, Rect, Alignment},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Paragraph, Row, Table, Wrap},
@@ -15,33 +15,33 @@ struct SeoMetrics {
     total_pages: usize,
     total_size: usize,
     total_words: usize,
-    
+
     // HTTP Status
     status_2xx: usize,
     status_3xx: usize,
     status_4xx: usize,
     status_5xx: usize,
-    
+
     // SEO Fundamentals
     pages_with_title: usize,
-    optimal_titles: usize,      // 30-60 chars
-    short_titles: usize,         // <30
-    long_titles: usize,          // >60
-    
+    optimal_titles: usize, // 30-60 chars
+    short_titles: usize,   // <30
+    long_titles: usize,    // >60
+
     pages_with_desc: usize,
     optimal_descriptions: usize, // 120-160 chars
     short_descriptions: usize,   // <120
     long_descriptions: usize,    // >160
-    
+
     pages_with_h1: usize,
     multiple_h1: usize,
     missing_h1: usize,
-    
+
     // Indexability & Mobile
     indexable: usize,
     noindex: usize,
     mobile_friendly: usize,
-    
+
     // Content Analysis
     total_h1: usize,
     total_h2: usize,
@@ -49,34 +49,34 @@ struct SeoMetrics {
     total_h4: usize,
     total_h5: usize,
     total_h6: usize,
-    
+
     // Links
     total_internal_links: usize,
     total_external_links: usize,
     pages_with_canonicals: usize,
     pages_with_alternates: usize,
-    
+
     // Images
     total_images: usize,
     images_with_alt: usize,
     images_missing_alt: usize,
-    
+
     // Resources
     total_css_files: usize,
     total_js_files: usize,
     pages_with_inline_css: usize,
     pages_with_inline_js: usize,
-    
+
     // Performance (CWV)
     desktop_score_sum: f64,
     desktop_samples: usize,
     mobile_score_sum: f64,
     mobile_samples: usize,
-    
+
     // Schema & Structured Data
     pages_with_schema: usize,
     total_schema_objects: usize,
-    
+
     // Language
     pages_with_lang: usize,
 }
@@ -85,7 +85,7 @@ struct SeoMetrics {
 
 pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block, accent_color: Color) {
     let metrics = collect_metrics(&app.page_data);
-    
+
     let block = content_block.title(Span::styled(
         " SEO OVERVIEW ",
         Style::default()
@@ -120,7 +120,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block, ac
 
 fn collect_metrics(pages: &[crate::crawler::PageData]) -> SeoMetrics {
     let mut m = SeoMetrics::default();
-    
+
     m.total_pages = pages.len();
 
     for page in pages {
@@ -128,10 +128,15 @@ fn collect_metrics(pages: &[crate::crawler::PageData]) -> SeoMetrics {
         m.total_words += page.word_count.unwrap_or(0);
 
         // HTTP Status
-        if page.status.starts_with('2') { m.status_2xx += 1; }
-        else if page.status.starts_with('3') { m.status_3xx += 1; }
-        else if page.status.starts_with('4') { m.status_4xx += 1; }
-        else if page.status.starts_with('5') { m.status_5xx += 1; }
+        if page.status.starts_with('2') {
+            m.status_2xx += 1;
+        } else if page.status.starts_with('3') {
+            m.status_3xx += 1;
+        } else if page.status.starts_with('4') {
+            m.status_4xx += 1;
+        } else if page.status.starts_with('5') {
+            m.status_5xx += 1;
+        }
 
         // Title Analysis
         if !page.title.is_empty() {
@@ -289,30 +294,45 @@ fn render_header_stats(f: &mut Frame, area: Rect, m: &SeoMetrics, accent: Color)
         ("PAGES", m.total_pages.to_string(), Color::Cyan),
         ("SIZE", format_size(m.total_size), Color::Yellow),
         ("WORDS", format_number(m.total_words), Color::Magenta),
-        ("LINKS", format_number(m.total_internal_links + m.total_external_links), accent),
+        (
+            "LINKS",
+            format_number(m.total_internal_links + m.total_external_links),
+            accent,
+        ),
     ];
 
     for (i, (label, value, color)) in cards.iter().enumerate() {
         let text = vec![
             Line::from(Span::styled(*label, Style::default().fg(Color::DarkGray))),
-            Line::from(Span::styled(value.clone(), Style::default().fg(*color).add_modifier(Modifier::BOLD))),
+            Line::from(Span::styled(
+                value.clone(),
+                Style::default().fg(*color).add_modifier(Modifier::BOLD),
+            )),
         ];
-        
+
         let p = Paragraph::new(text)
-            .block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(Color::Rgb(40, 40, 50))))
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_style(Style::default().fg(Color::Rgb(40, 40, 50))),
+            )
             .alignment(Alignment::Center);
-        
+
         f.render_widget(p, layout[i]);
     }
 }
-
 
 fn render_http_health(f: &mut Frame, area: Rect, m: &SeoMetrics) {
     let block = Block::default()
         .borders(Borders::TOP | Borders::BOTTOM)
         .border_style(Style::default().fg(Color::Rgb(50, 50, 70)))
-        .title(Span::styled(" HTTP STATUS ", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)));
-    
+        .title(Span::styled(
+            " HTTP STATUS ",
+            Style::default()
+                .fg(Color::Green)
+                .add_modifier(Modifier::BOLD),
+        ));
+
     let inner = block.inner(area);
     f.render_widget(block, area);
 
@@ -335,38 +355,84 @@ fn render_http_health(f: &mut Frame, area: Rect, m: &SeoMetrics) {
     ];
 
     for (i, (code, count, color, label)) in cards.iter().enumerate() {
-        let percentage = if m.total_pages > 0 { (count * 100) / m.total_pages } else { 0 };
-        
+        let percentage = if m.total_pages > 0 {
+            (count * 100) / m.total_pages
+        } else {
+            0
+        };
+
         let text = vec![
-            Line::from(Span::styled(*code, Style::default().fg(Color::DarkGray).add_modifier(Modifier::BOLD))),
-            Line::from(Span::styled(count.to_string(), Style::default().fg(*color).add_modifier(Modifier::BOLD))),
-            Line::from(Span::styled(format!("{}%", percentage), Style::default().fg(Color::DarkGray))),
-            Line::from(Span::styled(*label, Style::default().fg(Color::Rgb(80, 80, 90)))),
+            Line::from(Span::styled(
+                *code,
+                Style::default()
+                    .fg(Color::DarkGray)
+                    .add_modifier(Modifier::BOLD),
+            )),
+            Line::from(Span::styled(
+                count.to_string(),
+                Style::default().fg(*color).add_modifier(Modifier::BOLD),
+            )),
+            Line::from(Span::styled(
+                format!("{}%", percentage),
+                Style::default().fg(Color::DarkGray),
+            )),
+            Line::from(Span::styled(
+                *label,
+                Style::default().fg(Color::Rgb(80, 80, 90)),
+            )),
         ];
-        
+
         let p = Paragraph::new(text)
-            .block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(Color::Rgb(40, 40, 50))))
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_style(Style::default().fg(Color::Rgb(40, 40, 50))),
+            )
             .alignment(Alignment::Center);
-        
+
         f.render_widget(p, layout[i]);
     }
 }
-
 
 fn render_seo_fundamentals(f: &mut Frame, area: Rect, m: &SeoMetrics) {
     let block = Block::default()
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Rgb(50, 50, 70)))
-        .title(Span::styled(" SEO FUNDAMENTALS ", Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD)));
+        .title(Span::styled(
+            " SEO FUNDAMENTALS ",
+            Style::default()
+                .fg(Color::Magenta)
+                .add_modifier(Modifier::BOLD),
+        ));
 
     let inner = block.inner(area);
     f.render_widget(block, area);
 
     let rows = vec![
-        create_metric_row("Title Tags", m.pages_with_title, m.total_pages, Some((m.optimal_titles, "optimal"))),
-        create_metric_row("Meta Desc", m.pages_with_desc, m.total_pages, Some((m.optimal_descriptions, "optimal"))),
-        create_metric_row("H1 Tags", m.pages_with_h1, m.total_pages, Some((m.missing_h1, "missing"))),
-        create_metric_row("Indexable", m.indexable, m.total_pages, Some((m.noindex, "noindex"))),
+        create_metric_row(
+            "Title Tags",
+            m.pages_with_title,
+            m.total_pages,
+            Some((m.optimal_titles, "optimal")),
+        ),
+        create_metric_row(
+            "Meta Desc",
+            m.pages_with_desc,
+            m.total_pages,
+            Some((m.optimal_descriptions, "optimal")),
+        ),
+        create_metric_row(
+            "H1 Tags",
+            m.pages_with_h1,
+            m.total_pages,
+            Some((m.missing_h1, "missing")),
+        ),
+        create_metric_row(
+            "Indexable",
+            m.indexable,
+            m.total_pages,
+            Some((m.noindex, "noindex")),
+        ),
         create_metric_row("Mobile", m.mobile_friendly, m.total_pages, None),
         create_metric_row("Canonical", m.pages_with_canonicals, m.total_pages, None),
         create_metric_row("Lang Attr", m.pages_with_lang, m.total_pages, None),
@@ -374,7 +440,11 @@ fn render_seo_fundamentals(f: &mut Frame, area: Rect, m: &SeoMetrics) {
 
     let table = Table::new(
         rows,
-        [Constraint::Percentage(35), Constraint::Percentage(25), Constraint::Percentage(40)]
+        [
+            Constraint::Percentage(35),
+            Constraint::Percentage(25),
+            Constraint::Percentage(40),
+        ],
     )
     .column_spacing(1);
 
@@ -385,7 +455,12 @@ fn render_content_structure(f: &mut Frame, area: Rect, m: &SeoMetrics) {
     let block = Block::default()
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Rgb(50, 50, 70)))
-        .title(Span::styled(" CONTENT STRUCTURE ", Style::default().fg(Color::Blue).add_modifier(Modifier::BOLD)));
+        .title(Span::styled(
+            " CONTENT STRUCTURE ",
+            Style::default()
+                .fg(Color::Blue)
+                .add_modifier(Modifier::BOLD),
+        ));
 
     let inner = block.inner(area);
     f.render_widget(block, area);
@@ -397,17 +472,35 @@ fn render_content_structure(f: &mut Frame, area: Rect, m: &SeoMetrics) {
 
     // Left: Headings
     let heading_rows = vec![
-        Row::new(vec![Cell::from("H1"), Cell::from(m.total_h1.to_string()).style(Style::default().fg(Color::Cyan))]),
-        Row::new(vec![Cell::from("H2"), Cell::from(m.total_h2.to_string()).style(Style::default().fg(Color::Cyan))]),
-        Row::new(vec![Cell::from("H3"), Cell::from(m.total_h3.to_string()).style(Style::default().fg(Color::Cyan))]),
-        Row::new(vec![Cell::from("H4"), Cell::from(m.total_h4.to_string()).style(Style::default().fg(Color::DarkGray))]),
-        Row::new(vec![Cell::from("H5"), Cell::from(m.total_h5.to_string()).style(Style::default().fg(Color::DarkGray))]),
-        Row::new(vec![Cell::from("H6"), Cell::from(m.total_h6.to_string()).style(Style::default().fg(Color::DarkGray))]),
+        Row::new(vec![
+            Cell::from("H1"),
+            Cell::from(m.total_h1.to_string()).style(Style::default().fg(Color::Cyan)),
+        ]),
+        Row::new(vec![
+            Cell::from("H2"),
+            Cell::from(m.total_h2.to_string()).style(Style::default().fg(Color::Cyan)),
+        ]),
+        Row::new(vec![
+            Cell::from("H3"),
+            Cell::from(m.total_h3.to_string()).style(Style::default().fg(Color::Cyan)),
+        ]),
+        Row::new(vec![
+            Cell::from("H4"),
+            Cell::from(m.total_h4.to_string()).style(Style::default().fg(Color::DarkGray)),
+        ]),
+        Row::new(vec![
+            Cell::from("H5"),
+            Cell::from(m.total_h5.to_string()).style(Style::default().fg(Color::DarkGray)),
+        ]),
+        Row::new(vec![
+            Cell::from("H6"),
+            Cell::from(m.total_h6.to_string()).style(Style::default().fg(Color::DarkGray)),
+        ]),
     ];
 
     let heading_table = Table::new(
         heading_rows,
-        [Constraint::Percentage(40), Constraint::Percentage(60)]
+        [Constraint::Percentage(40), Constraint::Percentage(60)],
     )
     .block(Block::default().borders(Borders::RIGHT).title(" Headings "))
     .column_spacing(1);
@@ -416,18 +509,40 @@ fn render_content_structure(f: &mut Frame, area: Rect, m: &SeoMetrics) {
 
     // Right: Links & Images
     let link_rows = vec![
-        Row::new(vec![Cell::from("Internal"), Cell::from(format_number(m.total_internal_links)).style(Style::default().fg(Color::Green))]),
-        Row::new(vec![Cell::from("External"), Cell::from(format_number(m.total_external_links)).style(Style::default().fg(Color::Yellow))]),
-        Row::new(vec![Cell::from("Images"), Cell::from(m.total_images.to_string()).style(Style::default().fg(Color::Magenta))]),
-        Row::new(vec![Cell::from("Alt Text"), Cell::from(format!("{}/{}", m.images_with_alt, m.total_images)).style(
-            if m.images_missing_alt > 0 { Style::default().fg(Color::Yellow) } else { Style::default().fg(Color::Green) }
-        )]),
-        Row::new(vec![Cell::from("Schema"), Cell::from(format!("{} pages", m.pages_with_schema)).style(Style::default().fg(Color::Cyan))]),
+        Row::new(vec![
+            Cell::from("Internal"),
+            Cell::from(format_number(m.total_internal_links))
+                .style(Style::default().fg(Color::Green)),
+        ]),
+        Row::new(vec![
+            Cell::from("External"),
+            Cell::from(format_number(m.total_external_links))
+                .style(Style::default().fg(Color::Yellow)),
+        ]),
+        Row::new(vec![
+            Cell::from("Images"),
+            Cell::from(m.total_images.to_string()).style(Style::default().fg(Color::Magenta)),
+        ]),
+        Row::new(vec![
+            Cell::from("Alt Text"),
+            Cell::from(format!("{}/{}", m.images_with_alt, m.total_images)).style(
+                if m.images_missing_alt > 0 {
+                    Style::default().fg(Color::Yellow)
+                } else {
+                    Style::default().fg(Color::Green)
+                },
+            ),
+        ]),
+        Row::new(vec![
+            Cell::from("Schema"),
+            Cell::from(format!("{} pages", m.pages_with_schema))
+                .style(Style::default().fg(Color::Cyan)),
+        ]),
     ];
 
     let link_table = Table::new(
         link_rows,
-        [Constraint::Percentage(50), Constraint::Percentage(50)]
+        [Constraint::Percentage(50), Constraint::Percentage(50)],
     )
     .block(Block::default().title(" Links & Media "))
     .column_spacing(1);
@@ -445,38 +560,73 @@ fn render_technical_details(f: &mut Frame, area: Rect, m: &SeoMetrics) {
     let res_block = Block::default()
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Rgb(50, 50, 70)))
-        .title(Span::styled(" RESOURCES ", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)));
+        .title(Span::styled(
+            " RESOURCES ",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ));
 
     let res_text = vec![
         Line::from(vec![
             Span::raw("CSS Files:    "),
-            Span::styled(format!("{}", m.total_css_files), Style::default().fg(Color::Cyan)),
+            Span::styled(
+                format!("{}", m.total_css_files),
+                Style::default().fg(Color::Cyan),
+            ),
         ]),
         Line::from(vec![
             Span::raw("Inline CSS:   "),
-            Span::styled(format!("{} pages", m.pages_with_inline_css), Style::default().fg(Color::DarkGray)),
+            Span::styled(
+                format!("{} pages", m.pages_with_inline_css),
+                Style::default().fg(Color::DarkGray),
+            ),
         ]),
         Line::from(""),
         Line::from(vec![
             Span::raw("JS Files:     "),
-            Span::styled(format!("{}", m.total_js_files), Style::default().fg(Color::Magenta)),
+            Span::styled(
+                format!("{}", m.total_js_files),
+                Style::default().fg(Color::Magenta),
+            ),
         ]),
         Line::from(vec![
             Span::raw("Inline JS:    "),
-            Span::styled(format!("{} pages", m.pages_with_inline_js), Style::default().fg(Color::DarkGray)),
+            Span::styled(
+                format!("{} pages", m.pages_with_inline_js),
+                Style::default().fg(Color::DarkGray),
+            ),
         ]),
     ];
 
-    f.render_widget(Paragraph::new(res_text).block(res_block).wrap(Wrap { trim: true }), chunks[0]);
+    f.render_widget(
+        Paragraph::new(res_text)
+            .block(res_block)
+            .wrap(Wrap { trim: true }),
+        chunks[0],
+    );
 
     // Right: Performance
     let perf_block = Block::default()
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Rgb(50, 50, 70)))
-        .title(Span::styled(" PERFORMANCE ", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)));
+        .title(Span::styled(
+            " PERFORMANCE ",
+            Style::default()
+                .fg(Color::Green)
+                .add_modifier(Modifier::BOLD),
+        ));
 
-    let avg_desktop = if m.desktop_samples > 0 { m.desktop_score_sum / m.desktop_samples as f64 } else { 0.0 };
-    let avg_mobile = if m.mobile_samples > 0 { m.mobile_score_sum / m.mobile_samples as f64 } else { 0.0 };
+    let avg_desktop = if m.desktop_samples > 0 {
+        m.desktop_score_sum / m.desktop_samples as f64
+    } else {
+        0.0
+    };
+    let avg_mobile = if m.mobile_samples > 0 {
+        m.mobile_score_sum / m.mobile_samples as f64
+    } else {
+        0.0
+    };
 
     let perf_text = vec![
         Line::from(vec![
@@ -485,7 +635,10 @@ fn render_technical_details(f: &mut Frame, area: Rect, m: &SeoMetrics) {
         ]),
         Line::from(vec![
             Span::raw("Samples:      "),
-            Span::styled(format!("{}", m.desktop_samples), Style::default().fg(Color::DarkGray)),
+            Span::styled(
+                format!("{}", m.desktop_samples),
+                Style::default().fg(Color::DarkGray),
+            ),
         ]),
         Line::from(""),
         Line::from(vec![
@@ -494,19 +647,38 @@ fn render_technical_details(f: &mut Frame, area: Rect, m: &SeoMetrics) {
         ]),
         Line::from(vec![
             Span::raw("Samples:      "),
-            Span::styled(format!("{}", m.mobile_samples), Style::default().fg(Color::DarkGray)),
+            Span::styled(
+                format!("{}", m.mobile_samples),
+                Style::default().fg(Color::DarkGray),
+            ),
         ]),
     ];
 
-    f.render_widget(Paragraph::new(perf_text).block(perf_block).wrap(Wrap { trim: true }), chunks[1]);
+    f.render_widget(
+        Paragraph::new(perf_text)
+            .block(perf_block)
+            .wrap(Wrap { trim: true }),
+        chunks[1],
+    );
 }
 
 // --- Helper Functions ---
 
-fn create_metric_row<'a>(label: &'a str, value: usize, total: usize, extra: Option<(usize, &'a str)>) -> Row<'a> {
+fn create_metric_row<'a>(
+    label: &'a str,
+    value: usize,
+    total: usize,
+    extra: Option<(usize, &'a str)>,
+) -> Row<'a> {
     let percentage = if total > 0 { (value * 100) / total } else { 0 };
-    let color = if percentage >= 90 { Color::Green } else if percentage >= 70 { Color::Yellow } else { Color::Red };
-    
+    let color = if percentage >= 90 {
+        Color::Green
+    } else if percentage >= 70 {
+        Color::Yellow
+    } else {
+        Color::Red
+    };
+
     let extra_text = if let Some((count, desc)) = extra {
         format!(" ({} {})", count, desc)
     } else {
@@ -516,7 +688,8 @@ fn create_metric_row<'a>(label: &'a str, value: usize, total: usize, extra: Opti
     Row::new(vec![
         Cell::from(label),
         Cell::from(format!("{}/{}", value, total)).style(Style::default().fg(color)),
-        Cell::from(format!("{}%{}", percentage, extra_text)).style(Style::default().fg(Color::DarkGray)),
+        Cell::from(format!("{}%{}", percentage, extra_text))
+            .style(Style::default().fg(Color::DarkGray)),
     ])
 }
 
@@ -557,6 +730,9 @@ fn score_span(score: f64) -> Span<'static> {
     } else {
         (Color::DarkGray, "N/A".to_string())
     };
-    
-    Span::styled(text, Style::default().fg(color).add_modifier(Modifier::BOLD))
+
+    Span::styled(
+        text,
+        Style::default().fg(color).add_modifier(Modifier::BOLD),
+    )
 }

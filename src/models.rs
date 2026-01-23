@@ -341,6 +341,10 @@ pub struct App {
     pub images_horizontal_scroll: usize,
     pub images_search_query: String,
     pub show_images_search: bool,
+    // Tree View State
+    pub tree_view_state: ratatui::widgets::ListState,
+    pub tree_view_selected_index: usize,
+    pub tree_view_expanded_nodes: std::collections::HashSet<String>,
 }
 
 // ENGINE MODELES AND TYPES

@@ -9,6 +9,10 @@ use ratatui::{
 use crate::models::App;
 use crate::ui::sidebar::{actions, bookmarks, filters, settings, summary, tree_view};
 
+/// Standard colors for consistency
+const ACCENT_COLOR: Color = Color::Rgb(80, 140, 255);
+const BORDER_COLOR: Color = Color::Rgb(40, 45, 60);
+
 pub fn render(f: &mut Frame, app: &mut App) {
     if !app.sidebar_visible {
         return;
@@ -57,7 +61,8 @@ pub fn render(f: &mut Frame, app: &mut App) {
         .style(Style::default().fg(Color::DarkGray))
         .highlight_style(
             Style::default()
-                .fg(accent_color)
+                .fg(ACCENT_COLOR)
+                .bg(Color::White)
                 .add_modifier(Modifier::BOLD)
                 .add_modifier(Modifier::REVERSED),
         )

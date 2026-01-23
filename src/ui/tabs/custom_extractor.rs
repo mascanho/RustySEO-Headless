@@ -23,12 +23,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         app.extractor_full_filtered_table_data = app.extractor_table_data.clone();
     }
 
-    let header_titles = [
-        "ID",
-        "URL",
-        "Element",
-        "Snippet",
-    ];
+    let header_titles = ["ID", "URL", "Element", "Snippet"];
 
     let header = Row::new(header_titles.iter().map(|h| {
         Cell::from(format!(" {} ", h)).style(
@@ -71,10 +66,10 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         });
 
     let widths = vec![
-        Constraint::Length(6),            // ID
-        Constraint::Percentage(30),       // URL
-        Constraint::Length(10),           // Element
-        Constraint::Percentage(54),       // Snippet
+        Constraint::Length(6),      // ID
+        Constraint::Percentage(30), // URL
+        Constraint::Length(10),     // Element
+        Constraint::Percentage(54), // Snippet
     ];
 
     let total_pages = (app.extractor_full_filtered_table_data.len() + app.extractor_page_size - 1)
