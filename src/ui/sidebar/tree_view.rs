@@ -7,7 +7,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, List, ListItem},
 };
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct TreeNode {
@@ -43,7 +43,7 @@ impl TreeNode {
         self.children.push(child);
     }
 
-    pub fn render_tree_line(&self, is_selected: bool) -> Line<'_> {
+    pub fn render_tree_line(&self, is_selected: bool) -> Line {
         let mut spans = Vec::new();
 
         // Add indentation based on level
@@ -91,9 +91,9 @@ impl TreeNode {
         Line::from(spans)
     }
 
-    pub fn flatten_to_list<'a>(
-        &'a self,
-        items: &mut Vec<ListItem<'a>>,
+    pub fn flatten_to_list(
+        &self,
+        items: &mut Vec<ListItem>,
         selected_index: usize,
         current_index: &mut usize,
     ) {
@@ -125,7 +125,7 @@ pub fn build_tree_structure(page_data: &[PageData]) -> TreeNode {
     }
 
     // Group pages by domain/path
-    let mut domain_map: BTreeMap<String, Vec<&PageData>> = BTreeMap::new();
+    let mut domain_map: HashMap<String, Vec<&PageData>> = HashMap::new();
 
     for page in page_data {
         if let Ok(url) = url::Url::parse(&page.url) {
@@ -150,7 +150,7 @@ pub fn build_tree_structure(page_data: &[PageData]) -> TreeNode {
         );
 
         // Group by path segments
-        let mut path_map: BTreeMap<String, Vec<&PageData>> = BTreeMap::new();
+        let mut path_map: HashMap<String, Vec<&PageData>> = HashMap::new();
 
         for page in pages {
             if let Ok(url) = url::Url::parse(&page.url) {
@@ -167,13 +167,13 @@ pub fn build_tree_structure(page_data: &[PageData]) -> TreeNode {
         }
 
         // Create path nodes
-        for (path, mut path_pages) in path_map {
+        for (path, path_pages) in path_map {
             let mut path_node = TreeNode::new(
                 format!("path-{}-{}", domain, path),
                 format!(
                     "📁 {}",
                     if path == "/" {
-                        "/"
+                        "root"
                     } else {
                         path.trim_start_matches('/')
                     }
@@ -182,9 +182,6 @@ pub fn build_tree_structure(page_data: &[PageData]) -> TreeNode {
                 None,
                 2,
             );
-
-            // Sort pages within the path by URL for stability
-            path_pages.sort_by_key(|p| &p.url);
 
             // Add individual pages
             for page in path_pages {
@@ -223,7 +220,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block) {
     // Update tree state if needed
     if app.tree_view_expanded_nodes.is_empty() && !app.page_data.is_empty() {
         // Auto-expand first level
-        app.tree_view_expanded_nodes.insert("/".to_string());
+        app.tree_view_expanded_nodes.insert("root".to_string());
     }
 
     // Apply expansion state to tree
@@ -243,8 +240,8 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block) {
         )))
         .highlight_style(
             Style::default()
-                .fg(Color::White)
-                .bg(Color::Blue)
+                .fg(Color::Black)
+                .bg(Color::White)
                 .add_modifier(Modifier::BOLD),
         );
 
