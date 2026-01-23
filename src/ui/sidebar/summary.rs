@@ -4,7 +4,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect, Alignment},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Cell, Paragraph, Row, Table, Gauge, Wrap},
+    widgets::{Block, Borders, Cell, Paragraph, Row, Table, Wrap},
 };
 
 // --- Data Structures ---
@@ -306,47 +306,52 @@ fn render_header_stats(f: &mut Frame, area: Rect, m: &SeoMetrics, accent: Color)
     }
 }
 
+
 fn render_http_health(f: &mut Frame, area: Rect, m: &SeoMetrics) {
     let block = Block::default()
-        .borders(Borders::ALL)
+        .borders(Borders::TOP | Borders::BOTTOM)
         .border_style(Style::default().fg(Color::Rgb(50, 50, 70)))
         .title(Span::styled(" HTTP STATUS ", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)));
     
     let inner = block.inner(area);
     f.render_widget(block, area);
 
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
+    let layout = Layout::default()
+        .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Length(1),
-            Constraint::Length(1),
-            Constraint::Length(1),
-            Constraint::Length(1),
+            Constraint::Percentage(25),
+            Constraint::Percentage(25),
+            Constraint::Percentage(25),
+            Constraint::Percentage(25),
         ])
         .margin(1)
         .split(inner);
 
-    let max_val = m.total_pages.max(1) as f64;
-    let bars = [
-        ("2xx Success", m.status_2xx, Color::Green),
-        ("3xx Redirect", m.status_3xx, Color::Cyan),
-        ("4xx Client", m.status_4xx, Color::Yellow),
-        ("5xx Server", m.status_5xx, Color::Red),
+    let cards = [
+        ("2xx", m.status_2xx, Color::Green, "Success"),
+        ("3xx", m.status_3xx, Color::Cyan, "Redirect"),
+        ("4xx", m.status_4xx, Color::Yellow, "Client"),
+        ("5xx", m.status_5xx, Color::Red, "Server"),
     ];
 
-    for (i, (label, val, color)) in bars.iter().enumerate() {
-        let ratio = (*val as f64 / max_val).min(1.0);
-        let gauge = Gauge::default()
-            .gauge_style(Style::default().fg(*color).bg(Color::Rgb(25, 25, 35)))
-            .ratio(ratio)
-            .label(Span::styled(
-                format!("{:<12} {:>4} ({:>3}%)", label, val, (ratio * 100.0) as usize),
-                Style::default().fg(Color::White)
-            ));
+    for (i, (code, count, color, label)) in cards.iter().enumerate() {
+        let percentage = if m.total_pages > 0 { (count * 100) / m.total_pages } else { 0 };
         
-        f.render_widget(gauge, chunks[i]);
+        let text = vec![
+            Line::from(Span::styled(*code, Style::default().fg(Color::DarkGray).add_modifier(Modifier::BOLD))),
+            Line::from(Span::styled(count.to_string(), Style::default().fg(*color).add_modifier(Modifier::BOLD))),
+            Line::from(Span::styled(format!("{}%", percentage), Style::default().fg(Color::DarkGray))),
+            Line::from(Span::styled(*label, Style::default().fg(Color::Rgb(80, 80, 90)))),
+        ];
+        
+        let p = Paragraph::new(text)
+            .block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(Color::Rgb(40, 40, 50))))
+            .alignment(Alignment::Center);
+        
+        f.render_widget(p, layout[i]);
     }
 }
+
 
 fn render_seo_fundamentals(f: &mut Frame, area: Rect, m: &SeoMetrics) {
     let block = Block::default()
