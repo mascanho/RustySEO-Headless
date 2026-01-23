@@ -1,6 +1,6 @@
 use directories::ProjectDirs;
-use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
+use fuzzy_matcher::skim::SkimMatcherV2;
 use serde_json;
 use std::collections::HashMap;
 use std::sync::mpsc;
@@ -344,7 +344,7 @@ impl App {
             if let Some(extraction) = &data.extraction {
                 if extraction.found {
                     for match_item in &extraction.matches {
-                         let entry = crate::models::ExtractionTableEntry {
+                        let entry = crate::models::ExtractionTableEntry {
                             id: self.extractor_table_data.len() + 1,
                             url: data.url.clone(),
                             element: match_item.element.clone(),
@@ -358,11 +358,15 @@ impl App {
             // Collect Images for Images table
             for image in &data.images {
                 let normalized_img_url = image.src.clone();
-                
-                if let Some(existing) = self.images_table_data.iter_mut().find(|i| i.url == normalized_img_url) {
+
+                if let Some(existing) = self
+                    .images_table_data
+                    .iter_mut()
+                    .find(|i| i.url == normalized_img_url)
+                {
                     existing.page_count += 1;
                 } else {
-                     self.images_table_data.push(crate::models::ImageTableEntry {
+                    self.images_table_data.push(crate::models::ImageTableEntry {
                         id: self.images_table_data.len() + 1,
                         url: normalized_img_url,
                         alt: image.alt.clone(),
@@ -669,7 +673,7 @@ impl App {
     }
 
     pub fn next_sidebar_tab(&mut self) {
-        self.sidebar_tab = (self.sidebar_tab + 1) % 5;
+        self.sidebar_tab = (self.sidebar_tab + 1) % 6;
     }
 
     pub fn previous_sidebar_tab(&mut self) {
@@ -1506,30 +1510,31 @@ impl App {
 
     pub fn apply_extractor_filter(&mut self) {
         if self.extractor_search_query.is_empty() {
-             // Only update if lengths differ to avoid redundant massive clones
-             if self.extractor_full_filtered_table_data.len() != self.extractor_table_data.len() {
+            // Only update if lengths differ to avoid redundant massive clones
+            if self.extractor_full_filtered_table_data.len() != self.extractor_table_data.len() {
                 self.extractor_full_filtered_table_data = self.extractor_table_data.clone();
-             }
+            }
         } else {
             let matcher = SkimMatcherV2::default();
             let mut scored_data = Vec::new();
-            
+
             for entry in &self.extractor_table_data {
                 let search_blob = format!("{} {} {}", entry.url, entry.element, entry.snippet);
-                 if let Some(score) = matcher.fuzzy_match(&search_blob, &self.extractor_search_query) {
+                if let Some(score) = matcher.fuzzy_match(&search_blob, &self.extractor_search_query)
+                {
                     scored_data.push((score, entry.clone()));
                 }
             }
-            
+
             scored_data.sort_by(|a, b| b.0.cmp(&a.0));
             self.extractor_full_filtered_table_data =
                 scored_data.into_iter().map(|(_, row)| row).collect();
         }
 
-        let total_pages = (self.extractor_full_filtered_table_data.len() + self.extractor_page_size
-            - 1)
-            / self.extractor_page_size;
-        
+        let total_pages =
+            (self.extractor_full_filtered_table_data.len() + self.extractor_page_size - 1)
+                / self.extractor_page_size;
+
         // Handle pagination reset if search reduced pages
         if self.extractor_current_page >= total_pages && total_pages > 0 {
             self.extractor_current_page = total_pages.saturating_sub(1);
@@ -1542,10 +1547,11 @@ impl App {
 
     pub fn apply_extractor_pagination(&mut self) {
         let start = self.extractor_current_page * self.extractor_page_size;
-        let end = (start + self.extractor_page_size).min(self.extractor_full_filtered_table_data.len());
-        
+        let end =
+            (start + self.extractor_page_size).min(self.extractor_full_filtered_table_data.len());
+
         if start < self.extractor_full_filtered_table_data.len() {
-            self.extractor_filtered_table_data = 
+            self.extractor_filtered_table_data =
                 self.extractor_full_filtered_table_data[start..end].to_vec();
         } else {
             self.extractor_filtered_table_data = Vec::new();
@@ -1554,9 +1560,10 @@ impl App {
         if let Some(selected) = self.extractor_table_state.selected() {
             if selected >= self.extractor_filtered_table_data.len() {
                 if self.extractor_filtered_table_data.is_empty() {
-                     self.extractor_table_state.select(None);
+                    self.extractor_table_state.select(None);
                 } else {
-                     self.extractor_table_state.select(Some(self.extractor_filtered_table_data.len() - 1));
+                    self.extractor_table_state
+                        .select(Some(self.extractor_filtered_table_data.len() - 1));
                 }
             }
         }
@@ -1800,8 +1807,9 @@ impl App {
     }
 
     pub fn next_extractor_page(&mut self) {
-        let total_pages = (self.extractor_full_filtered_table_data.len() + self.extractor_page_size - 1)
-            / self.extractor_page_size;
+        let total_pages =
+            (self.extractor_full_filtered_table_data.len() + self.extractor_page_size - 1)
+                / self.extractor_page_size;
         if self.extractor_current_page + 1 < total_pages {
             self.extractor_current_page += 1;
             self.apply_extractor_pagination();
@@ -1823,16 +1831,16 @@ impl App {
         let i = match self.extractor_table_state.selected() {
             Some(i) => {
                 if i >= len - 1 {
-                     let total_pages = (self.extractor_full_filtered_table_data.len()
+                    let total_pages = (self.extractor_full_filtered_table_data.len()
                         + self.extractor_page_size
                         - 1)
                         / self.extractor_page_size;
                     if self.extractor_current_page + 1 < total_pages {
-                         self.extractor_current_page += 1;
-                         self.apply_extractor_pagination();
-                         0
+                        self.extractor_current_page += 1;
+                        self.apply_extractor_pagination();
+                        0
                     } else {
-                         len - 1
+                        len - 1
                     }
                 } else {
                     i + 1
@@ -1869,29 +1877,28 @@ impl App {
 
     pub fn apply_images_filter(&mut self) {
         if self.images_search_query.is_empty() {
-             if self.images_full_filtered_table_data.len() != self.images_table_data.len() {
+            if self.images_full_filtered_table_data.len() != self.images_table_data.len() {
                 self.images_full_filtered_table_data = self.images_table_data.clone();
-             }
+            }
         } else {
             let matcher = SkimMatcherV2::default();
             let mut scored_data = Vec::new();
-            
+
             for entry in &self.images_table_data {
                 let search_blob = format!("{} {}", entry.url, entry.alt);
-                 if let Some(score) = matcher.fuzzy_match(&search_blob, &self.images_search_query) {
+                if let Some(score) = matcher.fuzzy_match(&search_blob, &self.images_search_query) {
                     scored_data.push((score, entry.clone()));
                 }
             }
-            
+
             scored_data.sort_by(|a, b| b.0.cmp(&a.0));
             self.images_full_filtered_table_data =
                 scored_data.into_iter().map(|(_, row)| row).collect();
         }
 
-        let total_pages = (self.images_full_filtered_table_data.len() + self.images_page_size
-            - 1)
+        let total_pages = (self.images_full_filtered_table_data.len() + self.images_page_size - 1)
             / self.images_page_size;
-        
+
         if self.images_current_page >= total_pages && total_pages > 0 {
             self.images_current_page = total_pages.saturating_sub(1);
         } else if total_pages == 0 {
@@ -1904,20 +1911,21 @@ impl App {
     pub fn apply_images_pagination(&mut self) {
         let start = self.images_current_page * self.images_page_size;
         let end = (start + self.images_page_size).min(self.images_full_filtered_table_data.len());
-        
+
         if start < self.images_full_filtered_table_data.len() {
-            self.images_filtered_table_data = 
+            self.images_filtered_table_data =
                 self.images_full_filtered_table_data[start..end].to_vec();
         } else {
             self.images_filtered_table_data = Vec::new();
         }
-        
-         if let Some(selected) = self.images_table_state.selected() {
+
+        if let Some(selected) = self.images_table_state.selected() {
             if selected >= self.images_filtered_table_data.len() {
                 if self.images_filtered_table_data.is_empty() {
-                     self.images_table_state.select(None);
+                    self.images_table_state.select(None);
                 } else {
-                     self.images_table_state.select(Some(self.images_filtered_table_data.len() - 1));
+                    self.images_table_state
+                        .select(Some(self.images_filtered_table_data.len() - 1));
                 }
             }
         }
@@ -1938,7 +1946,7 @@ impl App {
             self.apply_images_pagination();
         }
     }
-    
+
     pub fn next_images_row(&mut self) {
         let len = self.images_filtered_table_data.len();
         if len == 0 {
@@ -1947,16 +1955,15 @@ impl App {
         let i = match self.images_table_state.selected() {
             Some(i) => {
                 if i >= len - 1 {
-                     let total_pages = (self.images_full_filtered_table_data.len()
-                        + self.images_page_size
-                        - 1)
-                        / self.images_page_size;
+                    let total_pages =
+                        (self.images_full_filtered_table_data.len() + self.images_page_size - 1)
+                            / self.images_page_size;
                     if self.images_current_page + 1 < total_pages {
-                         self.images_current_page += 1;
-                         self.apply_images_pagination();
-                         0
+                        self.images_current_page += 1;
+                        self.apply_images_pagination();
+                        0
                     } else {
-                         len - 1
+                        len - 1
                     }
                 } else {
                     i + 1
@@ -1990,5 +1997,4 @@ impl App {
         };
         self.images_table_state.select(Some(i));
     }
-
 }

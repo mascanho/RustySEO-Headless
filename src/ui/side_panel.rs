@@ -7,7 +7,7 @@ use ratatui::{
 };
 
 use crate::models::App;
-use crate::ui::sidebar::{actions, bookmarks, filters, settings, summary};
+use crate::ui::sidebar::{actions, bookmarks, filters, settings, summary, tree_view};
 
 pub fn render(f: &mut Frame, app: &mut App) {
     if !app.sidebar_visible {
@@ -39,7 +39,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     app.sidebar_tab_rect = Some(sidebar_tab_area);
 
-    let sidebar_titles = vec!["Summary", "Settings", "Filter", "Act", "Bookmarks"];
+    let sidebar_titles = vec!["Overview", "Settings", "Filter", "Act", "Bookmarks", "Tree"];
     let sidebar_tabs = Tabs::new(sidebar_titles)
         .block(
             Block::default()
@@ -91,6 +91,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
             accent_color,
             border_color,
         ),
+        5 => tree_view::render(f, app, sidebar_content_area, content_block),
         _ => {}
     }
 }

@@ -27,13 +27,10 @@ use crate::{
     ui::ui,
 };
 
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     // Logging initialization moved to after TUI setup to capture logs in app
     let log_rx = logging::init();
-
-
 
     // SPAWN SOME IO TASKS TO NOT SLOW DOWN THE UI
     tokio::task::spawn(async move {
@@ -70,12 +67,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
         app.settings = Some(settings);
         app.log_receiver = Some(log_rx);
         app.bookmarks = db::load_bookmarks();
-        
+
         // Initialize the settings file watcher for real-time settings updates
         let (settings_tx, settings_rx) = std::sync::mpsc::channel();
         let _settings_watcher = settings::watcher::init_settings_watcher(settings_tx);
         app.settings_receiver = Some(settings_rx);
-        
+
         let res = run_app(&mut terminal, &mut app).await;
 
         // restore terminal
@@ -94,10 +91,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 }
 
-async fn run_app<B: Backend>(
-    terminal: &mut Terminal<B>,
-    app: &mut App,
-) -> io::Result<()> {
+async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<()> {
     let tick_rate = std::time::Duration::from_millis(100);
 
     loop {
@@ -189,7 +183,7 @@ async fn run_app<B: Backend>(
                             _ => {}
                         }
                     } else if app.show_extractor_search {
-                         match key.code {
+                        match key.code {
                             KeyCode::Enter | KeyCode::Esc => {
                                 app.show_extractor_search = false;
                                 app.apply_extractor_filter();
@@ -205,7 +199,7 @@ async fn run_app<B: Backend>(
                             _ => {}
                         }
                     } else if app.show_images_search {
-                         match key.code {
+                        match key.code {
                             KeyCode::Enter | KeyCode::Esc => {
                                 app.show_images_search = false;
                                 app.apply_images_filter();
@@ -868,7 +862,7 @@ async fn run_app<B: Backend>(
                             },
 
                             // Quick jumps
-                            KeyCode::Char('g') => app.set_sidebar_tab(0),
+                            KeyCode::Char('o') => app.set_sidebar_tab(0),
                             KeyCode::Char('s') => app.set_sidebar_tab(1),
                             KeyCode::Char('e') | KeyCode::Char('E') => {
                                 if app.sidebar_visible && app.sidebar_tab == 1 {
