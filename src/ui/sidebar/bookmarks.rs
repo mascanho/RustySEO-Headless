@@ -1,10 +1,10 @@
 use crate::models::App;
 use ratatui::{
-    Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph, Tabs},
+    Frame,
 };
 
 pub fn render(
@@ -85,23 +85,13 @@ fn render_bookmarks_list(f: &mut Frame, app: &mut App, area: Rect, accent_color:
         .iter()
         .enumerate()
         .map(|(i, url)| {
-            let is_selected = i == app.bookmark_index;
-            let style = if is_selected {
-                Style::default()
-                    .fg(Color::Black)
-                    .bg(accent_color)
-                    .add_modifier(Modifier::BOLD)
-            } else {
-                Style::default().fg(Color::Cyan)
-            };
-
             ListItem::new(Line::from(vec![
                 Span::styled(
                     format!("{:2}. ", i + 1),
                     Style::default().fg(Color::DarkGray),
                 ),
                 Span::styled("📘 ", Style::default().fg(Color::Yellow)),
-                Span::styled(url, style),
+                Span::styled(url, Style::default().fg(Color::Cyan)),
             ]))
         })
         .collect();
@@ -112,9 +102,17 @@ fn render_bookmarks_list(f: &mut Frame, app: &mut App, area: Rect, accent_color:
                 // .borders(Borders::ALL)
                 .border_style(Style::default().fg(accent_color)),
         )
-        .style(Style::default().bg(Color::Rgb(20, 20, 30)));
+        .style(Style::default().bg(Color::Rgb(20, 20, 30)))
+        .highlight_style(
+            Style::default()
+                .fg(Color::Black)
+                .bg(accent_color)
+                .add_modifier(Modifier::BOLD),
+        );
 
-    f.render_widget(list, area);
+    let mut bookmarks_state = app.bookmarks_state.clone();
+    f.render_stateful_widget(list, area, &mut bookmarks_state);
+    app.bookmarks_state = bookmarks_state;
 }
 
 fn render_recent_crawls_list(f: &mut Frame, app: &mut App, area: Rect, accent_color: Color) {

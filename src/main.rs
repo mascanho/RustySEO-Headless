@@ -70,6 +70,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         app.settings = Some(settings);
         app.log_receiver = Some(log_rx);
         app.bookmarks = db::load_bookmarks();
+        app.sync_bookmarks_state();
 
         // Initialize the settings file watcher for real-time settings updates
         let (settings_tx, settings_rx) = std::sync::mpsc::channel();
@@ -571,6 +572,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                             if !app.bookmark_input.is_empty() {
                                                 crate::db::add_bookmark(&app.bookmark_input);
                                                 app.bookmarks = crate::db::load_bookmarks();
+                                                app.sync_bookmarks_state();
                                                 app.bookmark_input.clear();
                                                 app.bookmark_cursor = 0;
                                             } else if let Some(url) =

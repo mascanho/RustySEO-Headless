@@ -220,6 +220,7 @@ pub struct App {
     pub bookmark_input: String,
     pub bookmark_cursor: usize,
     pub bookmark_subview: usize, // 0=bookmarks, 1=last_crawled
+    pub bookmarks_state: ratatui::widgets::ListState,
     pub last_crawled_index: usize,
     pub table_data: Vec<Vec<String>>,
     pub page_data: Vec<crate::crawler::PageData>,

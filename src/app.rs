@@ -50,6 +50,11 @@ impl Default for App {
             bookmark_input: String::new(),
             bookmark_cursor: 0,
             bookmark_subview: 0, // 0=bookmarks, 1=last_crawled
+            bookmarks_state: {
+                let mut state = ratatui::widgets::ListState::default();
+                state.select(Some(0));
+                state
+            },
             last_crawled_index: 0,
             table_data,
             page_data,
@@ -733,6 +738,7 @@ impl App {
     pub fn next_bookmark(&mut self) {
         if !self.bookmarks.is_empty() {
             self.bookmark_index = (self.bookmark_index + 1) % self.bookmarks.len();
+            self.bookmarks_state.select(Some(self.bookmark_index));
         }
     }
 
@@ -743,6 +749,7 @@ impl App {
             } else {
                 self.bookmark_index - 1
             };
+            self.bookmarks_state.select(Some(self.bookmark_index));
         }
     }
 
@@ -751,11 +758,22 @@ impl App {
             let url = self.bookmarks[self.bookmark_index].clone();
             crate::db::remove_bookmark(&url);
             self.bookmarks = crate::db::load_bookmarks();
-            if self.bookmark_index >= self.bookmarks.len() && !self.bookmarks.is_empty() {
+            // Update ListState to match the bookmark_index
+            self.sync_bookmarks_state();
+        }
+    }
+
+    /// Sync bookmark_index with bookmarks_state
+    pub fn sync_bookmarks_state(&mut self) {
+        if self.bookmarks.is_empty() {
+            self.bookmarks_state.select(None);
+            self.bookmark_index = 0;
+        } else {
+            // Ensure bookmark_index is within bounds
+            if self.bookmark_index >= self.bookmarks.len() {
                 self.bookmark_index = self.bookmarks.len() - 1;
-            } else if self.bookmarks.is_empty() {
-                self.bookmark_index = 0;
             }
+            self.bookmarks_state.select(Some(self.bookmark_index));
         }
     }
 
