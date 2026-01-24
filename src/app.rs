@@ -183,9 +183,22 @@ impl Default for App {
                 vec!["Missing Alt".to_string(), "25".to_string(), "31%".to_string()],
                 vec!["Slow Load".to_string(), "6".to_string(), "7%".to_string()],
             ],
-            issues_table_state: ratatui::widgets::TableState::default(),
+            issues_table_state: {
+                let mut state = ratatui::widgets::TableState::default();
+                state.select(Some(0));
+                state
+            },
             issues_current_page: 0,
             issues_page_size: 100,
+            // Issues URLs Modal State
+            show_issue_urls_modal: false,
+            issue_urls_list: vec![],
+            issue_urls_state: {
+                let mut state = ratatui::widgets::ListState::default();
+                state.select(Some(0));
+                state
+            },
+            current_issue_title: String::new(),
         }
     }
 }
@@ -963,11 +976,133 @@ impl App {
     pub fn handle_issues_enter(&mut self) {
         if let Some(selected) = self.issues_table_state.selected() {
             if selected < self.issues_table_data.len() {
-                let issue = &self.issues_table_data[selected][0];
-                self.log(format!("Action triggered for issue: {}", issue));
-                // Add specific action handling here based on the issue type
+                let issue_title = &self.issues_table_data[selected][0];
+                self.current_issue_title = issue_title.clone();
+                
+                // Generate mock URLs for the selected issue
+                self.issue_urls_list = self.generate_mock_urls_for_issue(issue_title);
+                
+                // Reset the list state to select the first item
+                self.issue_urls_state.select(Some(0));
+                
+                // Show the modal
+                self.show_issue_urls_modal = true;
+                
+                self.log(format!("Showing URLs for issue: {}", issue_title));
             }
         }
+    }
+    
+    pub fn generate_mock_urls_for_issue(&self, issue_type: &str) -> Vec<String> {
+        match issue_type {
+            "404 Errors" => vec![
+                "https://example.com/nonexistent-page".to_string(),
+                "https://example.com/broken-link".to_string(),
+                "https://example.com/old-url".to_string(),
+                "https://example.com/moved-content".to_string(),
+                "https://example.com/deleted-resource".to_string(),
+                "https://example.com/typo-url".to_string(),
+                "https://example.com/outdated-path".to_string(),
+                "https://example.com/missing-page".to_string(),
+                "https://example.com/removed-content".to_string(),
+                "https://example.com/error-404".to_string(),
+                "https://example.com/not-found".to_string(),
+                "https://example.com/invalid-url".to_string(),
+            ],
+            "Broken Links" => vec![
+                "https://example.com/link-to-broken-site".to_string(),
+                "https://example.com/external-dead-link".to_string(),
+                "https://example.com/invalid-external-url".to_string(),
+                "https://example.com/broken-partner-link".to_string(),
+                "https://example.com/dead-reference".to_string(),
+                "https://example.com/malformed-url".to_string(),
+                "https://example.com/timeout-link".to_string(),
+                "https://example.com/server-error-link".to_string(),
+            ],
+            "Missing Alt" => vec![
+                "https://example.com/page-with-image-1".to_string(),
+                "https://example.com/page-with-image-2".to_string(),
+                "https://example.com/gallery-page".to_string(),
+                "https://example.com/product-page".to_string(),
+                "https://example.com/blog-post-with-images".to_string(),
+                "https://example.com/landing-page".to_string(),
+                "https://example.com/about-us-page".to_string(),
+                "https://example.com/contact-page".to_string(),
+                "https://example.com/services-page".to_string(),
+                "https://example.com/portfolio-page".to_string(),
+                "https://example.com/news-article".to_string(),
+                "https://example.com/testimonial-page".to_string(),
+                "https://example.com/team-page".to_string(),
+                "https://example.com/case-study".to_string(),
+                "https://example.com/feature-page".to_string(),
+                "https://example.com/pricing-page".to_string(),
+                "https://example.com/faq-page".to_string(),
+                "https://example.com/documentation-page".to_string(),
+                "https://example.com/tutorial-page".to_string(),
+                "https://example.com/resource-page".to_string(),
+                "https://example.com/download-page".to_string(),
+                "https://example.com/demo-page".to_string(),
+                "https://example.com/trial-page".to_string(),
+                "https://example.com/webinar-page".to_string(),
+                "https://example.com/event-page".to_string(),
+            ],
+            "Slow Load" => vec![
+                "https://example.com/heavy-landing-page".to_string(),
+                "https://example.com/image-heavy-gallery".to_string(),
+                "https://example.com/video-embedded-page".to_string(),
+                "https://example.com/large-database-page".to_string(),
+                "https://example.com/unoptimized-images-page".to_string(),
+                "https://example.com/complex-javascript-page".to_string(),
+            ],
+            _ => vec![
+                "https://example.com/sample-url-1".to_string(),
+                "https://example.com/sample-url-2".to_string(),
+                "https://example.com/sample-url-3".to_string(),
+            ],
+        }
+    }
+    
+    pub fn close_issue_urls_modal(&mut self) {
+        self.show_issue_urls_modal = false;
+        self.issue_urls_list.clear();
+        self.current_issue_title.clear();
+        self.issue_urls_state.select(None);
+    }
+    
+    pub fn next_issue_url(&mut self) {
+        let len = self.issue_urls_list.len();
+        if len == 0 {
+            return;
+        }
+        let i = match self.issue_urls_state.selected() {
+            Some(i) => {
+                if i >= len - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.issue_urls_state.select(Some(i));
+    }
+    
+    pub fn previous_issue_url(&mut self) {
+        let len = self.issue_urls_list.len();
+        if len == 0 {
+            return;
+        }
+        let i = match self.issue_urls_state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    len - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.issue_urls_state.select(Some(i));
     }
 
     pub fn previous_detail_row(&mut self, len: usize) {

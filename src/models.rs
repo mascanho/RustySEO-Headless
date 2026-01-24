@@ -351,6 +351,11 @@ pub struct App {
     pub issues_table_state: ratatui::widgets::TableState,
     pub issues_current_page: usize,
     pub issues_page_size: usize,
+    // Issues URLs Modal State
+    pub show_issue_urls_modal: bool,
+    pub issue_urls_list: Vec<String>,
+    pub issue_urls_state: ratatui::widgets::ListState,
+    pub current_issue_title: String,
 }
 
 // ENGINE MODELES AND TYPES

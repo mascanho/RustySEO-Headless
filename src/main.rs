@@ -294,6 +294,13 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             }
                             _ => {}
                         }
+                    } else if app.show_issue_urls_modal {
+                        match key.code {
+                            KeyCode::Char('q') | KeyCode::Esc => app.close_issue_urls_modal(),
+                            KeyCode::Char('k') | KeyCode::Up => app.previous_issue_url(),
+                            KeyCode::Char('j') | KeyCode::Down => app.next_issue_url(),
+                            _ => {}
+                        }
                     } else if app.show_log_search {
                         match key.code {
                             KeyCode::Enter | KeyCode::Esc => {
@@ -530,8 +537,12 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                         // MODAL PRIORITY 3: Sidebar
                         if app.sidebar_visible {
                             if app.sidebar_tab == 1 {
-                                if key.code == KeyCode::Char('E') {
-                                    edit_file();
+                                match key.code {
+                                    KeyCode::Up | KeyCode::Char('k') => app.previous_issues_row(),
+                                    KeyCode::Down | KeyCode::Char('j') => app.next_issues_row(),
+                                    KeyCode::Enter => app.handle_issues_enter(),
+                                    KeyCode::Char('E') => edit_file(),
+                                    _ => {}
                                 }
                             }
 
