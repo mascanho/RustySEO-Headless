@@ -193,7 +193,7 @@ fn render_help_modal(f: &mut Frame) {
 
     let block = Block::default()
         .title(Span::styled(
-            " 🚀 ATALAIA SEO - Shortcut Mastery ",
+            " RustySEO [CLI] - Shortcut ",
             Style::default()
                 .fg(header_color)
                 .add_modifier(Modifier::BOLD),

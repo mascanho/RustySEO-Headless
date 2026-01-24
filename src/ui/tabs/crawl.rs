@@ -1,9 +1,9 @@
 use ratatui::{
-    Frame,
     layout::Rect,
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph, Wrap},
+    Frame,
 };
 
 use crate::models::App;
@@ -26,7 +26,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         Line::from(vec![
             Span::raw(" Welcome to "),
             Span::styled(
-                "ATALAIA SEO",
+                "RustySEO [CLI]",
                 Style::default()
                     .fg(accent_color)
                     .add_modifier(Modifier::BOLD),

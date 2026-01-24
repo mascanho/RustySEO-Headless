@@ -22,7 +22,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         .border_style(Style::default().fg(border_color))
         .bg(Color::Rgb(15, 15, 25))
         .title(Span::styled(
-            " Actions Menu ",
+            " Data options",
             Style::default()
                 .fg(Color::Yellow)
                 .add_modifier(Modifier::BOLD),

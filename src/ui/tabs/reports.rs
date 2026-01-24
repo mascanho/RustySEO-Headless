@@ -1,9 +1,13 @@
+// TODO: Create a nice report layout for technical and less technical people and show here.
+// A dashboard-like thing could work. With a nice overview that could potentially be then generated
+// into a PDF.
+
 use ratatui::{
-    Frame,
     layout::Rect,
     style::{Color, Modifier, Style},
     text::Span,
     widgets::{Block, Borders, Paragraph, Wrap},
+    Frame,
 };
 
 use crate::models::App;
