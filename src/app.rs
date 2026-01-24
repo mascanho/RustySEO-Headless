@@ -184,9 +184,26 @@ impl Default for App {
             tree_view_expanded_nodes: std::collections::HashSet::new(),
             // Issues Tab State
             issues_table_data: vec![
-                vec!["404 Errors".to_string(), "12".to_string(), "15%".to_string()],
-                vec!["Broken Links".to_string(), "8".to_string(), "10%".to_string()],
-                vec!["Missing Alt".to_string(), "25".to_string(), "31%".to_string()],
+                vec![
+                    "404 Errors".to_string(),
+                    "12".to_string(),
+                    "15%".to_string(),
+                ],
+                vec![
+                    "404 Errors".to_string(),
+                    "12".to_string(),
+                    "15%".to_string(),
+                ],
+                vec![
+                    "Broken Links".to_string(),
+                    "8".to_string(),
+                    "10%".to_string(),
+                ],
+                vec![
+                    "Missing Alt".to_string(),
+                    "25".to_string(),
+                    "31%".to_string(),
+                ],
                 vec!["Slow Load".to_string(), "6".to_string(), "7%".to_string()],
             ],
             issues_table_state: {
@@ -440,7 +457,7 @@ impl App {
             self.crawl_receiver = None;
             self.crawl_progress = 1.0;
             self.log("SYSTEM - Crawl finished successfully.");
-            
+
             // Update issues with real crawled data
             self.update_issues_from_crawled_data();
         }
@@ -1000,31 +1017,31 @@ impl App {
             if selected < self.issues_table_data.len() {
                 let issue_title = &self.issues_table_data[selected][0];
                 self.current_issue_title = issue_title.clone();
-                
+
                 // Generate real URLs for the selected issue
                 self.issue_urls_list = self.get_urls_for_issue(issue_title);
-                
+
                 // Reset the list state to select the first item
                 self.issue_urls_state.select(Some(0));
-                
+
                 // Show the modal
                 self.show_issue_urls_modal = true;
-                
+
                 self.log(format!("Showing URLs for issue: {}", issue_title));
             }
         }
     }
-    
+
     /// Populate issues_table_data with real crawled data analysis
     pub fn update_issues_from_crawled_data(&mut self) {
         self.issues_table_data = IssueAnalyzer::generate_issues_table_data(&self.page_data);
     }
-    
+
     /// Get real URLs for a specific issue type
     pub fn get_urls_for_issue(&self, issue_type: &str) -> Vec<String> {
         IssueAnalyzer::get_urls_for_issue(&self.page_data, issue_type)
     }
-    
+
     pub fn generate_mock_urls_for_issue(&self, issue_type: &str) -> Vec<String> {
         match issue_type {
             "404 Errors" => vec![
@@ -1093,14 +1110,14 @@ impl App {
             ],
         }
     }
-    
+
     pub fn close_issue_urls_modal(&mut self) {
         self.show_issue_urls_modal = false;
         self.issue_urls_list.clear();
         self.current_issue_title.clear();
         self.issue_urls_state.select(None);
     }
-    
+
     pub fn next_issue_url(&mut self) {
         let len = self.issue_urls_list.len();
         if len == 0 {
@@ -1118,7 +1135,7 @@ impl App {
         };
         self.issue_urls_state.select(Some(i));
     }
-    
+
     pub fn previous_issue_url(&mut self) {
         let len = self.issue_urls_list.len();
         if len == 0 {

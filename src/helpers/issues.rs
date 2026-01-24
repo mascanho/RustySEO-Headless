@@ -32,6 +32,28 @@ impl IssueAnalyzer {
         (count, urls_long_titles)
     }
 
+    // GET THE SHORTER TITLES - Maybe this is not Really needed?
+    pub fn analyse_short_titles(page_data: &[PageData]) -> (usize, Vec<String>) {
+        let mut urls_short_titles = Vec::new();
+
+        for page in page_data {
+            let mut short_title_count = 0;
+
+            for title in page_data {
+                if title.title_len < 30 {
+                    short_title_count += 1;
+                }
+            }
+
+            if short_title_count > 0 {
+                urls_short_titles.push(format!("{} ({})", page.url, short_title_count));
+            }
+        }
+
+        let count = urls_short_titles.len();
+        (count, urls_short_titles)
+    }
+
     /// Analyze crawled data to detect images with missing alt text and return (count, urls)
     pub fn analyze_missing_alt_text(page_data: &[PageData]) -> (usize, Vec<String>) {
         let mut urls_missing_alt = Vec::new();
@@ -58,6 +80,7 @@ impl IssueAnalyzer {
         match issue_type {
             "404 Errors" => Self::analyze_404_errors(page_data).1,
             "Page Titles > 60 chars" => Self::analyze_long_titles(page_data).1,
+            "Page Titles < 30 chars" => Self::analyse_short_titles(page_data).1,
             "Missing Alt Text" => Self::analyze_missing_alt_text(page_data).1,
             _ => vec![],
         }
@@ -73,6 +96,11 @@ impl IssueAnalyzer {
                 vec!["404 Errors".to_string(), "0".to_string(), "0%".to_string()],
                 vec![
                     "Page Titles > 60 chars".to_string(),
+                    "0".to_string(),
+                    "0%".to_string(),
+                ],
+                vec![
+                    "Page Titles < 30 chars".to_string(),
                     "0".to_string(),
                     "0%".to_string(),
                 ],

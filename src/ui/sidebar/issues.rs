@@ -7,6 +7,8 @@ use ratatui::{
     Frame,
 };
 
+static ACCENT_COLOUR: Color = Color::Rgb(80, 140, 255);
+
 pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block) {
     let header = Row::new(vec!["Issue", "Urls", "% of"]).style(Style::default().fg(Color::Yellow));
 
@@ -18,8 +20,8 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block) {
             let is_selected = app.issues_table_state.selected().map_or(false, |s| s == i);
             let style = if is_selected {
                 Style::default()
-                    .fg(Color::Black)
-                    .bg(Color::Rgb(255, 100, 100)) // Red/orange for issues theme
+                    .fg(Color::White)
+                    .bg(ACCENT_COLOUR) // Red/orange for issues theme
                     .add_modifier(ratatui::style::Modifier::BOLD)
             } else {
                 Style::default().fg(Color::White)
@@ -42,8 +44,8 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block) {
     .highlight_symbol("👉 ")
     .row_highlight_style(
         Style::default()
-            .fg(Color::Black)
-            .bg(Color::Rgb(255, 100, 100)) // Red/orange for issues theme
+            .fg(Color::White)
+            .bg(ACCENT_COLOUR)
             .add_modifier(ratatui::style::Modifier::BOLD),
     );
 
