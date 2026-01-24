@@ -1,13 +1,13 @@
 use ratatui::{
-    Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::Span,
     widgets::{Block, Borders, Clear, Tabs},
+    Frame,
 };
 
 use crate::models::App;
-use crate::ui::sidebar::{actions, bookmarks, filters, settings, summary, tree_view};
+use crate::ui::sidebar::{actions, bookmarks, issues, settings, summary, tree_view};
 
 /// Standard colors for consistency
 const ACCENT_COLOR: Color = Color::Rgb(80, 140, 255);
@@ -40,13 +40,21 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     app.sidebar_tab_rect = Some(sidebar_tab_area);
 
-    let sidebar_titles = vec!["General", "Settings", "Filter", "Act", "Bookmarks", "Tree"];
+    let sidebar_titles = vec![
+        "General",
+        "Issues",
+        "Settings",
+        "Filter",
+        "Act",
+        "Bookmarks",
+        "Tree",
+    ];
     let sidebar_tabs = Tabs::new(sidebar_titles)
         .block(
             Block::default()
                 .borders(Borders::ALL)
                 .title(Span::styled(
-                    " DRAW SIDEBAR ",
+                    " SIDEBAR ",
                     Style::default()
                         .fg(Color::Yellow)
                         .add_modifier(Modifier::BOLD),
@@ -75,7 +83,8 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     match app.sidebar_tab {
         0 => summary::render(f, app, sidebar_content_area, content_block, ACCENT_COLOR),
-        1 => settings::render(
+        1 => issues::render(f, app, sidebar_content_area, content_block),
+        2 => settings::render(
             f,
             app,
             sidebar_content_area,
@@ -83,7 +92,6 @@ pub fn render(f: &mut Frame, app: &mut App) {
             ACCENT_COLOR,
             BORDER_COLOR,
         ),
-        2 => filters::render(f, app, sidebar_content_area, content_block),
         3 => actions::render(f, app, sidebar_content_area, content_block),
         4 => bookmarks::render(
             f,

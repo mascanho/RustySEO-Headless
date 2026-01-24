@@ -42,7 +42,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     // Menu items
     let items = vec![
-        ListItem::new(" Copy URL"),
+        ListItem::new("Export Data From Table"),
         ListItem::new(" Open URL in Browser"),
         ListItem::new(" Open in Google"),
         ListItem::new(" Check Keywords"),
