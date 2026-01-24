@@ -1,6 +1,6 @@
 use directories::ProjectDirs;
-use fuzzy_matcher::FuzzyMatcher;
 use fuzzy_matcher::skim::SkimMatcherV2;
+use fuzzy_matcher::FuzzyMatcher;
 use serde_json;
 use std::collections::HashMap;
 use std::sync::mpsc;
@@ -39,6 +39,7 @@ impl Default for App {
         let table_state = ratatui::widgets::TableState::default();
 
         Self {
+            options_modal: false,
             sidebar_visible: false,
             task_panel_visible: false,
             current_state: AppState::Dashboard,
@@ -590,6 +591,10 @@ impl App {
             self.sidebar_tab = index;
             self.sidebar_visible = true;
         }
+    }
+
+    pub fn toggle_options_modal(&mut self) {
+        self.options_modal = !self.options_modal;
     }
 
     pub fn toggle_help(&mut self) {

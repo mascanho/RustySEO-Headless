@@ -109,6 +109,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             KeyCode::Enter | KeyCode::Esc => {
                                 app.show_search = false;
                                 app.apply_filter();
+                                app.options_modal = false
                             }
                             KeyCode::Char(c) => {
                                 app.search_query.push(c);
@@ -173,6 +174,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             KeyCode::Enter | KeyCode::Esc => {
                                 app.show_content_search = false;
                                 app.apply_content_filter();
+                                app.options_modal = false
                             }
                             KeyCode::Char(c) => {
                                 app.content_search_query.push(c);
@@ -189,6 +191,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             KeyCode::Enter | KeyCode::Esc => {
                                 app.show_extractor_search = false;
                                 app.apply_extractor_filter();
+                                app.options_modal = false
                             }
                             KeyCode::Char(c) => {
                                 app.extractor_search_query.push(c);
@@ -205,6 +208,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             KeyCode::Enter | KeyCode::Esc => {
                                 app.show_images_search = false;
                                 app.apply_images_filter();
+                                app.options_modal = false
                             }
                             KeyCode::Char(c) => {
                                 app.images_search_query.push(c);
@@ -489,6 +493,14 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             continue;
                         }
 
+                        if app.options_modal {
+                            match key.code {
+                                KeyCode::Char('q') | KeyCode::Esc => app.options_modal = false,
+                                _ => {}
+                            }
+                            continue;
+                        }
+
                         // MODAL PRIORITY 2.8: Logs Console
                         if app.show_logs {
                             match key.code {
@@ -667,6 +679,8 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
 
                         // GLOBAL NAVIGATION (when no modals are open)
                         match key.code {
+                            // THIS IS THE REUSABLE MODAL FOR ALL THJE TABLES
+                            KeyCode::Char('o') => app.toggle_options_modal(),
                             KeyCode::Char('q') => return Ok(()),
                             KeyCode::Char('?') => app.toggle_help(),
                             KeyCode::Esc => app.reset(),

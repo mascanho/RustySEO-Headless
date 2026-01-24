@@ -1,9 +1,9 @@
 use ratatui::{
-    Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Borders, Clear, Paragraph, Tabs},
+    Frame,
 };
 
 use crate::{app::AppState, models::App};
@@ -114,6 +114,11 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
     if app.show_dashboard_menu {
         modals::dashboard_menu::render(f, app);
+    }
+
+    // SHOW THE OPTIONS MODAL
+    if app.options_modal {
+        modals::options::render(f, app);
     }
 
     // Render Input Modal when in input mode

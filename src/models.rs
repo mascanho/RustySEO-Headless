@@ -210,6 +210,7 @@ pub struct ImageTableEntry {
 }
 
 pub struct App {
+    pub options_modal: bool,
     pub sidebar_visible: bool,
     pub task_panel_visible: bool,
     pub current_state: AppState,
