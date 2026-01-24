@@ -7,6 +7,7 @@ use std::sync::mpsc;
 
 use crate::crawler::CrawlMessage;
 use crate::helpers::issues::IssueAnalyzer;
+use crate::helpers::issues_table_data::issues;
 use crate::models::{App, AppSettings};
 use crate::settings::utils::read::recent_crawls;
 use crate::ui::modals::dashboard_menu;
@@ -183,29 +184,7 @@ impl Default for App {
             tree_view_selected_index: 0,
             tree_view_expanded_nodes: std::collections::HashSet::new(),
             // Issues Tab State
-            issues_table_data: vec![
-                vec![
-                    "404 Errors".to_string(),
-                    "12".to_string(),
-                    "15%".to_string(),
-                ],
-                vec![
-                    "404 Errors".to_string(),
-                    "12".to_string(),
-                    "15%".to_string(),
-                ],
-                vec![
-                    "Broken Links".to_string(),
-                    "8".to_string(),
-                    "10%".to_string(),
-                ],
-                vec![
-                    "Missing Alt".to_string(),
-                    "25".to_string(),
-                    "31%".to_string(),
-                ],
-                vec!["Slow Load".to_string(), "6".to_string(), "7%".to_string()],
-            ],
+            issues_table_data: issues(),
             issues_table_state: {
                 let mut state = ratatui::widgets::TableState::default();
                 state.select(Some(0));

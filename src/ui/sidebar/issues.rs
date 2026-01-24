@@ -10,7 +10,8 @@ use ratatui::{
 static ACCENT_COLOUR: Color = Color::Rgb(80, 140, 255);
 
 pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block) {
-    let header = Row::new(vec!["Issue", "Urls", "% of"]).style(Style::default().fg(Color::Yellow));
+    let header =
+        Row::new(vec![" Issues", " Urls", " % of"]).style(Style::default().fg(Color::Yellow));
 
     let rows: Vec<Row> = app
         .issues_table_data
@@ -33,7 +34,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block) {
     let table = Table::new(
         rows,
         vec![
-            Constraint::Percentage(40), // Issue column takes 1/3
+            Constraint::Percentage(70), // Issue column takes 1/3
             Constraint::Min(8),         // Urls column
             Constraint::Min(6),         // % of column
         ],
@@ -41,7 +42,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block) {
     .header(header)
     .block(content_block.title(Span::styled("  ", Style::default().fg(Color::Yellow))))
     .style(Style::default().fg(Color::White))
-    .highlight_symbol("👉 ")
+    // .highlight_symbol("👉 ")
     .row_highlight_style(
         Style::default()
             .fg(Color::White)

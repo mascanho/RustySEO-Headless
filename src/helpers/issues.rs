@@ -117,6 +117,7 @@ impl IssueAnalyzer {
         let (count_404, _urls_404) = Self::analyze_404_errors(page_data);
         let (count_long_titles, _urls_long_titles) = Self::analyze_long_titles(page_data);
         let (count_missing_alt, _urls_missing_alt) = Self::analyze_missing_alt_text(page_data);
+        let (count_short_titles, _urls_short_title) = Self::analyse_short_titles(page_data);
 
         // Calculate percentages
         let percent_404 = if total_pages > 0 {
@@ -135,6 +136,12 @@ impl IssueAnalyzer {
             0
         };
 
+        let percent_short_titles = if total_pages > 0 {
+            (count_short_titles * 100) / total_pages
+        } else {
+            0
+        };
+
         // Return issues table with real data
         vec![
             vec![
@@ -146,6 +153,11 @@ impl IssueAnalyzer {
                 "Page Titles > 60 chars".to_string(),
                 count_long_titles.to_string(),
                 format!("{}%", percent_long_titles),
+            ],
+            vec![
+                "Page Titles < 30 chars".to_string(),
+                count_long_titles.to_string(),
+                format!("{}%", percent_short_titles),
             ],
             vec![
                 "Missing Alt Text".to_string(),
