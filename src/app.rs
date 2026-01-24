@@ -176,6 +176,16 @@ impl Default for App {
             },
             tree_view_selected_index: 0,
             tree_view_expanded_nodes: std::collections::HashSet::new(),
+            // Issues Tab State
+            issues_table_data: vec![
+                vec!["404 Errors".to_string(), "12".to_string(), "15%".to_string()],
+                vec!["Broken Links".to_string(), "8".to_string(), "10%".to_string()],
+                vec!["Missing Alt".to_string(), "25".to_string(), "31%".to_string()],
+                vec!["Slow Load".to_string(), "6".to_string(), "7%".to_string()],
+            ],
+            issues_table_state: ratatui::widgets::TableState::default(),
+            issues_current_page: 0,
+            issues_page_size: 100,
         }
     }
 }
@@ -912,6 +922,52 @@ impl App {
             None => 0,
         };
         self.detail_table_state.select(Some(i));
+    }
+
+    pub fn next_issues_row(&mut self) {
+        let len = self.issues_table_data.len();
+        if len == 0 {
+            return;
+        }
+        let i = match self.issues_table_state.selected() {
+            Some(i) => {
+                if i >= len - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.issues_table_state.select(Some(i));
+    }
+
+    pub fn previous_issues_row(&mut self) {
+        let len = self.issues_table_data.len();
+        if len == 0 {
+            return;
+        }
+        let i = match self.issues_table_state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    len - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.issues_table_state.select(Some(i));
+    }
+
+    pub fn handle_issues_enter(&mut self) {
+        if let Some(selected) = self.issues_table_state.selected() {
+            if selected < self.issues_table_data.len() {
+                let issue = &self.issues_table_data[selected][0];
+                self.log(format!("Action triggered for issue: {}", issue));
+                // Add specific action handling here based on the issue type
+            }
+        }
     }
 
     pub fn previous_detail_row(&mut self, len: usize) {

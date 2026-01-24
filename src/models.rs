@@ -346,6 +346,11 @@ pub struct App {
     pub tree_view_state: ratatui::widgets::ListState,
     pub tree_view_selected_index: usize,
     pub tree_view_expanded_nodes: std::collections::HashSet<String>,
+    // Issues Tab State
+    pub issues_table_data: Vec<Vec<String>>,
+    pub issues_table_state: ratatui::widgets::TableState,
+    pub issues_current_page: usize,
+    pub issues_page_size: usize,
 }
 
 // ENGINE MODELES AND TYPES

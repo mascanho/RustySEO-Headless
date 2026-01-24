@@ -1,34 +1,35 @@
 use crate::models::App;
 use ratatui::{
-    Frame,
-    layout::Rect,
+    layout::{Constraint, Rect},
     style::{Color, Style},
     text::{Line, Span},
-    widgets::{Block, List, ListItem},
+    widgets::{Block, List, ListItem, Row, Table},
+    Frame,
 };
 
-pub fn render(f: &mut Frame, _app: &mut App, area: Rect, content_block: Block) {
-    let items = vec![
-        ListItem::new(Line::from(vec![
-            Span::styled(" [x] ", Style::default().fg(Color::Green)),
-            Span::raw("No-Follow Links"),
-        ])),
-        ListItem::new(Line::from(vec![
-            Span::styled(" [ ] ", Style::default().fg(Color::DarkGray)),
-            Span::raw("No-Index Pages"),
-        ])),
-        ListItem::new(Line::from(vec![
-            Span::styled(" [x] ", Style::default().fg(Color::Green)),
-            Span::raw("Status 200 Only"),
-        ])),
-        ListItem::new(Line::from(vec![
-            Span::styled(" [ ] ", Style::default().fg(Color::DarkGray)),
-            Span::raw("External Domains"),
-        ])),
-    ];
-    let list = List::new(items).block(content_block.title(Span::styled(
-        " Scan Filters ",
-        Style::default().fg(Color::Yellow),
-    )));
-    f.render_widget(list, area);
+pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block) {
+    let header = Row::new(vec!["Issue", "Urls", "% of"]).style(Style::default().fg(Color::Yellow));
+
+    let rows: Vec<Row> = app
+        .issues_table_data
+        .iter()
+        .map(|row| Row::new(row.clone()))
+        .collect();
+
+    let table = Table::new(
+        rows,
+        vec![
+            Constraint::Percentage(33), // Issue column takes 1/3
+            Constraint::Min(8),         // Urls column
+            Constraint::Min(6),         // % of column
+        ],
+    )
+    .header(header)
+    .block(content_block.title(Span::styled(" Issues ", Style::default().fg(Color::Yellow))))
+    .style(Style::default().fg(Color::White))
+    .highlight_style(Style::default().add_modifier(ratatui::style::Modifier::REVERSED));
+
+    let mut table_state = app.issues_table_state.clone();
+    f.render_stateful_widget(table, area, &mut table_state);
+    app.issues_table_state = table_state;
 }
