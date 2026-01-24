@@ -548,7 +548,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                 }
                             }
 
-                            if app.sidebar_tab == 4 {
+                            if app.sidebar_tab == 2 {
                                 match key.code {
                                     KeyCode::Left => {
                                         if app.bookmark_input.is_empty() {
