@@ -31,13 +31,13 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block) {
     let table = Table::new(
         rows,
         vec![
-            Constraint::Percentage(33), // Issue column takes 1/3
+            Constraint::Percentage(40), // Issue column takes 1/3
             Constraint::Min(8),         // Urls column
             Constraint::Min(6),         // % of column
         ],
     )
     .header(header)
-    .block(content_block.title(Span::styled(" Issues ", Style::default().fg(Color::Yellow))))
+    .block(content_block.title(Span::styled("  ", Style::default().fg(Color::Yellow))))
     .style(Style::default().fg(Color::White))
     .highlight_symbol("👉 ")
     .row_highlight_style(
