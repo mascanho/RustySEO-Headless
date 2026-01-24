@@ -43,11 +43,10 @@ pub fn render(f: &mut Frame, app: &mut App) {
     let sidebar_titles = vec![
         "General",
         "Issues",
-        "Settings",
-        "Filter",
-        "Act",
         "Bookmarks",
         "Tree",
+        "Settings",
+        "Filter",
     ];
     let sidebar_tabs = Tabs::new(sidebar_titles)
         .block(
@@ -84,7 +83,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
     match app.sidebar_tab {
         0 => summary::render(f, app, sidebar_content_area, content_block, ACCENT_COLOR),
         1 => issues::render(f, app, sidebar_content_area, content_block),
-        2 => settings::render(
+        2 => bookmarks::render(
             f,
             app,
             sidebar_content_area,
@@ -92,8 +91,8 @@ pub fn render(f: &mut Frame, app: &mut App) {
             ACCENT_COLOR,
             BORDER_COLOR,
         ),
-        3 => actions::render(f, app, sidebar_content_area, content_block),
-        4 => bookmarks::render(
+        3 => tree_view::render(f, app, sidebar_content_area, content_block),
+        4 => settings::render(
             f,
             app,
             sidebar_content_area,
@@ -101,7 +100,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
             ACCENT_COLOR,
             BORDER_COLOR,
         ),
-        5 => tree_view::render(f, app, sidebar_content_area, content_block),
+        5 => actions::render(f, app, sidebar_content_area, content_block),
         _ => {}
     }
 }

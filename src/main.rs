@@ -18,6 +18,7 @@ pub mod app;
 pub mod cli;
 pub mod crawler;
 pub mod db;
+pub mod helpers;
 pub mod logging;
 pub mod models;
 pub mod server;
@@ -907,8 +908,9 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             // Quick jumps
                             KeyCode::Char('g') => app.set_sidebar_tab(0), // General
                             KeyCode::Char('i') => app.set_sidebar_tab(1), // Issues
-                            KeyCode::Char('s') => app.set_sidebar_tab(2), // Settings
-                            KeyCode::Char('t') => app.set_sidebar_tab(5), // Tree View
+                            KeyCode::Char('b') => app.set_sidebar_tab(2), // Bookmarks
+                            KeyCode::Char('t') => app.set_sidebar_tab(3), // Tree View
+                            KeyCode::Char('s') => app.set_sidebar_tab(4), // Settings
                             KeyCode::Char('e') | KeyCode::Char('E') => {
                                 if app.sidebar_visible && app.sidebar_tab == 1 {
                                     app.open_settings_file();
@@ -917,7 +919,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             KeyCode::Char('f') => app.set_sidebar_tab(2),
                             KeyCode::Char('a') => app.set_sidebar_tab(3),
                             KeyCode::Char('A') => app.toggle_ai_modal(),
-                            KeyCode::Char('b') | KeyCode::Char('+') => app.set_sidebar_tab(4),
+                            // KeyCode::Char('b') | KeyCode::Char('+') => app.set_sidebar_tab(4),
                             KeyCode::Char('L') => app.toggle_logs(),
                             // Number jumps
                             KeyCode::Char('1') => app.current_state = AppState::Dashboard,
