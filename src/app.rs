@@ -434,6 +434,9 @@ impl App {
             self.crawl_receiver = None;
             self.crawl_progress = 1.0;
             self.log("SYSTEM - Crawl finished successfully.");
+            
+            // Update issues with real crawled data
+            self.update_issues_from_crawled_data();
         }
 
         // Debounce search filtering
@@ -979,8 +982,8 @@ impl App {
                 let issue_title = &self.issues_table_data[selected][0];
                 self.current_issue_title = issue_title.clone();
                 
-                // Generate mock URLs for the selected issue
-                self.issue_urls_list = self.generate_mock_urls_for_issue(issue_title);
+                // Generate real URLs for the selected issue
+                self.issue_urls_list = self.get_urls_for_issue(issue_title);
                 
                 // Reset the list state to select the first item
                 self.issue_urls_state.select(Some(0));
@@ -990,6 +993,111 @@ impl App {
                 
                 self.log(format!("Showing URLs for issue: {}", issue_title));
             }
+        }
+    }
+    
+    // Issue Analysis Functions - Real Data Processing
+    
+    /// Analyze crawled data to detect 404 errors and return (count, urls)
+    pub fn analyze_404_errors(&self) -> (usize, Vec<String>) {
+        let mut urls_404 = Vec::new();
+        
+        for page in &self.page_data {
+            if page.status == "404" || page.status.starts_with("4") {
+                urls_404.push(page.url.clone());
+            }
+        }
+        
+        let count = urls_404.len();
+        (count, urls_404)
+    }
+    
+    /// Analyze crawled data to detect pages with titles > 60 characters and return (count, urls)
+    pub fn analyze_long_titles(&self) -> (usize, Vec<String>) {
+        let mut urls_long_titles = Vec::new();
+        
+        for page in &self.page_data {
+            if page.title_len > 60 {
+                urls_long_titles.push(format!("{} ({} chars)", page.url, page.title_len));
+            }
+        }
+        
+        let count = urls_long_titles.len();
+        (count, urls_long_titles)
+    }
+    
+    /// Analyze crawled data to detect images with missing alt text and return (count, urls)
+    pub fn analyze_missing_alt_text(&self) -> (usize, Vec<String>) {
+        let mut urls_missing_alt = Vec::new();
+        
+        for page in &self.page_data {
+            let mut missing_count = 0;
+            for image in &page.images {
+                if image.alt.trim().is_empty() {
+                    missing_count += 1;
+                }
+            }
+            
+            if missing_count > 0 {
+                urls_missing_alt.push(format!("{} ({} images)", page.url, missing_count));
+            }
+        }
+        
+        let count = urls_missing_alt.len();
+        (count, urls_missing_alt)
+    }
+    
+    /// Populate issues_table_data with real crawled data analysis
+    pub fn update_issues_from_crawled_data(&mut self) {
+        let total_pages = self.page_data.len();
+        
+        if total_pages == 0 {
+            // Keep default values if no data
+            return;
+        }
+        
+        // Get real issue counts and URLs
+        let (count_404, _urls_404) = self.analyze_404_errors();
+        let (count_long_titles, _urls_long_titles) = self.analyze_long_titles();
+        let (count_missing_alt, _urls_missing_alt) = self.analyze_missing_alt_text();
+        
+        // Calculate percentages
+        let percent_404 = if total_pages > 0 { (count_404 * 100) / total_pages } else { 0 };
+        let percent_long_titles = if total_pages > 0 { (count_long_titles * 100) / total_pages } else { 0 };
+        let percent_missing_alt = if total_pages > 0 { (count_missing_alt * 100) / total_pages } else { 0 };
+        
+        // Update issues table with real data
+        self.issues_table_data = vec![
+            vec![
+                "404 Errors".to_string(),
+                count_404.to_string(),
+                format!("{}%", percent_404)
+            ],
+            vec![
+                "Page Titles > 60 chars".to_string(),
+                count_long_titles.to_string(),
+                format!("{}%", percent_long_titles)
+            ],
+            vec![
+                "Missing Alt Text".to_string(),
+                count_missing_alt.to_string(),
+                format!("{}%", percent_missing_alt)
+            ],
+            vec![
+                "Slow Load".to_string(),
+                "0".to_string(),
+                "0%".to_string()
+            ], // Placeholder for future implementation
+        ];
+    }
+    
+    /// Get real URLs for a specific issue type
+    pub fn get_urls_for_issue(&self, issue_type: &str) -> Vec<String> {
+        match issue_type {
+            "404 Errors" => self.analyze_404_errors().1,
+            "Page Titles > 60 chars" => self.analyze_long_titles().1,
+            "Missing Alt Text" => self.analyze_missing_alt_text().1,
+            _ => vec![],
         }
     }
     
