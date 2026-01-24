@@ -650,8 +650,8 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                     KeyCode::Esc | KeyCode::Char('h') | KeyCode::Left => {
                                         app.sidebar_visible = false
                                     }
-                                    KeyCode::Char('k') | KeyCode::Up => app.previous_sidebar_tab(),
-                                    KeyCode::Char('j') | KeyCode::Down => app.next_sidebar_tab(),
+                                    KeyCode::Char('k') => app.previous_sidebar_tab(),
+                                    KeyCode::Char('j') => app.next_sidebar_tab(),
                                     // KeyCode::Char('l') | KeyCode::Right => app.next_state(),
                                     KeyCode::Tab => app.next_sidebar_tab(),
                                     KeyCode::BackTab => app.previous_sidebar_tab(),
@@ -894,9 +894,10 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             },
 
                             // Quick jumps
-                            KeyCode::Char('g') => app.set_sidebar_tab(0),
-                            KeyCode::Char('t') => app.set_sidebar_tab(5),
-                            KeyCode::Char('s') => app.set_sidebar_tab(1),
+                            KeyCode::Char('g') => app.set_sidebar_tab(0), // General
+                            KeyCode::Char('i') => app.set_sidebar_tab(1), // Issues
+                            KeyCode::Char('s') => app.set_sidebar_tab(2), // Settings
+                            KeyCode::Char('t') => app.set_sidebar_tab(5), // Tree View
                             KeyCode::Char('e') | KeyCode::Char('E') => {
                                 if app.sidebar_visible && app.sidebar_tab == 1 {
                                     app.open_settings_file();
