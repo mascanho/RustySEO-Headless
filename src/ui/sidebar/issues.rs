@@ -21,11 +21,11 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block) {
             let cells = row_data
                 .iter()
                 .enumerate()
-.map(|(i, c)| {
+                .map(|(i, c)| {
                     use ratatui::layout::Alignment;
                     use ratatui::text::Line;
                     use ratatui::widgets::Cell;
-                    
+
                     if i > 0 {
                         // Columns 1 and 2 (URLs and % of) - centered with red styling for issues count
                         let style = if i == 1 && c.parse::<usize>().unwrap_or(0) > 0 {
