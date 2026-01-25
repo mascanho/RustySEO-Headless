@@ -144,7 +144,7 @@ pub fn handle_action(app: &mut App, action_index: usize) {
     app.show_dashboard_menu = false;
 }
 
-fn copy_to_clipboard(text: String) {
+pub fn copy_to_clipboard(text: String) {
     std::thread::spawn(move || {
         #[cfg(target_os = "macos")]
         {
