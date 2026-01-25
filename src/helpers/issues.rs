@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::crawler::helpers::html_parser::PageData;
+use crate::crawler::helpers::html_parser::{AnchorLink, PageData};
 
 pub struct IssueHandler {
     pub name: &'static str,
@@ -69,7 +69,101 @@ impl IssueAnalyzer {
                 name: " Non Webp/Avif Images",
                 process: Self::analyse_urls_with_png_or_jpg,
             },
+            IssueHandler {
+                name: " Parameterised URLs",
+                process: Self::analyse_param_urls,
+            },
+            IssueHandler {
+                name: " Large HTML Pages",
+                process: Self::analyse_big_html_pages,
+            },
+            IssueHandler {
+                name: " Missing Headers",
+                process: Self::analyse_missing_headers,
+            },
+            IssueHandler {
+                name: " Generic or Empty Anchors",
+                process: Self::analyse_generic_anchors,
+            },
+            IssueHandler {
+                name: " Low Internal Link Count",
+                process: Self::analyse_low_internal_link_count,
+            },
         ]
+    }
+
+    // GET THE PAGES WITH LOW INTERNAL LINK COUNT, EXCLUDING PARAMETERISED URLS
+    pub fn analyse_low_internal_link_count(page_data: &[PageData]) -> (usize, Vec<String>) {
+        let mut low_internal_link_count = Vec::new();
+
+        for page in page_data {
+            if page.anchor_links.len() < 5 && !page.url.contains("?") {
+                low_internal_link_count.push(page.url.clone());
+            }
+        }
+
+        (low_internal_link_count.len(), low_internal_link_count)
+    }
+
+    // GET ALL THE STUFF WITH GENERRIC ANCHORS OR EMPTY
+    pub fn analyse_generic_anchors(page_data: &[PageData]) -> (usize, Vec<String>) {
+        let mut generic_anchors = Vec::new();
+
+        for page in page_data {
+            if page
+                .anchor_links
+                .iter()
+                .any(|anchor| anchor.text.is_empty() || anchor.text.contains("here"))
+            {
+                generic_anchors.push(page.url.clone());
+            }
+        }
+
+        (generic_anchors.len(), generic_anchors)
+    }
+
+    // GET ALL THE POAGES WITH MISSING HEADERS
+    pub fn analyse_missing_headers(page_data: &[PageData]) -> (usize, Vec<String>) {
+        let mut missing_headers = Vec::new();
+
+        for page in page_data {
+            if page.headers.is_empty() {
+                missing_headers.push(page.url.clone());
+            }
+        }
+
+        (missing_headers.len(), missing_headers)
+    }
+
+    // GETS ALL THE HTML PAGES THAT ARE TOO BIG
+    pub fn analyse_big_html_pages(page_data: &[PageData]) -> (usize, Vec<String>) {
+        let mut big_html_pages = Vec::new();
+
+        for page in page_data {
+            if page.size > 500_000 {
+                big_html_pages.push(page.url.clone());
+            }
+        }
+
+        (big_html_pages.len(), big_html_pages)
+    }
+
+    // GET ALL THE URLS THAT HAVE PARAMS
+    pub fn analyse_param_urls(page_data: &[PageData]) -> (usize, Vec<String>) {
+        let mut param_urls = Vec::new();
+
+        for page in page_data {
+            let has_param = page.url.contains('?')
+                || page.url.contains('#')
+                || page.url.contains('&')
+                || page.url.contains('=');
+
+            if has_param {
+                param_urls.push(page.url.clone());
+            }
+        }
+
+        (param_urls.len(), param_urls)
     }
 
     // GETS ALL THE URLS that contain PNGs or JPGs
