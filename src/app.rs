@@ -1521,9 +1521,9 @@ pub fn copy_selected_issue_url(&mut self) {
         }
     }
 
-    pub fn next_dashboard_menu_item(&mut self) {
-        // There are 7 items in the menu (0 to 6)
-        if self.dashboard_menu_selection >= 6 {
+pub fn next_dashboard_menu_item(&mut self) {
+        // There are 8 items in menu (0 to 7)
+        if self.dashboard_menu_selection >= 7 {
             self.dashboard_menu_selection = 0;
         } else {
             self.dashboard_menu_selection += 1;
@@ -1532,7 +1532,7 @@ pub fn copy_selected_issue_url(&mut self) {
 
     pub fn previous_dashboard_menu_item(&mut self) {
         if self.dashboard_menu_selection == 0 {
-            self.dashboard_menu_selection = 6;
+            self.dashboard_menu_selection = 7;
         } else {
             self.dashboard_menu_selection = self.dashboard_menu_selection.saturating_sub(1);
         }

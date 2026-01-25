@@ -1,9 +1,9 @@
 use ratatui::{
-    Frame,
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style, Stylize},
     text::Span,
     widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph},
+    Frame,
 };
 
 use crate::models::App;
@@ -100,7 +100,7 @@ pub fn handle_action(app: &mut App, action_index: usize) {
 
     match action_index {
         0 => {
-            // Copy URL - now non-blocking
+            // Copy URL
             copy_to_clipboard(url);
         }
         1 => {
@@ -110,25 +110,32 @@ pub fn handle_action(app: &mut App, action_index: usize) {
                 .insert(0, format!("Opening URL in browser: {}", url));
         }
         2 => {
+            // Open in Google
+            let google_url = format!("https://www.google.com/search?q={}", url);
+            open_in_browser(&google_url);
+            app.logs_data
+                .insert(0, format!("Opening URL in Google: {}", url));
+        }
+        3 => {
             // Check Keywords
             app.logs_data
                 .insert(0, format!("Keywords check for: {}", url));
         }
-        3 => {
+        4 => {
             // View SEO Score
             app.logs_data.insert(0, format!("SEO Score for: {}", url));
         }
-        4 => {
+        5 => {
             // Extract Links
             app.logs_data
                 .insert(0, format!("Extracting links from: {}", url));
         }
-        5 => {
+        6 => {
             // Screenshot
             app.logs_data
                 .insert(0, format!("Taking screenshot of: {}", url));
         }
-        6 => {
+        7 => {
             // Export Data
             app.logs_data
                 .insert(0, format!("Exporting data for: {}", url));

@@ -16,8 +16,12 @@ impl IssueAnalyzer {
                 process: Self::analyze_404_errors,
             },
             IssueHandler {
-                name: " 301 Errors",
-                process: Self::analyse_301_redirects,
+                name: " 3XX Errors",
+                process: Self::analyse_3xx_redirects,
+            },
+            IssueHandler {
+                name: " 5XX Errors",
+                process: Self::analyse_5xx_errors,
             },
             IssueHandler {
                 name: " Page Titles > 60 chars",
@@ -54,12 +58,24 @@ impl IssueAnalyzer {
         ]
     }
 
-    // GET THE 301 REDIRECTS STATUS CODES URLS
-    pub fn analyse_301_redirects(page_data: &[PageData]) -> (usize, Vec<String>) {
+    // GET THE 5XX ERRORS STATUS CODES URLS
+    pub fn analyse_5xx_errors(page_data: &[PageData]) -> (usize, Vec<String>) {
         let mut urls = Vec::new();
 
         for page in page_data {
-            if page.status == "301" {
+            if page.status.contains("5") {
+                urls.push(page.url.clone());
+            }
+        }
+        (urls.len(), urls)
+    }
+
+    // GET THE 301 REDIRECTS STATUS CODES URLS
+    pub fn analyse_3xx_redirects(page_data: &[PageData]) -> (usize, Vec<String>) {
+        let mut urls = Vec::new();
+
+        for page in page_data {
+            if page.status.contains("3") {
                 urls.push(page.url.clone());
             }
         }
