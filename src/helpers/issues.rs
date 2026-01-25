@@ -16,6 +16,10 @@ impl IssueAnalyzer {
                 process: Self::analyze_404_errors,
             },
             IssueHandler {
+                name: " 301 Errors",
+                process: Self::analyse_301_redirects,
+            },
+            IssueHandler {
                 name: " Page Titles > 60 chars",
                 process: Self::analyze_long_titles,
             },
@@ -48,6 +52,18 @@ impl IssueAnalyzer {
                 process: |_| (0, vec![]), // Placeholder
             },
         ]
+    }
+
+    // GET THE 301 REDIRECTS STATUS CODES URLS
+    pub fn analyse_301_redirects(page_data: &[PageData]) -> (usize, Vec<String>) {
+        let mut urls = Vec::new();
+
+        for page in page_data {
+            if page.status == "301" {
+                urls.push(page.url.clone());
+            }
+        }
+        (urls.len(), urls)
     }
 
     /// Analyze crawled data to detect 404 errors
