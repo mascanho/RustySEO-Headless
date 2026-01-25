@@ -89,7 +89,24 @@ impl IssueAnalyzer {
                 name: " Low Internal Link Count",
                 process: Self::analyse_low_internal_link_count,
             },
+            IssueHandler {
+                name: " Missing Schema",
+                process: Self::analyse_missing_schema,
+            },
         ]
+    }
+
+    // FLAGG THE ONES WITH MISSING SCHEMA
+    pub fn analyse_missing_schema(page_data: &[PageData]) -> (usize, Vec<String>) {
+        let mut missing_schema = Vec::new();
+
+        for page in page_data {
+            if page.schema.len() == 0 && !page.url.contains("?") || !page.url.contains("#") {
+                missing_schema.push(page.url.clone());
+            }
+        }
+
+        (missing_schema.len(), missing_schema)
     }
 
     // GET THE PAGES WITH LOW INTERNAL LINK COUNT, EXCLUDING PARAMETERISED URLS
@@ -97,8 +114,71 @@ impl IssueAnalyzer {
         let mut low_internal_link_count = Vec::new();
 
         for page in page_data {
-            if page.anchor_links.len() < 5 && !page.url.contains("?") {
-                low_internal_link_count.push(page.url.clone());
+            // Skip error pages and non-HTML content
+            if page.status.starts_with("4") || page.status.starts_with("5") {
+                continue;
+            }
+
+            // Skip parameterized URLs, fragments, and common non-content URLs
+            if page.url.contains("?") || page.url.contains("#") {
+                continue;
+            }
+
+            // Skip binary files and non-HTML content types
+            let url_lower = page.url.to_lowercase();
+            if url_lower.ends_with(".pdf")
+                || url_lower.ends_with(".jpg")
+                || url_lower.ends_with(".jpeg")
+                || url_lower.ends_with(".png")
+                || url_lower.ends_with(".gif")
+                || url_lower.ends_with(".svg")
+                || url_lower.ends_with(".xml")
+                || url_lower.ends_with(".css")
+                || url_lower.ends_with(".js")
+                || url_lower.contains("/cdn/")
+                || url_lower.contains("/static/")
+                || url_lower.contains("/assets/")
+            {
+                continue;
+            }
+
+            // Filter out external links, nofollow links, and empty links
+            let internal_links: Vec<&AnchorLink> = page
+                .anchor_links
+                .iter()
+                .filter(|anchor| {
+                    // Skip empty hrefs, mailto, tel, javascript links
+                    if anchor.href.is_empty()
+                        || anchor.href.starts_with("mailto:")
+                        || anchor.href.starts_with("tel:")
+                        || anchor.href.starts_with("javascript:")
+                        || anchor.href.starts_with("#")
+                    {
+                        return false;
+                    }
+
+                    // Skip nofollow links
+                    if anchor.rel.to_lowercase().contains("nofollow") {
+                        return false;
+                    }
+
+                    // Skip external links (check if href starts with http and has different domain)
+                    if anchor.href.starts_with("http") {
+                        if let Some(page_domain) = page.url.split('/').nth(2) {
+                            if let Some(link_domain) = anchor.href.split('/').nth(2) {
+                                if page_domain != link_domain {
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+
+                    true
+                })
+                .collect();
+
+            if internal_links.len() < 5 {
+                low_internal_link_count.push(format!("{}", page.url));
             }
         }
 
