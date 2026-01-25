@@ -1066,6 +1066,66 @@ impl App {
         self.issue_urls_state.select(Some(i));
     }
 
+    pub fn open_selected_issue_url(&mut self) {
+        if let Some(selected) = self.issue_urls_state.selected() {
+            if selected < self.issue_urls_list.len() {
+                let url = &self.issue_urls_list[selected];
+                #[cfg(target_os = "macos")]
+                let cmd = "open";
+                #[cfg(not(target_os = "macos"))]
+                let cmd = "xdg-open";
+
+                match std::process::Command::new(cmd).arg(url).spawn() {
+                    Ok(_) => {
+                        self.log(format!("Opened URL in browser: {}", url));
+                    }
+                    Err(e) => {
+                        self.log(format!("Failed to open URL {}: {}", url, e));
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn copy_selected_issue_url(&mut self) {
+        if let Some(selected) = self.issue_urls_state.selected() {
+            if selected < self.issue_urls_list.len() {
+                let url = &self.issue_urls_list[selected];
+                
+                match std::process::Command::new("pbcopy")
+                    .arg(url)
+                    .stdin(std::process::Stdio::piped())
+                    .stdout(std::process::Stdio::null())
+                    .stderr(std::process::Stdio::null())
+                    .spawn()
+                {
+                    Ok(_) => {
+                        self.log(format!("Copied URL to clipboard: {}", url));
+                    }
+                    Err(_) => {
+                        // Fallback for non-macOS systems
+                        match std::process::Command::new("xclip")
+                            .arg("-selection")
+                            .arg("clipboard")
+                            .arg(url)
+                            .stdin(std::process::Stdio::piped())
+                            .stdout(std::process::Stdio::null())
+                            .stderr(std::process::Stdio::null())
+                            .spawn()
+                        {
+                            Ok(_) => {
+                                self.log(format!("Copied URL to clipboard: {}", url));
+                            }
+                            Err(e) => {
+                                self.log(format!("Failed to copy URL to clipboard: {}", e));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     pub fn previous_detail_row(&mut self, len: usize) {
         if len == 0 {
             return;

@@ -301,6 +301,8 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             KeyCode::Char('q') | KeyCode::Esc => app.close_issue_urls_modal(),
                             KeyCode::Char('k') | KeyCode::Up => app.previous_issue_url(),
                             KeyCode::Char('j') | KeyCode::Down => app.next_issue_url(),
+                            KeyCode::Enter => app.open_selected_issue_url(),
+                            KeyCode::Char('c') => app.copy_selected_issue_url(),
                             _ => {}
                         }
                     } else if app.show_log_search {
