@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::crawler::helpers::html_parser::PageData;
 
 pub struct IssueHandler {
@@ -59,7 +61,36 @@ impl IssueAnalyzer {
                 name: " Non Canonical",
                 process: Self::analyze_non_canonical_urls,
             },
+            IssueHandler {
+                name: " Duplicate Content",
+                process: Self::analyse_duplicated_content,
+            },
         ]
+    }
+
+    /// Detects pages that share the same non-empty title.
+    /// This does NOT compare page content.
+    /// TODO: Implement this function to detect pages with duplicate content in the body.
+    pub fn analyse_duplicated_content(page_data: &[PageData]) -> (usize, Vec<String>) {
+        let mut duplicates = Vec::new();
+        let mut titles = HashMap::new();
+
+        for page in page_data {
+            if !page.title.is_empty() {
+                if let Some(existing) = titles.get(&page.title) {
+                    // THERE WILL PAGES THAT MIGHT HAVE THE SAME TITLE DUE TO PARAMS
+                    if page.url.contains("?") {
+                        continue;
+                    }
+
+                    duplicates.push(format!("{} [ and ] {}", existing, page.url));
+                } else {
+                    titles.insert(page.title.clone(), page.url.clone());
+                }
+            }
+        }
+
+        (duplicates.len(), duplicates)
     }
 
     // GET THE URLS THAT ARE NOT CANONICALISED
@@ -73,6 +104,7 @@ impl IssueAnalyzer {
                 || page.url.ends_with(".svg")
                 || page.url.contains("cdn-cgi")
                 || page.url.ends_with("exe")
+                || page.url.contains("?")
             {
                 continue;
             } else if page.canonicals.is_empty() {
