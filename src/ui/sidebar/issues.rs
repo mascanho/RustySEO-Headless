@@ -17,7 +17,23 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block) {
     let rows: Vec<Row> = app
         .issues_table_data
         .iter()
-        .map(|row_data| Row::new(row_data.clone()))
+        .map(|row_data| {
+            let cells = row_data
+                .iter()
+                .enumerate()
+                .map(|(i, c)| {
+                    use ratatui::layout::Alignment;
+                        use ratatui::text::Line;
+                        use ratatui::widgets::Cell;
+                        if i > 0 {
+                             Cell::from(Line::from(c.clone()).alignment(Alignment::Center))
+                        } else {
+                             Cell::from(c.clone())
+                        }
+                })
+                .collect::<Vec<_>>();
+            Row::new(cells)
+        })
         .collect();
 
     let table = Table::new(

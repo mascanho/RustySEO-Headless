@@ -12,23 +12,39 @@ impl IssueAnalyzer {
     pub fn get_handlers() -> Vec<IssueHandler> {
         vec![
             IssueHandler {
-                name: "404 Errors",
+                name: " 404 Errors",
                 process: Self::analyze_404_errors,
             },
             IssueHandler {
-                name: "Page Titles > 60 chars",
+                name: " Page Titles > 60 chars",
                 process: Self::analyze_long_titles,
             },
             IssueHandler {
-                name: "Page Titles < 30 chars",
+                name: " Page Titles < 30 chars",
                 process: Self::analyze_short_titles,
             },
             IssueHandler {
-                name: "Missing Alt Text",
+                name: " Missing Alt Text",
                 process: Self::analyze_missing_alt_text,
             },
             IssueHandler {
-                name: "Slow Load",
+                name: " Missing H1",
+                process: Self::analyze_missing_h1,
+            },
+            IssueHandler {
+                name: " Page Description > 160 chars",
+                process: Self::analyze_long_descriptions,
+            },
+            IssueHandler {
+                name: " Missing Page Description",
+                process: Self::analyze_missing_descriptions,
+            },
+            IssueHandler {
+                name: " Missing Page Title",
+                process: Self::analyze_missing_titles,
+            },
+            IssueHandler {
+                name: " Slow Load",
                 process: |_| (0, vec![]), // Placeholder
             },
         ]
@@ -71,9 +87,57 @@ impl IssueAnalyzer {
     pub fn analyze_missing_alt_text(page_data: &[PageData]) -> (usize, Vec<String>) {
         let mut urls = Vec::new();
         for page in page_data {
-            let missing = page.images.iter().filter(|img| img.alt.trim().is_empty()).count();
+            let missing = page
+                .images
+                .iter()
+                .filter(|img| img.alt.trim().is_empty())
+                .count();
             if missing > 0 {
                 urls.push(format!("{} ({} images)", page.url, missing));
+            }
+        }
+        (urls.len(), urls)
+    }
+
+    /// Analyze missing H1 tags
+    pub fn analyze_missing_h1(page_data: &[PageData]) -> (usize, Vec<String>) {
+        let mut urls = Vec::new();
+        for page in page_data {
+            if page.h1_len == 0 {
+                urls.push(page.url.clone());
+            }
+        }
+        (urls.len(), urls)
+    }
+
+    /// Analyze page descriptions > 160 chars
+    pub fn analyze_long_descriptions(page_data: &[PageData]) -> (usize, Vec<String>) {
+        let mut urls = Vec::new();
+        for page in page_data {
+            if page.description_len > 160 {
+                urls.push(format!("{} ({} chars)", page.url, page.description_len));
+            }
+        }
+        (urls.len(), urls)
+    }
+
+    /// Analyze missing page descriptions
+    pub fn analyze_missing_descriptions(page_data: &[PageData]) -> (usize, Vec<String>) {
+        let mut urls = Vec::new();
+        for page in page_data {
+            if page.description_len == 0 {
+                urls.push(page.url.clone());
+            }
+        }
+        (urls.len(), urls)
+    }
+
+    /// Analyze missing page titles
+    pub fn analyze_missing_titles(page_data: &[PageData]) -> (usize, Vec<String>) {
+        let mut urls = Vec::new();
+        for page in page_data {
+            if page.title_len == 0 {
+                urls.push(page.url.clone());
             }
         }
         (urls.len(), urls)
