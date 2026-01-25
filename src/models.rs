@@ -358,6 +358,3 @@ pub struct App {
     pub issue_urls_state: ratatui::widgets::ListState,
     pub current_issue_title: String,
 }
-
-// ENGINE MODELES AND TYPES
-//
