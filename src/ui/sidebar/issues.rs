@@ -18,6 +18,9 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block) {
         .issues_table_data
         .iter()
         .map(|row_data| {
+            // Get issues count from column 1 (count column) once per row
+            let issues_count = row_data[1].parse::<usize>().unwrap_or(0);
+
             let cells = row_data
                 .iter()
                 .enumerate()
@@ -26,21 +29,18 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block) {
                     use ratatui::text::Line;
                     use ratatui::widgets::Cell;
 
+                    let style = if issues_count > 0 {
+                        Style::default().fg(Color::Red)
+                    } else {
+                        Style::default().fg(Color::White)
+                    };
+
                     if i > 0 {
-                        // Columns 1 and 2 (URLs and % of) - centered with red styling for issues count
-                        let style = if i == 1 && c.parse::<usize>().unwrap_or(0) > 0 {
-                            Style::default().fg(Color::Red)
-                        } else {
-                            Style::default().fg(Color::White)
-                        };
+                        // Columns 1 and 2 (URLs and % of) - centered with red/white styling
                         Cell::from(Line::from(c.clone()).alignment(Alignment::Center)).style(style)
                     } else {
-                        // Column 0 (Issues) - red text if count > 0
-                        if c.parse::<usize>().unwrap_or(0) > 0 {
-                            Cell::from(c.clone()).style(Style::default().fg(Color::Red))
-                        } else {
-                            Cell::from(c.clone())
-                        }
+                        // Column 0 (Issues) - red/white text based on count
+                        Cell::from(c.clone()).style(style)
                     }
                 })
                 .collect::<Vec<_>>();
