@@ -55,7 +55,31 @@ impl IssueAnalyzer {
                 name: " Slow Load",
                 process: |_| (0, vec![]), // Placeholder
             },
+            IssueHandler {
+                name: " Non Canonical",
+                process: Self::analyze_non_canonical_urls,
+            },
         ]
+    }
+
+    // GET THE URLS THAT ARE NOT CANONICALISED
+    pub fn analyze_non_canonical_urls(page_data: &[PageData]) -> (usize, Vec<String>) {
+        let mut urls = Vec::new();
+
+        for page in page_data {
+            if page.url.ends_with(".jpg")
+                || page.url.ends_with(".pdf")
+                || page.url.ends_with(".png")
+                || page.url.ends_with(".svg")
+                || page.url.contains("cdn-cgi")
+                || page.url.ends_with("exe")
+            {
+                continue;
+            } else if page.canonicals.is_empty() {
+                urls.push(page.url.clone());
+            }
+        }
+        (urls.len(), urls)
     }
 
     // GET THE 5XX ERRORS STATUS CODES URLS

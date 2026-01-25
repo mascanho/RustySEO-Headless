@@ -1,10 +1,10 @@
 use crate::models::App;
 use ratatui::{
+    Frame,
     layout::{Constraint, Rect},
     style::{Color, Style},
     text::Span,
     widgets::{Block, Row, Table},
-    Frame,
 };
 
 static ACCENT_COLOUR: Color = Color::Rgb(80, 140, 255);
@@ -36,7 +36,6 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block) {
                     };
 
                     if i > 0 {
-                        // Columns 1 and 2 (URLs and % of) - centered with red/white styling
                         Cell::from(Line::from(c.clone()).alignment(Alignment::Center)).style(style)
                     } else {
                         // Column 0 (Issues) - red/white text based on count
