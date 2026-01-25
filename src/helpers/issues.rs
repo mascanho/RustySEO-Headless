@@ -93,7 +93,25 @@ impl IssueAnalyzer {
                 name: " Missing Schema",
                 process: Self::analyse_missing_schema,
             },
+            IssueHandler {
+                name: " Non HTTPS",
+                process: Self::analyse_non_https,
+            },
         ]
+    }
+
+    // GET THE PAGES THAT ARE NOTRR HTTPS SECURE
+    pub fn analyse_non_https(page_data: &[PageData]) -> (usize, Vec<String>) {
+        let mut non_https = Vec::new();
+
+        // MAKING THIS GENERIC MATE
+        for page in page_data {
+            if !page.url.starts_with("https://") {
+                non_https.push(page.url.clone());
+            }
+        }
+
+        (non_https.len(), non_https)
     }
 
     // FLAGG THE ONES WITH MISSING SCHEMA
