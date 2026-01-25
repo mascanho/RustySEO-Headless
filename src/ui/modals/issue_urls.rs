@@ -80,15 +80,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     // Footer with controls
     let footer = Paragraph::new(Span::styled(
-        " Esc/q: Close | ↑/k ↓/j: Navigate ",
-        Style::default().fg(Color::DarkGray).italic(),
-    ))
-    .alignment(Alignment::Center);
-    f.render_widget(footer, bottom_chunks[1]);
-
-    // Footer with controls
-    let footer = Paragraph::new(Span::styled(
-        " Esc/q: Close | ↑/k ↓/j: Navigate ",
+        " Esc/q: Close | ↑/k ↓/j: Navigate | Enter: Open URL | c: Copy URL ",
         Style::default().fg(Color::DarkGray).italic(),
     ))
     .alignment(Alignment::Center);
