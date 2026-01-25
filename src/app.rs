@@ -8,7 +8,7 @@ use std::sync::mpsc;
 
 use crate::crawler::CrawlMessage;
 use crate::helpers::issues::IssueAnalyzer;
-use crate::helpers::issues_table_data::issues;
+
 use crate::models::{App, AppSettings};
 use crate::settings::utils::read::recent_crawls;
 use crate::ui::modals::dashboard_menu;
@@ -185,7 +185,7 @@ impl Default for App {
             tree_view_selected_index: 0,
             tree_view_expanded_nodes: std::collections::HashSet::new(),
             // Issues Tab State
-            issues_table_data: issues(),
+            issues_table_data: IssueAnalyzer::generate_issues_table_data(&[]),
             issues_table_state: {
                 let mut state = ratatui::widgets::TableState::default();
                 state.select(Some(0));

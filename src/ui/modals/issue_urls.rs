@@ -1,10 +1,10 @@
 use crate::{models::App, ui::centered_rect};
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Borders, Clear, List, ListItem, Paragraph},
-    Frame,
 };
 
 pub fn render(f: &mut Frame, app: &mut App) {
@@ -47,20 +47,19 @@ pub fn render(f: &mut Frame, app: &mut App) {
                     format!("{:>3}. ", url_number),
                     Style::default().fg(Color::DarkGray),
                 ),
-                Span::styled(" 🔗 ", Style::default().fg(Color::Yellow)),
+                Span::raw(""),
                 Span::styled(url, Style::default().fg(Color::White)),
             ]))
         })
         .collect();
 
-    let list = List::new(items)
-        .highlight_style(
-            Style::default()
-                .bg(accent_color)
-                .fg(Color::Black)
-                .add_modifier(Modifier::BOLD),
-        )
-        .highlight_symbol(">> ");
+    let list = List::new(items).highlight_style(
+        Style::default()
+            .bg(accent_color)
+            .fg(Color::Black)
+            .add_modifier(Modifier::BOLD),
+    );
+    // .highlight_symbol(">> ");
 
     f.render_stateful_widget(list, chunks[1], &mut app.issue_urls_state);
 
