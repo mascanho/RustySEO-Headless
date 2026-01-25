@@ -634,7 +634,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                     KeyCode::BackTab => app.previous_sidebar_tab(),
                                     _ => {}
                                 }
-                            } else if app.sidebar_tab == 5 {
+                            } else if app.sidebar_tab == 3 {
                                 // Tree View handling
                                 match key.code {
                                     KeyCode::Up => {
