@@ -68,25 +68,30 @@ impl IssueAnalyzer {
         ]
     }
 
-    /// Detects pages that share the same non-empty title.
-    /// This does NOT compare page content.
+    /// Detects pages that share the same non-empty title and description.
+    /// This does NOT compare page content, just title and description combinations.
     /// TODO: Implement this function to detect pages with duplicate content in the body.
+
     pub fn analyse_duplicated_content(page_data: &[PageData]) -> (usize, Vec<String>) {
         let mut duplicates = Vec::new();
-        let mut titles = HashMap::new();
+        let mut content_map: HashMap<String, String> = HashMap::new();
 
         for page in page_data {
-            if !page.title.is_empty() {
-                if let Some(existing) = titles.get(&page.title) {
-                    // THERE WILL PAGES THAT MIGHT HAVE THE SAME TITLE DUE TO PARAMS
-                    if page.url.contains("?") {
-                        continue;
-                    }
+            if page.title.is_empty() || page.description.is_empty() {
+                continue;
+            }
 
-                    duplicates.push(format!("{} [ and ] {}", existing, page.url));
-                } else {
-                    titles.insert(page.title.clone(), page.url.clone());
+            let key = format!("{}|{}", page.title, page.description);
+
+            if let Some(existing_url) = content_map.get(&key) {
+                // Skip query-parameter URLs to avoid false positives
+                if page.url.contains("?") || existing_url.contains("?") {
+                    continue;
                 }
+
+                duplicates.push(format!("{} [ and ]  {}", existing_url, page.url));
+            } else {
+                content_map.insert(key, page.url.clone());
             }
         }
 
@@ -105,6 +110,9 @@ impl IssueAnalyzer {
                 || page.url.contains("cdn-cgi")
                 || page.url.ends_with("exe")
                 || page.url.contains("?")
+                || page.url.contains("#")
+                || page.url.contains("!")
+                || page.url.contains(".xml")
             {
                 continue;
             } else if page.canonicals.is_empty() {
