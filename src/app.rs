@@ -430,6 +430,7 @@ impl App {
             self.apply_js_urls_filter();
             self.apply_extractor_filter();
             self.apply_content_filter();
+            self.update_issues_from_crawled_data();
         }
 
         if crawl_finished {
@@ -1367,6 +1368,7 @@ impl App {
         self.show_content_search = false;
         self.content_filtered_table_data.clear();
         self.content_full_filtered_table_data.clear();
+        self.issues_table_data = IssueAnalyzer::generate_issues_table_data(&[]);
         self.crawl_progress = 0.0;
         self.is_crawling = true;
         self.logs_data
