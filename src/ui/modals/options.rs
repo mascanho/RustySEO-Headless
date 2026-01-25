@@ -263,7 +263,7 @@ pub fn copy_to_clipboard(text: String) {
     });
 }
 
-fn open_in_browser(url: &str) {
+pub fn open_in_browser(url: &str) {
     // Platform-specific browser opening
     #[cfg(target_os = "macos")]
     {
