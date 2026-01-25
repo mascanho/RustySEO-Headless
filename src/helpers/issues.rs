@@ -65,13 +65,35 @@ impl IssueAnalyzer {
                 name: " Duplicate Content",
                 process: Self::analyse_duplicated_content,
             },
+            IssueHandler {
+                name: " Non Webp/Avif Images",
+                process: Self::analyse_urls_with_png_or_jpg,
+            },
         ]
+    }
+
+    // GETS ALL THE URLS that contain PNGs or JPGs
+    pub fn analyse_urls_with_png_or_jpg(page_data: &[PageData]) -> (usize, Vec<String>) {
+        let mut image_urls = Vec::new();
+
+        for page in page_data {
+            let has_image = page.images.iter().any(|image| {
+                let src = image.src.split('?').next().unwrap().to_ascii_lowercase();
+
+                src.ends_with(".png") || src.ends_with(".jpg") || src.ends_with(".jpeg")
+            });
+
+            if has_image {
+                image_urls.push(page.url.clone());
+            }
+        }
+
+        (image_urls.len(), image_urls)
     }
 
     /// Detects pages that share the same non-empty title and description.
     /// This does NOT compare page content, just title and description combinations.
     /// TODO: Implement this function to detect pages with duplicate content in the body.
-
     pub fn analyse_duplicated_content(page_data: &[PageData]) -> (usize, Vec<String>) {
         let mut duplicates = Vec::new();
         let mut content_map: HashMap<String, String> = HashMap::new();
