@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![RustySEO Logo](https://raw.githubusercontent.com/user-attachments/assets/placeholder-logo.png)
+![RustySEO Logo](https://github.com/mascanho/RustySEO/raw/main/assets/icon.png)
 
 **A powerful, terminal-based SEO analysis tool built with Rust**
 
