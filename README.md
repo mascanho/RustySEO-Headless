@@ -1,4 +1,4 @@
-# 🦀 RustySEO CLI
+# RustySEO (Terminal)
 
 <div align="center">
 
