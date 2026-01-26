@@ -105,7 +105,7 @@ fn create_rows<'a>(
 
             let cells = vec![
                 Cell::from(format!(" {} ", css_url.id)).style(row_style),
-                Cell::from(format!(" {} ", truncate_url(&css_url.url))).style(row_style),
+                Cell::from(format!(" {} ", truncate_url(&css_url.destination))).style(row_style),
                 Cell::from(format!(" {} ", css_url.source))
                     .style(row_style.fg(Color::Green).bold()),
             ];
