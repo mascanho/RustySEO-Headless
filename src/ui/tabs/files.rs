@@ -1,230 +1,150 @@
+use crate::models::App;
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table},
-    Frame,
 };
 
-use crate::models::App;
+/// Standard colors for consistency
+const ACCENT_COLOR: Color = Color::Rgb(80, 140, 255);
+const BORDER_COLOR: Color = Color::Rgb(40, 45, 60);
 
-/// Renders the Content tab with independent filtering and scrolling from the Dashboard.
-/// This allows for content-specific views and future customizations.
+/// Renders the CSS URLs table showing unique CSS files and their usage statistics.
 pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     app.table_rect = Some(area);
-    let accent_color = Color::Rgb(80, 140, 255);
-    let border_color = Color::Rgb(40, 45, 60);
 
-    // Ensure we have filtered data if it was just initialized
-    if app.content_filtered_table_data.is_empty()
-        && !app.table_data.is_empty()
-        && app.content_search_query.is_empty()
+    // Initial population if empty
+    if app.css_urls_filtered_table_data.is_empty()
+        && !app.css_urls_table_data.is_empty()
+        && app.css_urls_search_query.is_empty()
     {
-        app.content_filtered_table_data = app.table_data.clone();
-        app.content_full_filtered_table_data = app.table_data.clone();
+        app.apply_css_urls_filter();
     }
 
-    let header_titles = [
-        "ID",
-        "URL",
-        "Word Count",
-        "KW 1",
-        "KW 2",
-        "KW 3",
-        "KW 4",
-        "KW 5",
-        "KW 6",
-        "KW 7",
-        "KW 8",
-        "KW 9",
-        "KW 10",
-    ];
+    let header_titles = ["#", " URL", "File Type"];
 
     let header = Row::new(header_titles.iter().map(|h| {
         Cell::from(format!(" {} ", h)).style(
             Style::default()
                 .add_modifier(Modifier::BOLD)
-                .fg(accent_color)
+                .fg(ACCENT_COLOR)
                 .bg(Color::Rgb(30, 30, 45)),
         )
     }))
     .height(1);
 
-    let rows = app
-        .content_filtered_table_data
-        .iter()
-        .enumerate()
-        .map(|(i, data)| {
-            let is_selected = app.content_table_state.selected() == Some(i);
+    let selected_idx = app.css_urls_table_state.selected();
+    let rows = create_rows(&app.css_urls_filtered_table_data, selected_idx);
 
-            let mut row_style = if i % 2 == 0 {
-                Style::default().bg(Color::Rgb(20, 20, 30))
-            } else {
-                Style::default().bg(Color::Rgb(25, 25, 40))
-            };
-
-            if is_selected {
-                row_style = row_style
-                    .fg(Color::White)
-                    .bg(accent_color)
-                    .add_modifier(Modifier::BOLD);
-            }
-
-            let start = app.content_current_page * app.content_page_size;
-            let full_idx = start + i;
-            let mut displayed_data = vec![
-                (full_idx + 1).to_string(), // Sequential ID
-                data[1].clone(),            // URL
-                data[18].clone(),           // Word Count
-            ];
-
-            // Add Top 10 Keywords (Indices 23 to 32)
-            for j in 23..33 {
-                if let Some(kw) = data.get(j) {
-                    displayed_data.push(kw.clone());
-                } else {
-                    displayed_data.push(String::new());
-                }
-            }
-
-            let cells = displayed_data.iter().enumerate().map(|(j, c)| {
-                let content = if j == 1 {
-                    // URL
-                    let content = c.as_str();
-                    let char_count = content.chars().count();
-                    if char_count > 60 {
-                        let start = app
-                            .content_horizontal_scroll
-                            .min(char_count.saturating_sub(50));
-                        let end = (start + 60).min(char_count);
-                        let sliced: String =
-                            content.chars().skip(start).take(end - start).collect();
-                        if start > 0 {
-                            format!("…{}", sliced)
-                        } else {
-                            sliced
-                        }
-                    } else {
-                        content.to_string()
-                    }
-                } else {
-                    c.as_str().to_string()
-                };
-
-                let mut cell_style = Style::default();
-
-                if j == 2 {
-                    // Word count column
-                    if let Ok(count) = content.trim().parse::<usize>() {
-                        if count > 1000 {
-                            cell_style = cell_style.fg(Color::Green).bold();
-                        } else if count < 200 {
-                            cell_style = cell_style.fg(Color::Red);
-                        }
-                    }
-                }
-
-                if j >= 3 {
-                    // Keywords
-                    cell_style = cell_style.fg(Color::Cyan);
-                }
-
-                let cell_content = if j == 2 {
-                    // Word count column - center the text
-                    Cell::from(Line::from(content).alignment(Alignment::Center)).style(cell_style)
-                } else {
-                    Cell::from(content).style(cell_style)
-                };
-
-                cell_content
-            });
-
-            Row::new(cells).style(row_style).height(1)
-        });
-
-    let max_id_width = app
-        .content_full_filtered_table_data
-        .len()
-        .to_string()
-        .len()
-        .max(2) as u16
-        + 2;
-    let mut widths = vec![
-        Constraint::Length(max_id_width), // ID
-        Constraint::Min(40),              // URL
-        Constraint::Length(12),           // Word Count
+    let widths = [
+        Constraint::Length(5),  // #
+        Constraint::Min(60),    // CSS URL
+        Constraint::Length(12), // Pages Using
     ];
 
-    // Add 10 constraints for keywords
-    for _ in 0..10 {
-        widths.push(Constraint::Length(20));
-    }
-
-    let total_pages = (app.content_full_filtered_table_data.len() + app.content_page_size - 1)
-        / app.content_page_size;
-    let scroll_indicator = if app.content_horizontal_scroll > 0 {
-        format!(" [Scroll: {}] ", app.content_horizontal_scroll)
-    } else {
-        String::new()
-    };
+    let total_pages = calculate_total_pages(app);
+    let pagination_info = format!(
+        " Page {} of {} ",
+        app.css_urls_current_page + 1,
+        total_pages
+    );
 
     let table = Table::new(rows, widths)
         .header(header)
         .block(
             Block::default()
                 .borders(Borders::ALL)
+                .border_style(Style::default().fg(BORDER_COLOR))
                 .title(Span::styled(
                     format!(
-                        " Content Audit ({}) ",
-                        app.content_full_filtered_table_data.len()
+                        " 🎨 CSS URLs ({}) ",
+                        app.css_urls_full_filtered_table_data.len()
                     ),
-                    Style::default()
-                        .fg(Color::Yellow)
-                        .add_modifier(Modifier::BOLD),
+                    Style::default().fg(ACCENT_COLOR).bold(),
                 ))
                 .title_bottom(
                     Line::from(Span::styled(
-                        format!(
-                            " Page {} of {} {} ",
-                            app.content_current_page + 1,
-                            total_pages,
-                            scroll_indicator
-                        ),
+                        pagination_info,
                         Style::default().fg(Color::DarkGray).italic(),
                     ))
                     .alignment(Alignment::Right),
-                )
-                .border_style(Style::default().fg(border_color)),
+                ),
         )
         .column_spacing(1)
-        .style(Style::default().bg(Color::Rgb(15, 15, 25)));
+        .row_highlight_style(Style::default().bg(ACCENT_COLOR))
+        .style(Style::default().bg(Color::Rgb(20, 20, 30)));
 
-    f.render_stateful_widget(table, area, &mut app.content_table_state);
+    f.render_stateful_widget(table, area, &mut app.css_urls_table_state);
 
-    // Floating Search Bar at bottom right
-    if app.show_content_search {
-        let search_area = Rect {
-            x: area.x + area.width.saturating_sub(40),
-            y: area.y + area.height.saturating_sub(3),
-            width: 38,
-            height: 3,
-        };
-
-        let search_block = Block::default()
-            .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::Yellow))
-            .bg(Color::Rgb(25, 25, 40))
-            .title(Span::styled(
-                " Fuzzy Search ",
-                Style::default().fg(Color::Cyan).bold(),
-            ));
-
-        let search_text = format!("> {}", app.content_search_query);
-        let search_paragraph = Paragraph::new(search_text)
-            .block(search_block)
-            .style(Style::default().fg(Color::White));
-
-        f.render_widget(Clear, search_area);
-        f.render_widget(search_paragraph, search_area);
+    // Render search bar if active
+    if app.show_css_urls_search {
+        render_search_bar(f, &app.css_urls_search_query, area);
     }
+}
+
+fn create_rows<'a>(
+    data: &'a Vec<crate::models::InternalLink>,
+    selected_idx: Option<usize>,
+) -> Vec<Row<'a>> {
+    data.iter()
+        .enumerate()
+        .map(|(i, css_url)| {
+            let is_selected = selected_idx == Some(i);
+            let base_style = if i % 2 == 0 {
+                Style::default().bg(Color::Rgb(20, 20, 30))
+            } else {
+                Style::default().bg(Color::Rgb(25, 25, 40))
+            };
+
+            let mut row_style = base_style;
+            if is_selected {
+                row_style = row_style.fg(Color::White).add_modifier(Modifier::BOLD);
+            }
+
+            let cells = vec![
+                Cell::from(format!(" {} ", css_url.id)).style(row_style),
+                Cell::from(format!(" {} ", truncate_url(&css_url.url))).style(row_style),
+                Cell::from(format!(" {} ", css_url.source))
+                    .style(row_style.fg(Color::Green).bold()),
+            ];
+
+            Row::new(cells).height(1)
+        })
+        .collect()
+}
+
+fn truncate_url(url: &str) -> String {
+    url.to_string()
+}
+
+fn calculate_total_pages(app: &App) -> usize {
+    let total_items = app.css_urls_full_filtered_table_data.len();
+    if total_items == 0 {
+        1
+    } else {
+        (total_items + app.css_urls_page_size - 1) / app.css_urls_page_size
+    }
+}
+
+fn render_search_bar(f: &mut Frame, query: &str, area: Rect) {
+    let search_area = Rect {
+        x: area.x + area.width / 4,
+        y: area.y + area.height / 2 - 1,
+        width: area.width / 2,
+        height: 3,
+    };
+
+    f.render_widget(Clear, search_area);
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(ACCENT_COLOR))
+        .title(" 🔍 Fuzzy Search (CSS URLs) ");
+
+    let paragraph = Paragraph::new(format!(" Query: {}_", query))
+        .block(block)
+        .style(Style::default().bg(Color::Rgb(30, 35, 50)));
+
+    f.render_widget(paragraph, search_area);
 }

@@ -1270,8 +1270,8 @@ impl App {
             AppState::CoreWebVitals => AppState::CustomExtractor,
             AppState::CustomExtractor => AppState::Reports,
             AppState::Reports => AppState::Content,
-            AppState::Content => AppState::Dashboard,
-            AppState::Files => AppState::Files,
+            AppState::Content => AppState::Files,
+            AppState::Files => AppState::Dashboard,
         }
     }
 
@@ -1289,7 +1289,7 @@ impl App {
             AppState::CustomExtractor => AppState::CoreWebVitals,
             AppState::Reports => AppState::CustomExtractor,
             AppState::Content => AppState::Reports,
-            AppState::Files => AppState::Files,
+            AppState::Files => AppState::Content,
         }
     }
 
