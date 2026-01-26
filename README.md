@@ -12,6 +12,8 @@
 
 [Features](#-features) • [Installation](#-installation) • [Usage](#-usage) • [Screenshots](#-screenshots) • [Contributing](#-contributing)
 
+
+![RustySEO Terminal](https://github.com/mascanho/RustySEO/raw/main/assets/tui.webp)
 </div>
 
 ---
