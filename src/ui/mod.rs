@@ -1,9 +1,9 @@
 use ratatui::{
+    Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Borders, Clear, Paragraph, Tabs},
-    Frame,
 };
 
 use crate::{app::AppState, models::App};
@@ -57,6 +57,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         "Custom Extractor",
         "Reports",
         "Content",
+        "Files",
     ];
     let tabs = Tabs::new(titles)
         .block(
@@ -100,6 +101,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         }
         AppState::Reports => tabs::reports::render(f, app, content_area),
         AppState::Content => tabs::content::render(f, app, content_area),
+        AppState::Files => tabs::files::render(f, app, content_area),
     }
 
     // Render Footer

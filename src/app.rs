@@ -1,7 +1,7 @@
 // TODO: Reduce the size of this module. This shit is way too big.
 use directories::ProjectDirs;
-use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
+use fuzzy_matcher::skim::SkimMatcherV2;
 use serde_json;
 use std::collections::HashMap;
 use std::sync::mpsc;
@@ -33,6 +33,7 @@ pub enum AppState {
     CustomExtractor,
     Reports,
     Content,
+    Files,
 }
 
 impl Default for App {
@@ -1076,7 +1077,7 @@ impl App {
         }
     }
 
-pub fn copy_selected_issue_url(&mut self) {
+    pub fn copy_selected_issue_url(&mut self) {
         if let Some(selected) = self.issue_urls_state.selected() {
             if selected < self.issue_urls_list.len() {
                 let url = self.issue_urls_list[selected].clone();
@@ -1270,6 +1271,7 @@ pub fn copy_selected_issue_url(&mut self) {
             AppState::CustomExtractor => AppState::Reports,
             AppState::Reports => AppState::Content,
             AppState::Content => AppState::Dashboard,
+            AppState::Files => AppState::Files,
         }
     }
 
@@ -1287,6 +1289,7 @@ pub fn copy_selected_issue_url(&mut self) {
             AppState::CustomExtractor => AppState::CoreWebVitals,
             AppState::Reports => AppState::CustomExtractor,
             AppState::Content => AppState::Reports,
+            AppState::Files => AppState::Files,
         }
     }
 
@@ -1304,6 +1307,7 @@ pub fn copy_selected_issue_url(&mut self) {
             AppState::CustomExtractor => 9,
             AppState::Reports => 10,
             AppState::Content => 11,
+            AppState::Files => 12,
         }
     }
 
@@ -1521,9 +1525,9 @@ pub fn copy_selected_issue_url(&mut self) {
         }
     }
 
-pub fn next_dashboard_menu_item(&mut self) {
-        // There are 8 items in menu (0 to 7)
-        if self.dashboard_menu_selection >= 7 {
+    // THIS MOVES AND SETS THE CYCLING OF THE TAB IN THE MAIN VIEW
+    pub fn next_dashboard_menu_item(&mut self) {
+        if self.dashboard_menu_selection >= 10 {
             self.dashboard_menu_selection = 0;
         } else {
             self.dashboard_menu_selection += 1;
