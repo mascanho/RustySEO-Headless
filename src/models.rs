@@ -209,6 +209,14 @@ pub struct ImageTableEntry {
     pub page_count: usize,
 }
 
+/// Entry for the Files results table
+#[derive(Debug, Clone)]
+pub struct FileEntry {
+    pub id: usize,
+    pub url: String,
+    pub filetype: String,
+}
+
 pub struct App {
     pub options_modal: bool,
     pub sidebar_visible: bool,
@@ -357,4 +365,13 @@ pub struct App {
     pub issue_urls_list: Vec<String>,
     pub issue_urls_state: ratatui::widgets::ListState,
     pub current_issue_title: String,
+    // Files Tab State
+    pub files_table_data: Vec<FileEntry>,
+    pub files_table_state: ratatui::widgets::TableState,
+    pub files_filtered_table_data: Vec<FileEntry>,
+    pub files_full_filtered_table_data: Vec<FileEntry>,
+    pub files_current_page: usize,
+    pub files_page_size: usize,
+    pub files_search_query: String,
+    pub show_files_search: bool,
 }

@@ -203,6 +203,15 @@ impl Default for App {
                 state
             },
             current_issue_title: String::new(),
+            // Files Tab State
+            files_table_data: Vec::new(),
+            files_table_state: ratatui::widgets::TableState::default(),
+            files_filtered_table_data: Vec::new(),
+            files_full_filtered_table_data: Vec::new(),
+            files_current_page: 0,
+            files_page_size: 100,
+            files_search_query: String::new(),
+            show_files_search: false,
         }
     }
 }
@@ -313,11 +322,47 @@ impl App {
                 let internal_link = crate::models::InternalLink {
                     id: self.internal_table_data.len() + 1,
                     source: data.url.clone(),
-                    destination: normalized_to,
+                    destination: normalized_to.clone(),
                     anchor: link.text.clone(),
                     rel: link.rel.clone(),
                 };
                 self.internal_table_data.push(internal_link);
+
+                // Collect Files (non-HTML, non-PHP, non-CSS, non-JS)
+                let path_part = normalized_to.split('?').next().unwrap_or("").split('#').next().unwrap_or("");
+                let last_segment = path_part.split('/').last().unwrap_or("");
+                let ext = if last_segment.contains('.') {
+                    last_segment.split('.').last().unwrap_or("").to_lowercase()
+                } else {
+                    String::new()
+                };
+
+                if !ext.is_empty()
+                    && ext != "html"
+                    && ext != "htm"
+                    && ext != "php"
+                    && ext != "css"
+                    && ext != "js"
+                    && ext != "aspx"
+                    && ext != "asp"
+                    && ext != "jsp"
+                    && ext != "png"
+                    && ext != "jpg"
+                    && ext != "jpeg"
+                    && ext != "gif"
+                    && ext != "svg"
+                    && ext != "webp"
+                    && ext != "ico"
+                    && ext.len() < 10 // Avoid long "extensions" that are likely not files
+                {
+                    if !self.files_table_data.iter().any(|f| f.url == normalized_to) {
+                        self.files_table_data.push(crate::models::FileEntry {
+                            id: self.files_table_data.len() + 1,
+                            url: normalized_to.clone(),
+                            filetype: ext.to_uppercase(),
+                        });
+                    }
+                }
             }
 
             // Collect CSS URLs for CSS URLs table
@@ -431,6 +476,7 @@ impl App {
             self.apply_js_urls_filter();
             self.apply_extractor_filter();
             self.apply_content_filter();
+            self.apply_files_filter();
             self.update_issues_from_crawled_data();
         }
 
@@ -454,6 +500,7 @@ impl App {
                 self.apply_extractor_filter();
                 self.apply_images_filter();
                 self.apply_content_filter();
+                self.apply_files_filter();
                 self.last_search_time = None;
             }
         }
@@ -1811,6 +1858,119 @@ impl App {
                         .select(Some(self.content_filtered_table_data.len() - 1));
                 }
             }
+        }
+    }
+
+    pub fn apply_files_filter(&mut self) {
+        if self.files_search_query.is_empty() {
+            if self.files_full_filtered_table_data.len() != self.files_table_data.len() {
+                self.files_full_filtered_table_data = self.files_table_data.clone();
+            }
+        } else {
+            let matcher = SkimMatcherV2::default();
+            let mut scored_data = Vec::new();
+            for file in &self.files_table_data {
+                let search_blob = format!("{} {}", file.url, file.filetype);
+                if let Some(score) = matcher.fuzzy_match(&search_blob, &self.files_search_query) {
+                    scored_data.push((score, file.clone()));
+                }
+            }
+            scored_data.sort_by(|a, b| b.0.cmp(&a.0));
+            self.files_full_filtered_table_data =
+                scored_data.into_iter().map(|(_, file)| file).collect();
+        }
+
+        let total_pages = (self.files_full_filtered_table_data.len() + self.files_page_size - 1)
+            / self.files_page_size;
+        if self.files_current_page >= total_pages {
+            self.files_current_page = total_pages.saturating_sub(1);
+        }
+
+        self.apply_files_pagination();
+    }
+
+    pub fn apply_files_pagination(&mut self) {
+        let start = self.files_current_page * self.files_page_size;
+        let end = (start + self.files_page_size).min(self.files_full_filtered_table_data.len());
+        self.files_filtered_table_data = self.files_full_filtered_table_data[start..end].to_vec();
+
+        if let Some(selected) = self.files_table_state.selected() {
+            if selected >= self.files_filtered_table_data.len() {
+                if self.files_filtered_table_data.is_empty() {
+                    self.files_table_state.select(None);
+                } else {
+                    self.files_table_state
+                        .select(Some(self.files_filtered_table_data.len() - 1));
+                }
+            }
+        }
+    }
+
+    pub fn next_files_row(&mut self) {
+        let len = self.files_filtered_table_data.len();
+        if len == 0 {
+            return;
+        }
+        let i = match self.files_table_state.selected() {
+            Some(i) => {
+                if i >= len - 1 {
+                    let total_pages = (self.files_full_filtered_table_data.len()
+                        + self.files_page_size
+                        - 1)
+                        / self.files_page_size;
+                    if self.files_current_page + 1 < total_pages {
+                        self.files_current_page += 1;
+                        self.apply_files_pagination();
+                        0
+                    } else {
+                        len - 1
+                    }
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.files_table_state.select(Some(i));
+    }
+
+    pub fn previous_files_row(&mut self) {
+        let len = self.files_filtered_table_data.len();
+        if len == 0 {
+            return;
+        }
+        let i = match self.files_table_state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    if self.files_current_page > 0 {
+                        self.files_current_page -= 1;
+                        self.apply_files_pagination();
+                        self.files_filtered_table_data.len().saturating_sub(1)
+                    } else {
+                        0
+                    }
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.files_table_state.select(Some(i));
+    }
+
+    pub fn next_files_page(&mut self) {
+        let total_pages = (self.files_full_filtered_table_data.len() + self.files_page_size - 1)
+            / self.files_page_size;
+        if self.files_current_page + 1 < total_pages {
+            self.files_current_page += 1;
+            self.apply_files_pagination();
+        }
+    }
+
+    pub fn previous_files_page(&mut self) {
+        if self.files_current_page > 0 {
+            self.files_current_page -= 1;
+            self.apply_files_pagination();
         }
     }
 

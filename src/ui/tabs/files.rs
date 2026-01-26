@@ -11,16 +11,16 @@ use ratatui::{
 const ACCENT_COLOR: Color = Color::Rgb(80, 140, 255);
 const BORDER_COLOR: Color = Color::Rgb(40, 45, 60);
 
-/// Renders the CSS URLs table showing unique CSS files and their usage statistics.
+/// Renders the Files table showing unique files discovered.
 pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     app.table_rect = Some(area);
 
     // Initial population if empty
-    if app.css_urls_filtered_table_data.is_empty()
-        && !app.css_urls_table_data.is_empty()
-        && app.css_urls_search_query.is_empty()
+    if app.files_filtered_table_data.is_empty()
+        && !app.files_table_data.is_empty()
+        && app.files_search_query.is_empty()
     {
-        app.apply_css_urls_filter();
+        app.apply_files_filter();
     }
 
     let header_titles = ["#", " URL", "File Type"];
@@ -35,19 +35,19 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     }))
     .height(1);
 
-    let selected_idx = app.css_urls_table_state.selected();
-    let rows = create_rows(&app.css_urls_filtered_table_data, selected_idx);
+    let selected_idx = app.files_table_state.selected();
+    let rows = create_rows(&app.files_filtered_table_data, selected_idx);
 
     let widths = [
         Constraint::Length(5),  // #
-        Constraint::Min(60),    // CSS URL
-        Constraint::Length(12), // Pages Using
+        Constraint::Min(60),    // URL
+        Constraint::Length(15), // File Type
     ];
 
     let total_pages = calculate_total_pages(app);
     let pagination_info = format!(
         " Page {} of {} ",
-        app.css_urls_current_page + 1,
+        app.files_current_page + 1,
         total_pages
     );
 
@@ -59,8 +59,8 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 .border_style(Style::default().fg(BORDER_COLOR))
                 .title(Span::styled(
                     format!(
-                        " 🎨 CSS URLs ({}) ",
-                        app.css_urls_full_filtered_table_data.len()
+                        " 📁 Discovered Files ({}) ",
+                        app.files_full_filtered_table_data.len()
                     ),
                     Style::default().fg(ACCENT_COLOR).bold(),
                 ))
@@ -76,21 +76,21 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         .row_highlight_style(Style::default().bg(ACCENT_COLOR))
         .style(Style::default().bg(Color::Rgb(20, 20, 30)));
 
-    f.render_stateful_widget(table, area, &mut app.css_urls_table_state);
+    f.render_stateful_widget(table, area, &mut app.files_table_state);
 
     // Render search bar if active
-    if app.show_css_urls_search {
-        render_search_bar(f, &app.css_urls_search_query, area);
+    if app.show_files_search {
+        render_search_bar(f, &app.files_search_query, area);
     }
 }
 
 fn create_rows<'a>(
-    data: &'a Vec<crate::models::InternalLink>,
+    data: &'a Vec<crate::models::FileEntry>,
     selected_idx: Option<usize>,
 ) -> Vec<Row<'a>> {
     data.iter()
         .enumerate()
-        .map(|(i, css_url)| {
+        .map(|(i, file)| {
             let is_selected = selected_idx == Some(i);
             let base_style = if i % 2 == 0 {
                 Style::default().bg(Color::Rgb(20, 20, 30))
@@ -104,10 +104,10 @@ fn create_rows<'a>(
             }
 
             let cells = vec![
-                Cell::from(format!(" {} ", css_url.id)).style(row_style),
-                Cell::from(format!(" {} ", truncate_url(&css_url.destination))).style(row_style),
-                Cell::from(format!(" {} ", css_url.source))
-                    .style(row_style.fg(Color::Green).bold()),
+                Cell::from(format!(" {} ", file.id)).style(row_style),
+                Cell::from(format!(" {} ", file.url)).style(row_style),
+                Cell::from(format!(" {} ", file.filetype))
+                    .style(row_style.fg(Color::Yellow).bold()),
             ];
 
             Row::new(cells).height(1)
@@ -115,16 +115,12 @@ fn create_rows<'a>(
         .collect()
 }
 
-fn truncate_url(url: &str) -> String {
-    url.to_string()
-}
-
 fn calculate_total_pages(app: &App) -> usize {
-    let total_items = app.css_urls_full_filtered_table_data.len();
+    let total_items = app.files_full_filtered_table_data.len();
     if total_items == 0 {
         1
     } else {
-        (total_items + app.css_urls_page_size - 1) / app.css_urls_page_size
+        (total_items + app.files_page_size - 1) / app.files_page_size
     }
 }
 
@@ -140,7 +136,7 @@ fn render_search_bar(f: &mut Frame, query: &str, area: Rect) {
     let block = Block::default()
         .borders(Borders::ALL)
         .border_style(Style::default().fg(ACCENT_COLOR))
-        .title(" 🔍 Fuzzy Search (CSS URLs) ");
+        .title(" 🔍 Fuzzy Search (Files) ");
 
     let paragraph = Paragraph::new(format!(" Query: {}_", query))
         .block(block)

@@ -222,6 +222,23 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             }
                             _ => {}
                         }
+                    } else if app.show_files_search {
+                        match key.code {
+                            KeyCode::Enter | KeyCode::Esc => {
+                                app.show_files_search = false;
+                                app.apply_files_filter();
+                                app.options_modal = false
+                            }
+                            KeyCode::Char(c) => {
+                                app.files_search_query.push(c);
+                                app.last_search_time = Some(std::time::Instant::now());
+                            }
+                            KeyCode::Backspace => {
+                                app.files_search_query.pop();
+                                app.last_search_time = Some(std::time::Instant::now());
+                            }
+                            _ => {}
+                        }
                     } else if app.show_js_pages_modal {
                         match key.code {
                             KeyCode::Char('q') | KeyCode::Esc => app.close_js_pages_modal(),
@@ -720,6 +737,8 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                     app.show_extractor_search = true;
                                 } else if app.current_state == AppState::Images {
                                     app.show_images_search = true;
+                                } else if app.current_state == AppState::Files {
+                                    app.show_files_search = true;
                                 }
                             }
 
@@ -768,6 +787,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                         ));
                                     }
                                 }
+                                AppState::Files => app.previous_files_row(),
                                 _ => {}
                             },
                             KeyCode::Char('j') | KeyCode::Down => match app.current_state {
@@ -812,6 +832,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                         }
                                     }
                                 }
+                                AppState::Files => app.next_files_row(),
                                 _ => {}
                             },
 
@@ -822,6 +843,13 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                     AppState::Dashboard | AppState::CoreWebVitals => {
                                         if !app.table_data.is_empty() {
                                             app.table_state.select(Some(app.table_data.len() - 1));
+                                        }
+                                    }
+                                    AppState::Files => {
+                                        if !app.files_filtered_table_data.is_empty() {
+                                            app.files_table_state.select(Some(
+                                                app.files_filtered_table_data.len().saturating_sub(1),
+                                            ));
                                         }
                                     }
                                     _ => {}
@@ -890,6 +918,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                         app.apply_js_urls_pagination();
                                     }
                                 }
+                                AppState::Files => app.next_files_page(),
                                 _ => {}
                             },
                             KeyCode::Char('[') => match app.current_state {
@@ -906,6 +935,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                         app.apply_js_urls_pagination();
                                     }
                                 }
+                                AppState::Files => app.previous_files_page(),
                                 _ => {}
                             },
 
