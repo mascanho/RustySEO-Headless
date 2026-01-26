@@ -1,7 +1,6 @@
 use crate::app::AppState;
 
 use std::collections::HashMap;
-use std::sync::mpsc::Receiver;
 
 use serde::{Deserialize, Serialize};
 
@@ -256,11 +255,11 @@ pub struct App {
     pub detail_horizontal_scroll: usize,
     pub detail_table_state: ratatui::widgets::TableState,
     pub input_url: String,
-    pub crawl_receiver: Option<Receiver<crate::crawler::CrawlMessage>>,
+    pub crawl_receiver: Option<tokio::sync::mpsc::Receiver<crate::crawler::CrawlMessage>>,
     pub is_crawling: bool,
     pub settings: Option<AppSettings>,
-    pub settings_receiver: Option<Receiver<()>>,
-    pub log_receiver: Option<Receiver<String>>,
+    pub settings_receiver: Option<std::sync::mpsc::Receiver<()>>,
+    pub log_receiver: Option<std::sync::mpsc::Receiver<String>>,
     pub show_logs: bool,
     pub logs_height: u16,
     pub show_ai_modal: bool,
