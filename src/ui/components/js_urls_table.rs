@@ -8,7 +8,7 @@ use ratatui::{
 };
 
 /// Standard colors for consistency
-const ACCENT_COLOR: Color = Color::Rgb(255, 180, 80); // Orange-ish for JS
+const ACCENT_COLOR: Color = Color::Rgb(80, 140, 255);
 const BORDER_COLOR: Color = Color::Rgb(40, 45, 60);
 
 /// Renders the Javascript URLs table showing unique JS files and their usage statistics.
@@ -58,10 +58,10 @@ pub fn render_js_urls_table(f: &mut Frame, app: &mut App, area: Rect) {
                 .border_style(Style::default().fg(BORDER_COLOR))
                 .title(Span::styled(
                     format!(
-                        " 📜 Javascript URLs ({}) ",
+                        " Javascript URLs ({}) ",
                         app.js_urls_full_filtered_table_data.len()
                     ),
-                    Style::default().fg(ACCENT_COLOR).bold(),
+                    Style::default().fg(Color::Yellow).bold(),
                 ))
                 .title_bottom(
                     Line::from(Span::styled(

@@ -8,10 +8,13 @@ use ratatui::{
 
 use crate::models::App;
 
+/// Standard colors for consistency
+const ACCENT_COLOR: Color = Color::Rgb(80, 140, 255);
+const BORDER_COLOR: Color = Color::Rgb(40, 45, 60);
+
 /// Renders the Redirects tab with results table
 pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     app.table_rect = Some(area);
-    let accent_color = Color::Rgb(255, 100, 100); // Reddish for redirects
     let border_color = Color::Rgb(40, 45, 60);
 
     // Initial population if empty
@@ -28,7 +31,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         Cell::from(format!(" {} ", h)).style(
             Style::default()
                 .add_modifier(Modifier::BOLD)
-                .fg(accent_color)
+                .fg(ACCENT_COLOR)
                 .bg(Color::Rgb(30, 30, 45)),
         )
     }))
@@ -50,11 +53,13 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             if is_selected {
                 row_style = row_style
                     .fg(Color::White)
-                    .bg(accent_color)
+                    .bg(ACCENT_COLOR)
                     .add_modifier(Modifier::BOLD);
             }
 
-            let chain_str = data.chain.iter()
+            let chain_str = data
+                .chain
+                .iter()
                 .map(|h| format!("{} ({})", h.url, h.status))
                 .collect::<Vec<_>>()
                 .join(" -> ");
@@ -85,9 +90,12 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             Block::default()
                 .borders(Borders::ALL)
                 .title(Span::styled(
-                    format!(" Redirects ({}) ", app.redirects_full_filtered_table_data.len()),
+                    format!(
+                        " Redirects ({}) ",
+                        app.redirects_full_filtered_table_data.len()
+                    ),
                     Style::default()
-                        .fg(Color::Red)
+                        .fg(Color::Yellow)
                         .add_modifier(Modifier::BOLD),
                 ))
                 .title_bottom(

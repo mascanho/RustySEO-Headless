@@ -59,10 +59,10 @@ pub fn render_css_urls_table(f: &mut Frame, app: &mut App, area: Rect) {
                 .border_style(Style::default().fg(BORDER_COLOR))
                 .title(Span::styled(
                     format!(
-                        " 🎨 CSS URLs ({}) ",
+                        " CSS URLs ({}) ",
                         app.css_urls_full_filtered_table_data.len()
                     ),
-                    Style::default().fg(ACCENT_COLOR).bold(),
+                    Style::default().fg(Color::Yellow).bold(),
                 ))
                 .title_bottom(
                     Line::from(Span::styled(

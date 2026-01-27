@@ -259,7 +259,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 .borders(Borders::ALL)
                 .title(Span::styled(
                     format!(
-                        "SEO Audit Dashboard ({}) ",
+                        " SEO Audit Dashboard ({}) ",
                         app.full_filtered_table_data.len()
                     ),
                     Style::default()

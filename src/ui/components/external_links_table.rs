@@ -78,7 +78,7 @@ pub fn render_external_links_table(f: &mut Frame, app: &mut App, area: Rect, tit
                         title,
                         app.external_full_filtered_table_data.len()
                     ),
-                    Style::default().fg(ACCENT_COLOR).bold(),
+                    Style::default().fg(Color::Yellow).bold(),
                 ))
                 .title_bottom(
                     Line::from(Span::styled(

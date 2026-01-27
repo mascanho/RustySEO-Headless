@@ -14,7 +14,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
     let block = Block::default()
         .title(Span::styled(
-            " 🔗 Internal Links ",
+            " Internal Links ",
             Style::default()
                 .fg(Color::Yellow)
                 .add_modifier(Modifier::BOLD),

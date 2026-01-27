@@ -1,10 +1,10 @@
 use crate::models::App;
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table},
-    Frame,
 };
 
 /// Standard colors for consistency
@@ -55,10 +55,10 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 .border_style(Style::default().fg(BORDER_COLOR))
                 .title(Span::styled(
                     format!(
-                        " 📁 Discovered Files ({}) ",
+                        " Discovered Files ({}) ",
                         app.files_full_filtered_table_data.len()
                     ),
-                    Style::default().fg(ACCENT_COLOR).bold(),
+                    Style::default().fg(Color::Yellow).bold(),
                 ))
                 .title_bottom(
                     Line::from(Span::styled(

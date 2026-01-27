@@ -122,6 +122,23 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             Span::styled(format!("{}", "OFF"), Style::default().fg(Color::Red))
         },
         Span::styled(" | ", Style::default().fg(border_color)),
+        Span::styled(
+            " D.Lock: ",
+            Style::default()
+                .fg(Color::Gray)
+                .add_modifier(Modifier::BOLD),
+        ),
+        if app
+            .settings
+            .as_ref()
+            .map(|s| s.crawler.stay_on_domain)
+            .unwrap_or(false)
+        {
+            Span::styled(format!("{}", "ON"), Style::default().fg(Color::Green))
+        } else {
+            Span::styled(format!("{}", "OFF"), Style::default().fg(Color::Red))
+        },
+        Span::styled(" | ", Style::default().fg(border_color)),
         // MAX PAGES
         Span::styled("Max URLs: ", Style::default().fg(Color::Gray)),
         Span::styled(

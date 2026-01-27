@@ -158,7 +158,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 .borders(Borders::ALL)
                 .title(Span::styled(
                     format!(
-                        "Core Web Vitals - Desktop & Mobile ({}) ",
+                        " Core Web Vitals - Desktop & Mobile ({}) ",
                         app.full_filtered_table_data.len()
                     ),
                     Style::default()
