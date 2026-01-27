@@ -610,7 +610,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                     KeyCode::Up | KeyCode::Char('k') => app.previous_issues_row(),
                                     KeyCode::Down | KeyCode::Char('j') => app.next_issues_row(),
                                     KeyCode::Enter => app.handle_issues_enter(),
-                                    KeyCode::Char('E') => edit_file(),
+                                    KeyCode::Char('E') => app.open_settings_file(),
                                     _ => {}
                                 }
                             }
@@ -733,6 +733,16 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                     }
                                     KeyCode::Char('k') => app.previous_sidebar_tab(),
                                     KeyCode::Char('j') => app.next_sidebar_tab(),
+                                    KeyCode::Char('g') => app.set_sidebar_tab(0),
+                                    KeyCode::Char('i') => app.set_sidebar_tab(1),
+                                    KeyCode::Char('b') => app.set_sidebar_tab(2),
+                                    KeyCode::Char('t') => app.set_sidebar_tab(3),
+                                    KeyCode::Char('s') => app.set_sidebar_tab(4),
+                                    KeyCode::Char('e') | KeyCode::Char('E') => {
+                                        if app.sidebar_tab == 4 {
+                                            app.open_settings_file();
+                                        }
+                                    }
                                     // KeyCode::Char('l') | KeyCode::Right => app.next_state(),
                                     KeyCode::Tab => app.next_sidebar_tab(),
                                     KeyCode::BackTab => app.previous_sidebar_tab(),
@@ -1011,11 +1021,6 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             KeyCode::Char('b') => app.set_sidebar_tab(2), // Bookmarks
                             KeyCode::Char('t') => app.set_sidebar_tab(3), // Tree View
                             KeyCode::Char('s') => app.set_sidebar_tab(4), // Settings
-                            KeyCode::Char('e') | KeyCode::Char('E') => {
-                                if app.sidebar_visible && app.sidebar_tab == 1 {
-                                    app.open_settings_file();
-                                }
-                            }
                             KeyCode::Char('f') => app.set_sidebar_tab(2),
                             KeyCode::Char('a') => app.set_sidebar_tab(3),
                             KeyCode::Char('A') => app.toggle_ai_modal(),

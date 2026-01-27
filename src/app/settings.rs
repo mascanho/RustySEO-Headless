@@ -4,10 +4,13 @@ use crate::crawler::CrawlEngine;
 impl App {
     pub fn open_settings_file(&mut self) {
         let path = crate::models::AppSettings::path();
-        #[cfg(target_os = "macos")]
-        let cmd = "open";
-        #[cfg(not(target_os = "macos"))]
-        let cmd = "xdg-open";
+        
+        // Use runtime OS detection for more reliability
+        let cmd = match std::env::consts::OS {
+            "macos" => "open",
+            "windows" => "start",
+            _ => "xdg-open",
+        };
 
         let _ = std::process::Command::new(cmd).arg(path).spawn();
 
