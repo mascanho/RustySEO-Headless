@@ -1,5 +1,5 @@
-use crate::models::App;
 use crate::crawler::CrawlMessage;
+use crate::models::App;
 use tokio::sync::mpsc;
 
 impl App {
@@ -109,6 +109,8 @@ impl App {
                 let normalized_to = crate::crawler::url_normalizer::normalize_url(&link.href)
                     .unwrap_or_else(|| link.href.clone());
 
+                let is_email = normalized_to.starts_with("mailto:") || normalized_to.contains("@");
+
                 let is_internal = if let Some(ref domain) = base_domain {
                     if let Ok(parsed_to) = url::Url::parse(&normalized_to) {
                         if let Some(to_domain) = parsed_to.domain() {
@@ -132,6 +134,11 @@ impl App {
                     true
                 };
 
+                if is_email {
+                    // do nothing with it
+                    return;
+                }
+
                 if is_internal {
                     let internal_link = crate::models::InternalLink {
                         id: self.internal_table_data.len() + 1,
@@ -153,7 +160,13 @@ impl App {
                 }
 
                 // Collect Files (non-HTML, non-PHP, non-CSS, non-JS)
-                let path_part = normalized_to.split('?').next().unwrap_or("").split('#').next().unwrap_or("");
+                let path_part = normalized_to
+                    .split('?')
+                    .next()
+                    .unwrap_or("")
+                    .split('#')
+                    .next()
+                    .unwrap_or("");
                 let last_segment = path_part.split('/').last().unwrap_or("");
                 let ext = if last_segment.contains('.') {
                     last_segment.split('.').last().unwrap_or("").to_lowercase()
@@ -177,7 +190,6 @@ impl App {
                     && ext != "svg"
                     && ext != "webp"
                     && ext != "ico"
-                    && ext.len() < 10 // Avoid long "extensions" that are likely not files
                 {
                     if !self.files_table_data.iter().any(|f| f.url == normalized_to) {
                         self.files_table_data.push(crate::models::FileEntry {
@@ -291,12 +303,13 @@ impl App {
             // Collect Redirects
             if !data.redirect_chain.is_empty() {
                 let final_status = data.status.parse::<u16>().unwrap_or(0);
-                self.redirects_table_data.push(crate::models::RedirectEntry {
-                    id: self.redirects_table_data.len() + 1,
-                    initial_url: data.url.clone(),
-                    status_code: final_status,
-                    chain: data.redirect_chain.clone(),
-                });
+                self.redirects_table_data
+                    .push(crate::models::RedirectEntry {
+                        id: self.redirects_table_data.len() + 1,
+                        initial_url: data.url.clone(),
+                        status_code: final_status,
+                        chain: data.redirect_chain.clone(),
+                    });
             }
 
             if let Some(keywords) = &data.keywords {
