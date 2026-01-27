@@ -12,7 +12,7 @@ pub enum RustyColors {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum AppState {
     Dashboard,
-    Crawl,
+    External,
     Internal,
     Redirects,
     Images,
@@ -114,6 +114,15 @@ impl Default for App {
             internal_horizontal_scroll: 0,
             internal_search_query: String::new(),
             show_internal_search: false,
+            external_table_data: Vec::new(),
+            external_table_state: ratatui::widgets::TableState::default(),
+            external_filtered_table_data: Vec::new(),
+            external_full_filtered_table_data: Vec::new(),
+            external_current_page: 0,
+            external_page_size: 100,
+            external_horizontal_scroll: 0,
+            external_search_query: String::new(),
+            show_external_search: false,
             css_urls_table_data: Vec::new(),
             css_urls_table_state: ratatui::widgets::TableState::default(),
             css_urls_filtered_table_data: Vec::new(),
@@ -212,6 +221,16 @@ impl Default for App {
             redirects_horizontal_scroll: 0,
             redirects_search_query: String::new(),
             show_redirects_search: false,
+            // Keywords Tab State
+            keywords_table_data: Vec::new(),
+            keywords_table_state: ratatui::widgets::TableState::default(),
+            keywords_filtered_table_data: Vec::new(),
+            keywords_full_filtered_table_data: Vec::new(),
+            keywords_current_page: 0,
+            keywords_page_size: 100,
+            keywords_horizontal_scroll: 0,
+            keywords_search_query: String::new(),
+            show_keywords_search: false,
         }
     }
 }

@@ -100,19 +100,47 @@ impl App {
 
             self.table_data.push(row);
 
-            // Populate internal links table
+            // Populate internal and external links table
+            let base_domain = url::Url::parse(&self.input_url)
+                .ok()
+                .and_then(|u| u.domain().map(|d| d.to_string()));
+
             for link in &data.anchor_links {
                 let normalized_to = crate::crawler::url_normalizer::normalize_url(&link.href)
                     .unwrap_or_else(|| link.href.clone());
 
-                let internal_link = crate::models::InternalLink {
-                    id: self.internal_table_data.len() + 1,
-                    source: data.url.clone(),
-                    destination: normalized_to.clone(),
-                    anchor: link.text.clone(),
-                    rel: link.rel.clone(),
+                let is_internal = if let Some(ref domain) = base_domain {
+                    if let Ok(parsed_to) = url::Url::parse(&normalized_to) {
+                        parsed_to.domain() == Some(domain)
+                    } else {
+                        // If it's a relative URL, normalize_url might have made it absolute if it had base_url
+                        // but actually extract_page_elements just gets the href.
+                        // Wait, if it's relative, it's usually internal.
+                        !normalized_to.contains("://")
+                    }
+                } else {
+                    true
                 };
-                self.internal_table_data.push(internal_link);
+
+                if is_internal {
+                    let internal_link = crate::models::InternalLink {
+                        id: self.internal_table_data.len() + 1,
+                        source: data.url.clone(),
+                        destination: normalized_to.clone(),
+                        anchor: link.text.clone(),
+                        rel: link.rel.clone(),
+                    };
+                    self.internal_table_data.push(internal_link);
+                } else {
+                    let external_link = crate::models::ExternalLink {
+                        id: self.external_table_data.len() + 1,
+                        source: data.url.clone(),
+                        destination: normalized_to.clone(),
+                        anchor: link.text.clone(),
+                        rel: link.rel.clone(),
+                    };
+                    self.external_table_data.push(external_link);
+                }
 
                 // Collect Files (non-HTML, non-PHP, non-CSS, non-JS)
                 let path_part = normalized_to.split('?').next().unwrap_or("").split('#').next().unwrap_or("");
@@ -261,6 +289,20 @@ impl App {
                 });
             }
 
+            // Collect Keywords
+            if let Some(keywords) = &data.keywords {
+                let word_count = data.word_count.unwrap_or(0);
+                for (i, kw) in keywords.iter().enumerate() {
+                    self.keywords_table_data.push(crate::models::KeywordEntry {
+                        id: self.keywords_table_data.len() + 1,
+                        keyword: kw.clone(),
+                        url: data.url.clone(),
+                        word_count,
+                        relevance: i + 1,
+                    });
+                }
+            }
+
             self.url_to_status
                 .insert(data.url.clone(), data.status.clone());
             self.log(format!("Crawled: {}", data.url));
@@ -269,12 +311,14 @@ impl App {
         if !results.is_empty() {
             self.apply_filter();
             self.apply_internal_filter();
+            self.apply_external_filter();
             self.apply_css_urls_filter();
             self.apply_js_urls_filter();
             self.apply_extractor_filter();
             self.apply_content_filter();
             self.apply_files_filter();
             self.apply_redirects_filter();
+            self.apply_keywords_filter();
             self.update_issues_from_crawled_data();
         }
 

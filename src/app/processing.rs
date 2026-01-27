@@ -124,6 +124,57 @@ impl App {
         }
     }
 
+    pub fn apply_external_filter(&mut self) {
+        if self.external_search_query.is_empty() {
+            if self.external_full_filtered_table_data.len() != self.external_table_data.len() {
+                self.external_full_filtered_table_data = self.external_table_data.clone();
+            }
+        } else {
+            let matcher = SkimMatcherV2::default();
+            let mut scored_data = Vec::new();
+            for ext in &self.external_table_data {
+                let search_blob = format!("{} {} {}", ext.source, ext.destination, ext.anchor);
+                if let Some(score) = matcher.fuzzy_match(&search_blob, &self.external_search_query) {
+                    scored_data.push((score, ext.clone()));
+                }
+            }
+            scored_data.sort_by(|a, b| b.0.cmp(&a.0));
+            self.external_full_filtered_table_data = scored_data
+                .into_iter()
+                .map(|(_, ext)| ext)
+                .collect();
+        }
+
+        let total_pages = (self.external_full_filtered_table_data.len()
+            + self.external_page_size
+            - 1)
+            / self.external_page_size.max(1);
+        if self.external_current_page >= total_pages {
+            self.external_current_page = total_pages.saturating_sub(1);
+        }
+
+        self.apply_external_pagination();
+    }
+
+    pub fn apply_external_pagination(&mut self) {
+        let start = self.external_current_page * self.external_page_size;
+        let end =
+            (start + self.external_page_size).min(self.external_full_filtered_table_data.len());
+        self.external_filtered_table_data =
+            self.external_full_filtered_table_data[start..end].to_vec();
+
+        if let Some(selected) = self.external_table_state.selected() {
+            if selected >= self.external_filtered_table_data.len() {
+                if self.external_filtered_table_data.is_empty() {
+                    self.external_table_state.select(None);
+                } else {
+                    self.external_table_state
+                        .select(Some(self.external_filtered_table_data.len() - 1));
+                }
+            }
+        }
+    }
+
     pub fn apply_css_urls_filter(&mut self) {
         if self.css_urls_search_query.is_empty() {
             // Only update if lengths differ to avoid redundant massive clones
@@ -466,6 +517,53 @@ impl App {
                 } else {
                     self.redirects_table_state
                         .select(Some(self.redirects_filtered_table_data.len() - 1));
+                }
+            }
+        }
+    }
+
+    pub fn apply_keywords_filter(&mut self) {
+        if self.keywords_search_query.is_empty() {
+            if self.keywords_full_filtered_table_data.len() != self.keywords_table_data.len() {
+                self.keywords_full_filtered_table_data = self.keywords_table_data.clone();
+            }
+        } else {
+            let matcher = SkimMatcherV2::default();
+            let mut scored_data = Vec::new();
+            for entry in &self.keywords_table_data {
+                let search_blob = format!("{} {}", entry.keyword, entry.url);
+                if let Some(score) = matcher.fuzzy_match(&search_blob, &self.keywords_search_query) {
+                    scored_data.push((score, entry.clone()));
+                }
+            }
+            scored_data.sort_by(|a, b| b.0.cmp(&a.0));
+            self.keywords_full_filtered_table_data =
+                scored_data.into_iter().map(|(_, entry)| entry).collect();
+        }
+
+        let total_pages = (self.keywords_full_filtered_table_data.len() + self.keywords_page_size
+            - 1)
+            / self.keywords_page_size.max(1);
+        if self.keywords_current_page >= total_pages {
+            self.keywords_current_page = total_pages.saturating_sub(1);
+        }
+
+        self.apply_keywords_pagination();
+    }
+
+    pub fn apply_keywords_pagination(&mut self) {
+        let start = self.keywords_current_page * self.keywords_page_size;
+        let end = (start + self.keywords_page_size).min(self.keywords_full_filtered_table_data.len());
+        self.keywords_filtered_table_data =
+            self.keywords_full_filtered_table_data[start..end].to_vec();
+
+        if let Some(selected) = self.keywords_table_state.selected() {
+            if selected >= self.keywords_filtered_table_data.len() {
+                if self.keywords_filtered_table_data.is_empty() {
+                    self.keywords_table_state.select(None);
+                } else {
+                    self.keywords_table_state
+                        .select(Some(self.keywords_filtered_table_data.len() - 1));
                 }
             }
         }

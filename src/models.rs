@@ -172,6 +172,15 @@ pub struct InternalLink {
 }
 
 #[derive(Debug, Clone)]
+pub struct ExternalLink {
+    pub id: usize,
+    pub source: String,
+    pub destination: String,
+    pub anchor: String,
+    pub rel: String,
+}
+
+#[derive(Debug, Clone)]
 pub struct CssUrl {
     pub id: usize,
     pub url: String,
@@ -228,6 +237,15 @@ pub struct RedirectEntry {
     pub initial_url: String,
     pub status_code: u16,
     pub chain: Vec<RedirectHop>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct KeywordEntry {
+    pub id: usize,
+    pub keyword: String,
+    pub url: String,
+    pub word_count: usize,
+    pub relevance: usize, // 1 to 10 based on its rank in extracted keywords
 }
 
 pub struct App {
@@ -300,6 +318,17 @@ pub struct App {
     pub internal_table_state: ratatui::widgets::TableState,
     pub internal_filtered_table_data: Vec<InternalLink>,
     pub internal_full_filtered_table_data: Vec<InternalLink>,
+
+    // External Links Tab State
+    pub external_table_data: Vec<ExternalLink>,
+    pub external_table_state: ratatui::widgets::TableState,
+    pub external_filtered_table_data: Vec<ExternalLink>,
+    pub external_full_filtered_table_data: Vec<ExternalLink>,
+    pub external_current_page: usize,
+    pub external_page_size: usize,
+    pub external_horizontal_scroll: usize,
+    pub external_search_query: String,
+    pub show_external_search: bool,
 
     // CSS URLs Tab State
     pub css_urls_table_data: Vec<CssUrl>,
@@ -397,4 +426,14 @@ pub struct App {
     pub redirects_horizontal_scroll: usize,
     pub redirects_search_query: String,
     pub show_redirects_search: bool,
+    // Keywords Tab State
+    pub keywords_table_data: Vec<KeywordEntry>,
+    pub keywords_table_state: ratatui::widgets::TableState,
+    pub keywords_filtered_table_data: Vec<KeywordEntry>,
+    pub keywords_full_filtered_table_data: Vec<KeywordEntry>,
+    pub keywords_current_page: usize,
+    pub keywords_page_size: usize,
+    pub keywords_horizontal_scroll: usize,
+    pub keywords_search_query: String,
+    pub show_keywords_search: bool,
 }

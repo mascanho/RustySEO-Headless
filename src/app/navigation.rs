@@ -135,8 +135,8 @@ impl App {
 
     pub fn next_state(&mut self) {
         self.current_state = match self.current_state {
-            AppState::Dashboard => AppState::Crawl,
-            AppState::Crawl => AppState::Internal,
+            AppState::Dashboard => AppState::External,
+            AppState::External => AppState::Internal,
             AppState::Internal => AppState::Redirects,
             AppState::Redirects => AppState::Images,
             AppState::Images => AppState::Css,
@@ -154,8 +154,8 @@ impl App {
     pub fn previous_state(&mut self) {
         self.current_state = match self.current_state {
             AppState::Dashboard => AppState::Files,
-            AppState::Crawl => AppState::Dashboard,
-            AppState::Internal => AppState::Crawl,
+            AppState::External => AppState::Dashboard,
+            AppState::Internal => AppState::External,
             AppState::Redirects => AppState::Internal,
             AppState::Images => AppState::Redirects,
             AppState::Css => AppState::Images,
@@ -172,7 +172,7 @@ impl App {
     pub fn get_state_index(&self) -> usize {
         match self.current_state {
             AppState::Dashboard => 0,
-            AppState::Crawl => 1,
+            AppState::External => 1,
             AppState::Internal => 2,
             AppState::Redirects => 3,
             AppState::Images => 4,
@@ -373,6 +373,75 @@ impl App {
         if self.internal_current_page > 0 {
             self.internal_current_page -= 1;
             self.apply_internal_pagination();
+        }
+    }
+
+    pub fn next_external_row(&mut self) {
+        let len = self.external_filtered_table_data.len();
+        if len == 0 {
+            return;
+        }
+        let i = match self.external_table_state.selected() {
+            Some(i) => {
+                if i >= len - 1 {
+                    let total_pages = (self.external_full_filtered_table_data.len()
+                        + self.external_page_size
+                        - 1)
+                        / self.external_page_size;
+                    if self.external_current_page + 1 < total_pages {
+                        self.external_current_page += 1;
+                        self.apply_external_pagination();
+                        0
+                    } else {
+                        len - 1
+                    }
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.external_table_state.select(Some(i));
+    }
+
+    pub fn previous_external_row(&mut self) {
+        let len = self.external_filtered_table_data.len();
+        if len == 0 {
+            return;
+        }
+        let i = match self.external_table_state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    if self.external_current_page > 0 {
+                        self.external_current_page -= 1;
+                        self.apply_external_pagination();
+                        self.external_filtered_table_data.len().saturating_sub(1)
+                    } else {
+                        0
+                    }
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.external_table_state.select(Some(i));
+    }
+
+    pub fn next_external_page(&mut self) {
+        let total_pages = (self.external_full_filtered_table_data.len() + self.external_page_size
+            - 1)
+            / self.external_page_size;
+        if self.external_current_page + 1 < total_pages {
+            self.external_current_page += 1;
+            self.apply_external_pagination();
+        }
+    }
+
+    pub fn previous_external_page(&mut self) {
+        if self.external_current_page > 0 {
+            self.external_current_page -= 1;
+            self.apply_external_pagination();
         }
     }
 
@@ -835,6 +904,75 @@ impl App {
         if self.redirects_current_page > 0 {
             self.redirects_current_page -= 1;
             self.apply_redirects_pagination();
+        }
+    }
+
+    pub fn next_keywords_row(&mut self) {
+        let len = self.keywords_filtered_table_data.len();
+        if len == 0 {
+            return;
+        }
+        let i = match self.keywords_table_state.selected() {
+            Some(i) => {
+                if i >= len - 1 {
+                    let total_pages = (self.keywords_full_filtered_table_data.len()
+                        + self.keywords_page_size
+                        - 1)
+                        / self.keywords_page_size.max(1);
+                    if self.keywords_current_page + 1 < total_pages {
+                        self.keywords_current_page += 1;
+                        self.apply_keywords_pagination();
+                        0
+                    } else {
+                        len - 1
+                    }
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.keywords_table_state.select(Some(i));
+    }
+
+    pub fn previous_keywords_row(&mut self) {
+        let len = self.keywords_filtered_table_data.len();
+        if len == 0 {
+            return;
+        }
+        let i = match self.keywords_table_state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    if self.keywords_current_page > 0 {
+                        self.keywords_current_page -= 1;
+                        self.apply_keywords_pagination();
+                        self.keywords_filtered_table_data.len().saturating_sub(1)
+                    } else {
+                        0
+                    }
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.keywords_table_state.select(Some(i));
+    }
+
+    pub fn next_keywords_page(&mut self) {
+        let total_pages = (self.keywords_full_filtered_table_data.len() + self.keywords_page_size
+            - 1)
+            / self.keywords_page_size.max(1);
+        if self.keywords_current_page + 1 < total_pages {
+            self.keywords_current_page += 1;
+            self.apply_keywords_pagination();
+        }
+    }
+
+    pub fn previous_keywords_page(&mut self) {
+        if self.keywords_current_page > 0 {
+            self.keywords_current_page -= 1;
+            self.apply_keywords_pagination();
         }
     }
 }

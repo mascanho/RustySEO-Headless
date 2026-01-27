@@ -1,5 +1,5 @@
 pub mod content;
-pub mod crawl;
+pub mod external;
 pub mod css;
 pub mod custom_extractor;
 pub mod cwv;
@@ -11,3 +11,4 @@ pub mod javascript;
 pub mod logs;
 pub mod redirects;
 pub mod reports;
+pub mod keywords;

@@ -46,7 +46,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
     // Render Navigation Tabs
     let titles = vec![
         "Overview",
-        "Crawl",
+        "External",
         "Internal",
         "Redirects",
         "Images",
@@ -82,7 +82,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
     // Render Tab Content
     match app.current_state {
         AppState::Dashboard => tabs::dashboard::render(f, app, content_area),
-        AppState::Crawl => tabs::crawl::render(f, app, content_area),
+        AppState::External => tabs::external::render(f, app, content_area),
         AppState::Internal => tabs::internal::render(f, app, content_area),
         AppState::Css => tabs::css::render(f, app, content_area),
         AppState::Javascript => tabs::javascript::render(f, app, content_area),
@@ -90,16 +90,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         AppState::CustomExtractor => tabs::custom_extractor::render(f, app, content_area),
         AppState::Images => tabs::images::render(f, app, content_area),
         AppState::Redirects => tabs::redirects::render(f, app, content_area),
-        AppState::Keywords => {
-            let block = Block::default()
-                .borders(Borders::ALL)
-                .title(format!(" {:?} ", app.current_state))
-                .border_style(Style::default().fg(border_color));
-            let content = Paragraph::new("Feature coming soon...")
-                .block(block)
-                .alignment(ratatui::layout::Alignment::Center);
-            f.render_widget(content, content_area);
-        }
+        AppState::Keywords => tabs::keywords::render(f, app, content_area),
         AppState::Reports => tabs::reports::render(f, app, content_area),
         AppState::Content => tabs::content::render(f, app, content_area),
         AppState::Files => tabs::files::render(f, app, content_area),
