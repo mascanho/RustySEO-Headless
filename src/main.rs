@@ -26,7 +26,7 @@ pub mod settings;
 pub mod ui;
 
 use crate::{
-    app::AppState, cli::Cli, crawler::CrawlEngine, models::App, settings::utils::open::edit_file,
+    app::AppState, cli::Cli, crawler::CrawlEngine, models::App,
     ui::ui,
 };
 

@@ -103,19 +103,29 @@ impl App {
             // Populate internal and external links table
             let base_domain = url::Url::parse(&self.input_url)
                 .ok()
-                .and_then(|u| u.domain().map(|d| d.to_string()));
+                .and_then(|u| u.host_str().map(|d| d.to_string()));
 
-            for link in &data.anchor_links {
+            for link in &data.outlinks {
                 let normalized_to = crate::crawler::url_normalizer::normalize_url(&link.href)
                     .unwrap_or_else(|| link.href.clone());
 
                 let is_internal = if let Some(ref domain) = base_domain {
                     if let Ok(parsed_to) = url::Url::parse(&normalized_to) {
-                        parsed_to.domain() == Some(domain)
+                        if let Some(to_domain) = parsed_to.domain() {
+                            // Check if domains match or if it is a subdomain
+                            to_domain == domain || to_domain.ends_with(&format!(".{}", domain))
+                        } else {
+                            // No domain (e.g. mailto, tel, or IP)
+                            // If it's an IP, compare host
+                            if let Some(to_host) = parsed_to.host_str() {
+                                // If base_domain was actually an IP host
+                                to_host == domain
+                            } else {
+                                false
+                            }
+                        }
                     } else {
-                        // If it's a relative URL, normalize_url might have made it absolute if it had base_url
-                        // but actually extract_page_elements just gets the href.
-                        // Wait, if it's relative, it's usually internal.
+                        // If it's a relative URL
                         !normalized_to.contains("://")
                     }
                 } else {
@@ -289,10 +299,10 @@ impl App {
                 });
             }
 
-            // Collect Keywords
             if let Some(keywords) = &data.keywords {
                 let word_count = data.word_count.unwrap_or(0);
-                for (i, kw) in keywords.iter().enumerate() {
+                // The keywords are already sorted by frequency and limited to 10 in extract_keywords
+                for (i, kw) in keywords.iter().enumerate().take(10) {
                     self.keywords_table_data.push(crate::models::KeywordEntry {
                         id: self.keywords_table_data.len() + 1,
                         keyword: kw.clone(),
@@ -344,6 +354,8 @@ impl App {
                 self.apply_content_filter();
                 self.apply_files_filter();
                 self.apply_redirects_filter();
+                self.apply_external_filter();
+                self.apply_keywords_filter();
                 self.last_search_time = None;
             }
         }
