@@ -1,10 +1,10 @@
 use crate::models::App;
 use ratatui::{
-    Frame,
     layout::{Alignment, Constraint, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table},
+    Frame,
 };
 
 /// Standard colors for consistency
@@ -45,11 +45,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     ];
 
     let total_pages = calculate_total_pages(app);
-    let pagination_info = format!(
-        " Page {} of {} ",
-        app.files_current_page + 1,
-        total_pages
-    );
+    let pagination_info = format!(" Page {} of {} ", app.files_current_page + 1, total_pages);
 
     let table = Table::new(rows, widths)
         .header(header)
@@ -88,6 +84,21 @@ fn create_rows<'a>(
     data: &'a Vec<crate::models::FileEntry>,
     selected_idx: Option<usize>,
 ) -> Vec<Row<'a>> {
+    if data.is_empty() {
+        let no_files_row = Row::new(vec![
+            Cell::from(""),
+            Cell::from(" No files found during crawl ").style(
+                Style::default()
+                    .fg(Color::DarkGray)
+                    .italic()
+                    .bg(Color::Rgb(20, 20, 30)),
+            ),
+            Cell::from(""),
+        ])
+        .height(1);
+        return vec![no_files_row];
+    }
+
     data.iter()
         .enumerate()
         .map(|(i, file)| {
