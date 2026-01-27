@@ -421,4 +421,53 @@ impl App {
             }
         }
     }
+
+    pub fn apply_redirects_filter(&mut self) {
+        if self.redirects_search_query.is_empty() {
+            if self.redirects_full_filtered_table_data.len() != self.redirects_table_data.len() {
+                self.redirects_full_filtered_table_data = self.redirects_table_data.clone();
+            }
+        } else {
+            let matcher = SkimMatcherV2::default();
+            let mut scored_data = Vec::new();
+            for entry in &self.redirects_table_data {
+                let search_blob = format!("{} {}", entry.initial_url, entry.status_code);
+                if let Some(score) = matcher.fuzzy_match(&search_blob, &self.redirects_search_query) {
+                    scored_data.push((score, entry.clone()));
+                }
+            }
+            scored_data.sort_by(|a, b| b.0.cmp(&a.0));
+            self.redirects_full_filtered_table_data =
+                scored_data.into_iter().map(|(_, entry)| entry).collect();
+        }
+
+        let total_pages = (self.redirects_full_filtered_table_data.len()
+            + self.redirects_page_size
+            - 1)
+            / self.redirects_page_size;
+        if self.redirects_current_page >= total_pages {
+            self.redirects_current_page = total_pages.saturating_sub(1);
+        }
+
+        self.apply_redirects_pagination();
+    }
+
+    pub fn apply_redirects_pagination(&mut self) {
+        let start = self.redirects_current_page * self.redirects_page_size;
+        let end = (start + self.redirects_page_size)
+            .min(self.redirects_full_filtered_table_data.len());
+        self.redirects_filtered_table_data =
+            self.redirects_full_filtered_table_data[start..end].to_vec();
+
+        if let Some(selected) = self.redirects_table_state.selected() {
+            if selected >= self.redirects_filtered_table_data.len() {
+                if self.redirects_filtered_table_data.is_empty() {
+                    self.redirects_table_state.select(None);
+                } else {
+                    self.redirects_table_state
+                        .select(Some(self.redirects_filtered_table_data.len() - 1));
+                }
+            }
+        }
+    }
 }

@@ -250,6 +250,17 @@ impl App {
                 }
             }
 
+            // Collect Redirects
+            if !data.redirect_chain.is_empty() {
+                let final_status = data.status.parse::<u16>().unwrap_or(0);
+                self.redirects_table_data.push(crate::models::RedirectEntry {
+                    id: self.redirects_table_data.len() + 1,
+                    initial_url: data.url.clone(),
+                    status_code: final_status,
+                    chain: data.redirect_chain.clone(),
+                });
+            }
+
             self.url_to_status
                 .insert(data.url.clone(), data.status.clone());
             self.log(format!("Crawled: {}", data.url));
@@ -263,6 +274,7 @@ impl App {
             self.apply_extractor_filter();
             self.apply_content_filter();
             self.apply_files_filter();
+            self.apply_redirects_filter();
             self.update_issues_from_crawled_data();
         }
 
@@ -287,6 +299,7 @@ impl App {
                 self.apply_images_filter();
                 self.apply_content_filter();
                 self.apply_files_filter();
+                self.apply_redirects_filter();
                 self.last_search_time = None;
             }
         }

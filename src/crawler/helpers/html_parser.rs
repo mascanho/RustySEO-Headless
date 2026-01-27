@@ -120,6 +120,7 @@ pub struct PageData {
     pub cwv_desktop: Option<CwvData>,
     pub cwv_mobile: Option<CwvData>,
     pub extraction: Option<ExtractionResult>,
+    pub redirect_chain: Vec<crate::models::RedirectHop>,
 }
 
 // Define static CSS selectors for common page elements using LazyLock
@@ -388,6 +389,7 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         cwv_desktop: None,
         cwv_mobile: None,
         extraction,
+        redirect_chain: vec![],
     }
 }
 

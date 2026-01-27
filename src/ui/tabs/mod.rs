@@ -9,4 +9,5 @@ pub mod images;
 pub mod internal;
 pub mod javascript;
 pub mod logs;
+pub mod redirects;
 pub mod reports;

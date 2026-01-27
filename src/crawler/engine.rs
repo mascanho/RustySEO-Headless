@@ -61,6 +61,7 @@ impl CrawlEngine {
                 .timeout(Duration::from_secs(15))
                 .pool_max_idle_per_host(concurrency_limit)
                 .tcp_keepalive(Some(Duration::from_secs(60)))
+                .redirect(reqwest::redirect::Policy::none())
                 .build()
                 .unwrap(),
             visited: Arc::new(Mutex::new(HashSet::new())),

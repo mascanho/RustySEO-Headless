@@ -58,31 +58,60 @@ async fn fetch_standard(
     base_url: &Url,
     referer: Option<String>,
 ) -> Result<PageData, String> {
-    let user_agent = pick_random_user_agent(user_agents);
-    tracing::debug!("[UA] Using agent: {} for {}", user_agent, url);
+    let mut current_url = url.to_string();
+    let mut redirect_chain = Vec::new();
+    let mut hops = 0;
+    let max_hops = 10;
 
-    let mut request = client
-        .get(url)
-        .header("User-Agent", user_agent)
-        .header(
-            "Accept",
-            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        )
-        .header("Accept-Language", "en-US,en;q=0.5")
-        .header("Sec-Fetch-Dest", "document")
-        .header("Sec-Fetch-Mode", "navigate")
-        .header("Sec-Fetch-Site", "same-origin")
-        .header("DNT", "1")
-        .header("Upgrade-Insecure-Requests", "1");
+    let response = loop {
+        let user_agent = pick_random_user_agent(user_agents);
+        let mut request = client
+            .get(&current_url)
+            .header("User-Agent", user_agent)
+            .header(
+                "Accept",
+                "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            )
+            .header("Accept-Language", "en-US,en;q=0.5")
+            .header("Sec-Fetch-Dest", "document")
+            .header("Sec-Fetch-Mode", "navigate")
+            .header("Sec-Fetch-Site", "same-origin")
+            .header("DNT", "1")
+            .header("Upgrade-Insecure-Requests", "1");
 
-    if let Some(ref_url) = referer {
-        request = request.header("Referer", ref_url);
-    }
+        if let Some(ref_url) = referer.as_ref() {
+            request = request.header("Referer", ref_url);
+        }
 
-    let response = request
-        .send()
-        .await
-        .map_err(|e| format!("Request failed: {}", e))?;
+        let res = request
+            .send()
+            .await
+            .map_err(|e| format!("Request failed: {}", e))?;
+
+        let status = res.status();
+        if status.is_redirection() && hops < max_hops {
+            if let Some(location) = res.headers().get("location") {
+                let location_str = location.to_str().map_err(|_| "Invalid location header")?;
+                let next_url = match Url::parse(location_str) {
+                    Ok(u) => u.to_string(),
+                    Err(_) => base_url
+                        .join(location_str)
+                        .map_err(|_| "Failed to resolve redirect URL")?
+                        .to_string(),
+                };
+
+                redirect_chain.push(crate::models::RedirectHop {
+                    url: next_url.clone(),
+                    status: status.as_u16(),
+                });
+
+                current_url = next_url;
+                hops += 1;
+                continue;
+            }
+        }
+        break res;
+    };
 
     let status_code = response.status();
     tracing::info!("[FETCH] {} -> STATUS: {}", url, status_code);
@@ -118,9 +147,10 @@ async fn fetch_standard(
     let document = Html::parse_document(&html_content);
 
     let mut page_data = extract_page_elements(&document);
-    page_data.url = url.to_string();
+    page_data.url = url.to_string(); // Keep initial URL as the identity
     page_data.status = status;
     page_data.headers = headers_list;
+    page_data.redirect_chain = redirect_chain;
 
     if let Some(ct) = content_type_header {
         page_data.content_type = ct;

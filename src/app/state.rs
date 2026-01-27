@@ -202,6 +202,16 @@ impl Default for App {
             files_page_size: 100,
             files_search_query: String::new(),
             show_files_search: false,
+            // Redirects Tab State
+            redirects_table_data: Vec::new(),
+            redirects_table_state: ratatui::widgets::TableState::default(),
+            redirects_filtered_table_data: Vec::new(),
+            redirects_full_filtered_table_data: Vec::new(),
+            redirects_current_page: 0,
+            redirects_page_size: 100,
+            redirects_horizontal_scroll: 0,
+            redirects_search_query: String::new(),
+            show_redirects_search: false,
         }
     }
 }

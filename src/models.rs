@@ -216,6 +216,20 @@ pub struct FileEntry {
     pub filetype: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RedirectHop {
+    pub url: String,
+    pub status: u16,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RedirectEntry {
+    pub id: usize,
+    pub initial_url: String,
+    pub status_code: u16,
+    pub chain: Vec<RedirectHop>,
+}
+
 pub struct App {
     pub options_modal: bool,
     pub sidebar_visible: bool,
@@ -373,4 +387,14 @@ pub struct App {
     pub files_page_size: usize,
     pub files_search_query: String,
     pub show_files_search: bool,
+    // Redirects Tab State
+    pub redirects_table_data: Vec<RedirectEntry>,
+    pub redirects_table_state: ratatui::widgets::TableState,
+    pub redirects_filtered_table_data: Vec<RedirectEntry>,
+    pub redirects_full_filtered_table_data: Vec<RedirectEntry>,
+    pub redirects_current_page: usize,
+    pub redirects_page_size: usize,
+    pub redirects_horizontal_scroll: usize,
+    pub redirects_search_query: String,
+    pub show_redirects_search: bool,
 }

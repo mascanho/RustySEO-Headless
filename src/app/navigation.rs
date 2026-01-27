@@ -153,7 +153,7 @@ impl App {
 
     pub fn previous_state(&mut self) {
         self.current_state = match self.current_state {
-            AppState::Dashboard => AppState::Content,
+            AppState::Dashboard => AppState::Files,
             AppState::Crawl => AppState::Dashboard,
             AppState::Internal => AppState::Crawl,
             AppState::Redirects => AppState::Internal,
@@ -767,5 +767,74 @@ impl App {
             None => 0,
         };
         self.issues_table_state.select(Some(i));
+    }
+
+    pub fn next_redirects_row(&mut self) {
+        let len = self.redirects_filtered_table_data.len();
+        if len == 0 {
+            return;
+        }
+        let i = match self.redirects_table_state.selected() {
+            Some(i) => {
+                if i >= len - 1 {
+                    let total_pages = (self.redirects_full_filtered_table_data.len()
+                        + self.redirects_page_size
+                        - 1)
+                        / self.redirects_page_size;
+                    if self.redirects_current_page + 1 < total_pages {
+                        self.redirects_current_page += 1;
+                        self.apply_redirects_pagination();
+                        0
+                    } else {
+                        len - 1
+                    }
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.redirects_table_state.select(Some(i));
+    }
+
+    pub fn previous_redirects_row(&mut self) {
+        let len = self.redirects_filtered_table_data.len();
+        if len == 0 {
+            return;
+        }
+        let i = match self.redirects_table_state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    if self.redirects_current_page > 0 {
+                        self.redirects_current_page -= 1;
+                        self.apply_redirects_pagination();
+                        self.redirects_filtered_table_data.len().saturating_sub(1)
+                    } else {
+                        0
+                    }
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.redirects_table_state.select(Some(i));
+    }
+
+    pub fn next_redirects_page(&mut self) {
+        let total_pages = (self.redirects_full_filtered_table_data.len() + self.redirects_page_size
+            - 1)
+            / self.redirects_page_size;
+        if self.redirects_current_page + 1 < total_pages {
+            self.redirects_current_page += 1;
+            self.apply_redirects_pagination();
+        }
+    }
+
+    pub fn previous_redirects_page(&mut self) {
+        if self.redirects_current_page > 0 {
+            self.redirects_current_page -= 1;
+            self.apply_redirects_pagination();
+        }
     }
 }

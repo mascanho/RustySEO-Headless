@@ -239,6 +239,22 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             }
                             _ => {}
                         }
+                    } else if app.show_redirects_search {
+                        match key.code {
+                            KeyCode::Enter | KeyCode::Esc => {
+                                app.show_redirects_search = false;
+                                app.apply_redirects_filter();
+                            }
+                            KeyCode::Char(c) => {
+                                app.redirects_search_query.push(c);
+                                app.last_search_time = Some(std::time::Instant::now());
+                            }
+                            KeyCode::Backspace => {
+                                app.redirects_search_query.pop();
+                                app.last_search_time = Some(std::time::Instant::now());
+                            }
+                            _ => {}
+                        }
                     } else if app.show_js_pages_modal {
                         match key.code {
                             KeyCode::Char('q') | KeyCode::Esc => app.close_js_pages_modal(),
@@ -739,6 +755,8 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                     app.show_images_search = true;
                                 } else if app.current_state == AppState::Files {
                                     app.show_files_search = true;
+                                } else if app.current_state == AppState::Redirects {
+                                    app.show_redirects_search = true;
                                 }
                             }
 
@@ -788,6 +806,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                     }
                                 }
                                 AppState::Files => app.previous_files_row(),
+                                AppState::Redirects => app.previous_redirects_row(),
                                 _ => {}
                             },
                             KeyCode::Char('j') | KeyCode::Down => match app.current_state {
@@ -833,6 +852,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                     }
                                 }
                                 AppState::Files => app.next_files_row(),
+                                AppState::Redirects => app.next_redirects_row(),
                                 _ => {}
                             },
 
@@ -919,6 +939,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                     }
                                 }
                                 AppState::Files => app.next_files_page(),
+                                AppState::Redirects => app.next_redirects_page(),
                                 _ => {}
                             },
                             KeyCode::Char('[') => match app.current_state {
@@ -936,6 +957,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                     }
                                 }
                                 AppState::Files => app.previous_files_page(),
+                                AppState::Redirects => app.previous_redirects_page(),
                                 _ => {}
                             },
 
@@ -1067,6 +1089,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             || app.current_state == AppState::Internal
                             || app.current_state == AppState::Javascript
                             || app.current_state == AppState::Css
+                            || app.current_state == AppState::Redirects
                         {
                             if let Some(rect) = app.table_rect {
                                 if mouse.column >= rect.x
@@ -1100,6 +1123,8 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                                     app.css_urls_table_state
                                                         .select(Some(selected - 1));
                                                 }
+                                            } else if app.current_state == AppState::Redirects {
+                                                app.previous_redirects_row();
                                             }
                                         }
                                         MouseEventKind::ScrollDown => {
@@ -1129,6 +1154,8 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                                     app.css_urls_table_state
                                                         .select(Some(selected + 1));
                                                 }
+                                            } else if app.current_state == AppState::Redirects {
+                                                app.next_redirects_row();
                                             }
                                         }
                                         _ => {}
