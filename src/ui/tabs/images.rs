@@ -69,8 +69,8 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
     let widths = vec![
         Constraint::Length(6),      // ID
-        Constraint::Percentage(40), // URL
-        Constraint::Percentage(25), // Alt
+        Constraint::Percentage(50), // URL
+        Constraint::Percentage(35), // Alt
         Constraint::Length(8),      // Status
         Constraint::Length(10),     // Size
         Constraint::Length(6),      // Pages
