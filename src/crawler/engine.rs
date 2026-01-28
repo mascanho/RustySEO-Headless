@@ -116,7 +116,8 @@ impl CrawlEngine {
     pub async fn crawl(&self, start_url: &str, headless: bool) -> Vec<PageData> {
         // SET THE RECENTLY CRAWLED INTO THE LIST OF RECENTLY CRAWLED URLS
         add_recent_entry(start_url.to_string()).await;
-        let (tx, mut rx) = mpsc::channel(self.max_pages);
+        // Use a smaller fixed buffer instead of max_pages to prevent memory issues
+        let (tx, mut rx) = mpsc::channel(1000);
         let start_url = start_url.to_string();
         let engine = self.clone();
 
@@ -158,8 +159,19 @@ impl CrawlEngine {
         };
 
         //  new queue module for breadth-first crawling
-        let mut queue = crate::crawler::queue::CrawlQueue::new();
-        queue.push(start_url.to_string(), None);
+        // Allow queue to hold more items than max_pages to account for the frontier
+        // Factor of 10 allows building a backlog without dropping links too early
+        let queue_capacity = std::cmp::max(self.max_pages * 10, 200_000);
+        let mut queue = crate::crawler::queue::CrawlQueue::with_max_size(Some(queue_capacity));
+        
+        if let Some(normalized_start) = crate::crawler::url_normalizer::normalize_url(start_url) {
+             queue.push(normalized_start.clone(), None);
+             // Mark start URL as seen immediately to prevent re-queuing
+             self.visited.lock().await.insert(normalized_start);
+        } else {
+             tracing::error!("Invalid start URL: {}", start_url);
+             return;
+        }
 
         // Try to discover URLs from sitemap.xml and robots.txt
         tracing::info!("[DISCOVERY] Attempting to discover URLs from sitemap and robots.txt...");
@@ -170,14 +182,31 @@ impl CrawlEngine {
                 "[DISCOVERY] Found {} URLs from sitemaps, adding to queue",
                 sitemap_urls.len()
             );
-            for url in sitemap_urls {
-                // Only add URLs from the same domain
-                if let Ok(parsed) = Url::parse(&url) {
-                    if parsed.domain() == base_url.domain() {
-                        queue.push(url, None);
+            let mut added = 0;
+            {
+                let mut visited = self.visited.lock().await;
+                for url in sitemap_urls {
+                    // Only add URLs from the same domain
+                    if let Ok(parsed) = Url::parse(&url) {
+                        if crate::crawler::url_normalizer::is_same_domain(parsed.domain(), base_url.domain()) {
+                            if let Some(normalized_url) = crate::crawler::url_normalizer::normalize_url(&url) {
+                                 if crate::crawler::url_normalizer::should_crawl_url(&normalized_url) {
+                                      if !visited.contains(&normalized_url) {
+                                          if queue.push(normalized_url.clone(), None) {
+                                              visited.insert(normalized_url);
+                                              added += 1;
+                                          } else {
+                                              tracing::warn!("[QUEUE] Queue at capacity, skipping sitemap URL: {}", url);
+                                              break;
+                                          }
+                                      }
+                                 }
+                            }
+                        }
                     }
                 }
             }
+            tracing::info!("[DISCOVERY] Added {} sitemap URLs to queue", added);
         }
 
         let mut join_set = tokio::task::JoinSet::new();
@@ -189,30 +218,11 @@ impl CrawlEngine {
                     break;
                 }
 
-                let (url, referer) = queue.pop().unwrap();
+                let (normalized_url, referer) = queue.pop().unwrap();
 
-                // Normalize URL before checking if visited
-                let normalized_url = match crate::crawler::url_normalizer::normalize_url(&url) {
-                    Some(u) => u,
-                    None => {
-                        tracing::warn!("[SKIP] Failed to normalize URL: {}", url);
-                        continue;
-                    }
-                };
+                // URLs in queue are already normalized, filtered, and marked "seen" (visited)
+                // We proceed directly to processing
 
-                // Check if we should crawl this URL
-                if !crate::crawler::url_normalizer::should_crawl_url(&normalized_url) {
-                    tracing::debug!("[SKIP] URL filtered out: {}", normalized_url);
-                    continue;
-                }
-
-                {
-                    let mut visited = self.visited.lock().await;
-                    if visited.contains(&normalized_url) {
-                        continue;
-                    }
-                    visited.insert(normalized_url.clone());
-                }
 
                 let engine = self.clone();
                 let base_url_clone = base_url.clone();
@@ -250,61 +260,63 @@ impl CrawlEngine {
                         // Only add new links if we haven't reached max successful crawls
                         if current_success < self.max_pages {
                             let mut new_links = Vec::new();
-                            let mut filtered_count = 0;
+                            let filtered_count = 0;
                             let mut duplicate_count = 0;
-                            let mut normalization_failed = 0;
+                            let normalization_failed = 0;
 
+                            let mut added_count = 0;
                             {
-                                let visited = self.visited.lock().await;
+                                let mut visited = self.visited.lock().await; // Lock once
+                                
                                 for link in &data.anchor_links {
-                                    // Normalize each discovered link
-                                    let normalized_link =
-                                        match crate::crawler::url_normalizer::normalize_url(
-                                            &link.href,
-                                        ) {
-                                            Some(u) => u,
-                                            None => {
-                                                normalization_failed += 1;
-                                                tracing::debug!(
-                                                    "[LINK] Failed to normalize: {}",
-                                                    link.href
-                                                );
-                                                continue;
-                                            }
-                                        };
-
-                                    if !crate::crawler::url_normalizer::should_crawl_url(
-                                        &normalized_link,
-                                    ) {
-                                        filtered_count += 1;
-                                        tracing::debug!(
-                                            "[LINK] Filtered (non-HTML): {}",
-                                            normalized_link
-                                        );
-                                        continue;
-                                    }
-
-                                    if visited.contains(&normalized_link) {
+                                    // Links are already normalized and filtered by fetch_and_process
+                                    
+                                    if visited.contains(&link.href) {
                                         duplicate_count += 1;
-                                        tracing::debug!("[LINK] Duplicate: {}", normalized_link);
+                                        tracing::debug!("[LINK] Duplicate (Seen): {}", link.href);
                                     } else {
-                                        new_links.push(normalized_link.clone());
-                                        tracing::debug!("[LINK] NEW -> Queue: {}", normalized_link);
+                                        // Attempt to add to queue FIRST
+                                        if queue.push(link.href.clone(), Some(current_url.clone())) {
+                                            // Successfully queued -> Mark as visited/seen
+                                            visited.insert(link.href.clone());
+                                            new_links.push(link.href.clone()); // for logging/stats
+                                            added_count += 1;
+                                            tracing::debug!("[LINK] NEW -> Queue: {}", link.href);
+                                        } else {
+                                            // Queue full
+                                            tracing::warn!("Queue full, dropping link: {}", link.href);
+                                            // Stop processing links if queue is full?
+                                            // Or continue counting duplicates?
+                                            // Assuming push returns false means full, we can break.
+                                            break; 
+                                        }
                                     }
                                 }
-                            } // Release lock before pushing to queue
+                            } // Release lock immediately
 
                             self.stats.add_filtered(filtered_count);
                             self.stats.add_duplicate(duplicate_count);
 
-                            // Add all new links to the queue
-                            queue.push_batch(new_links.clone(), Some(current_url.clone()));
+                            // We already added them to queue in the loop
+
+                            
+                            // Warn if we couldn't add all links due to capacity
+                            if added_count < new_links.len() {
+                                tracing::warn!(
+                                    "[QUEUE] Queue at capacity! Added {}/{} new links. Queue size: {}/{}",
+                                    added_count,
+                                    new_links.len(),
+                                    queue.len(),
+                                    queue.remaining_capacity().map(|r| r + queue.len()).unwrap_or(queue.len())
+                                );
+                            }
 
                             tracing::info!(
-                                "[QUEUE] Page: {} | Found: {} links | New: {} | Filtered: {} | Duplicates: {} | Failed Norm: {} | Queue: {} | Success: {}/{}",
+                                "[QUEUE] Page: {} | Found: {} links | New: {} | Added: {} | Filtered: {} | Duplicates: {} | Failed Norm: {} | Queue: {} | Success: {}/{}",
                                 current_url,
                                 links_found,
                                 new_links.len(),
+                                added_count,
                                 filtered_count,
                                 duplicate_count,
                                 normalization_failed,

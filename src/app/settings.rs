@@ -65,9 +65,16 @@ impl App {
         self.crawl_receiver = Some(rx);
 
         self.log(format!("Starting crawl for: {}", url));
+        
+        let settings = self.settings.clone().unwrap_or_else(|| AppSettings::load());
 
         tokio::spawn(async move {
-            let crawler = CrawlEngine::new().await;
+            let crawler = CrawlEngine::new().await
+                .with_max_pages(settings.crawler.max_pages)
+                .with_concurrency(settings.crawler.concurrency)
+                .with_javascript(settings.crawler.enable_javascript)
+                .with_pagespeed(Some(settings.connectors.pagespeed));
+            
             crawler.crawl_concurrently(&url, tx).await;
         });
     }

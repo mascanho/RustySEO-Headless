@@ -62,6 +62,11 @@ async fn fetch_standard(
     let mut redirect_chain = Vec::new();
     let mut hops = 0;
     let max_hops = 10;
+    
+    // Retry configuration
+    let max_retries = 4;
+    let mut retry_count = 0;
+    let mut backoff = Duration::from_secs(2);
 
     let response = loop {
         let user_agent = pick_random_user_agent(user_agents);
@@ -83,34 +88,83 @@ async fn fetch_standard(
             request = request.header("Referer", ref_url);
         }
 
-        let res = request
-            .send()
-            .await
-            .map_err(|e| format!("Request failed: {}", e))?;
+        match request.send().await {
+            Ok(res) => {
+                let status = res.status();
 
-        let status = res.status();
-        if status.is_redirection() && hops < max_hops {
-            if let Some(location) = res.headers().get("location") {
-                let location_str = location.to_str().map_err(|_| "Invalid location header")?;
-                let next_url = match Url::parse(location_str) {
-                    Ok(u) => u.to_string(),
-                    Err(_) => base_url
-                        .join(location_str)
-                        .map_err(|_| "Failed to resolve redirect URL")?
-                        .to_string(),
-                };
+                if status.is_redirection() && hops < max_hops {
+                    if let Some(location) = res.headers().get("location") {
+                        if let Ok(location_str) = location.to_str() {
+                            // Resolve redirect URL against the CURRENT URL, not the base_url
+                            let current_url_parsed = Url::parse(&current_url)
+                                .map_err(|e| format!("Failed to parse current URL {}: {}", current_url, e))?;
+                            
+                            let next_url = match Url::parse(location_str) {
+                                Ok(u) => u.to_string(),
+                                Err(_) => match current_url_parsed.join(location_str) {
+                                    Ok(u) => u.to_string(),
+                                    Err(_) => current_url.clone(), 
+                                },
+                            };
 
-                redirect_chain.push(crate::models::RedirectHop {
-                    url: next_url.clone(),
-                    status: status.as_u16(),
-                });
+                            redirect_chain.push(crate::models::RedirectHop {
+                                url: next_url.clone(),
+                                status: status.as_u16(),
+                            });
 
-                current_url = next_url;
-                hops += 1;
-                continue;
+                            current_url = next_url;
+                            hops += 1;
+                            retry_count = 0;
+                            backoff = Duration::from_secs(2); 
+                            continue;
+                        }
+                    }
+                }
+                
+                // Handle Rate Limiting (429) and Server Errors (5xx)
+                if status.as_u16() == 429 || status.is_server_error() {
+                    // ... (keep existing retry logic)
+                    if retry_count < max_retries {
+                        retry_count += 1;
+                        tracing::warn!(
+                            "[RETRY] {} - {} (Attempt {}/{}). Waiting {:?}...",
+                            url,
+                            status,
+                            retry_count,
+                            max_retries,
+                            backoff
+                        );
+                        sleep(backoff).await;
+                        backoff *= 2; 
+                        continue;
+                    } else {
+                        tracing::error!("[FAIL] {} - Max retries exceeded for status {}", url, status);
+                        return Err(format!("Max retries exceeded for status {}", status));
+                    }
+                }
+
+                break res;
+            }
+            Err(e) => {
+               // ... (keep existing retry logic)
+                if retry_count < max_retries {
+                    retry_count += 1;
+                    tracing::warn!(
+                        "[RETRY] {} - Network Error: {} (Attempt {}/{}). Waiting {:?}...",
+                        url,
+                        e,
+                        retry_count,
+                        max_retries,
+                        backoff
+                    );
+                    sleep(backoff).await;
+                    backoff *= 2;
+                    continue;
+                } else {
+                     return Err(format!("Request failed after retries: {}", e));
+                }
             }
         }
-        break res;
     };
 
     let status_code = response.status();
@@ -121,12 +175,6 @@ async fn fetch_standard(
         .iter()
         .map(|(k, v)| format!("{}: {}", k, v.to_str().unwrap_or("[invalid]")))
         .collect();
-
-    if status_code.as_u16() == 429 {
-        tracing::error!("Rate limited (429) at {}. Waiting 5s...", url);
-        sleep(Duration::from_secs(5)).await;
-        return Err(format!("Rate limited (429) at {}", url));
-    }
 
     let status = format!(
         "{} {}",
@@ -147,7 +195,7 @@ async fn fetch_standard(
     let document = Html::parse_document(&html_content);
 
     let mut page_data = extract_page_elements(&document);
-    page_data.url = url.to_string(); // Keep initial URL as the identity
+    page_data.url = current_url.clone(); // Use the final URL after redirects
     page_data.status = status;
     page_data.headers = headers_list;
     page_data.redirect_chain = redirect_chain;
@@ -155,13 +203,18 @@ async fn fetch_standard(
     if let Some(ct) = content_type_header {
         page_data.content_type = ct;
     }
+    
+    // Parse the final URL to use as base for resolving relative links
+    let final_url = Url::parse(&current_url)
+        .map_err(|e| format!("Failed to parse final URL {}: {}", current_url, e))?;
 
     // Store all original links as outlinks before filtering
     page_data.outlinks = page_data
         .anchor_links
         .iter()
         .map(|link| {
-            if let Ok(abs_url) = base_url.join(&link.href) {
+            // Resolve against final_url (the page we are on)
+            if let Ok(abs_url) = final_url.join(&link.href) {
                 crate::crawler::helpers::html_parser::AnchorLink {
                     href: abs_url.to_string(),
                     text: link.text.clone(),
@@ -179,19 +232,26 @@ async fn fetch_standard(
         .anchor_links
         .into_iter()
         .filter_map(|link| {
-            if let Ok(mut abs_url) = base_url.join(&link.href) {
-                // Remove fragment (e.g., #section) to avoid duplicate crawls
-                abs_url.set_fragment(None);
-
-                if abs_url.domain() == base_url.domain() {
-                    let url_str = abs_url.to_string();
-                    // Deduplicate within this page
-                    if seen_urls.insert(url_str.clone()) {
-                        return Some(crate::crawler::helpers::html_parser::AnchorLink {
-                            href: url_str,
-                            text: link.text,
-                            rel: link.rel,
-                        });
+            // Resolve against final_url (the page we are on)
+            if let Ok(mut abs_url) = final_url.join(&link.href) {
+                // Check domain against base_url (crawl scope) using loose comparison
+                if crate::crawler::url_normalizer::is_same_domain(abs_url.domain(), base_url.domain()) {
+                    // Start by clearing fragment
+                    abs_url.set_fragment(None);
+                    
+                    // Normalize the URL string using the centralized normalizer
+                    if let Some(normalized_url) = crate::crawler::url_normalizer::normalize_url(abs_url.as_str()) {
+                         // Check if we should crawl this URL type
+                         if crate::crawler::url_normalizer::should_crawl_url(&normalized_url) {
+                             // Deduplicate within this page
+                             if seen_urls.insert(normalized_url.clone()) {
+                                 return Some(crate::crawler::helpers::html_parser::AnchorLink {
+                                     href: normalized_url,
+                                     text: link.text,
+                                     rel: link.rel,
+                                 });
+                             }
+                         }
                     }
                 }
             }
@@ -235,12 +295,16 @@ async fn fetch_js(url: &str, base_url: &Url, browser: Arc<Browser>) -> Result<Pa
     page_data.status = status;
     page_data.headers = vec!["Requested-Mode: JavaScript".to_string()];
 
+    // Parse the current page URL to use as base for resolving relative links
+    let current_page_url = Url::parse(url)
+        .map_err(|e| format!("Failed to parse current URL {}: {}", url, e))?;
+
     // Store all original links as outlinks before filtering
     page_data.outlinks = page_data
         .anchor_links
         .iter()
         .map(|link| {
-            if let Ok(abs_url) = base_url.join(&link.href) {
+            if let Ok(abs_url) = current_page_url.join(&link.href) {
                 crate::crawler::helpers::html_parser::AnchorLink {
                     href: abs_url.to_string(),
                     text: link.text.clone(),
@@ -258,17 +322,22 @@ async fn fetch_js(url: &str, base_url: &Url, browser: Arc<Browser>) -> Result<Pa
         .anchor_links
         .into_iter()
         .filter_map(|link| {
-            if let Ok(mut abs_url) = base_url.join(&link.href) {
-                abs_url.set_fragment(None);
-                if abs_url.domain() == base_url.domain() {
-                    let url_str = abs_url.to_string();
-                    if seen_urls.insert(url_str.clone()) {
-                        return Some(crate::crawler::helpers::html_parser::AnchorLink {
-                            href: url_str,
-                            text: link.text,
-                            rel: link.rel,
-                        });
-                    }
+            if let Ok(mut abs_url) = current_page_url.join(&link.href) {
+                if crate::crawler::url_normalizer::is_same_domain(abs_url.domain(), base_url.domain()) {
+                   abs_url.set_fragment(None);
+                   
+                   // Normalize using centralized logic
+                   if let Some(normalized_url) = crate::crawler::url_normalizer::normalize_url(abs_url.as_str()) {
+                       if crate::crawler::url_normalizer::should_crawl_url(&normalized_url) {
+                            if seen_urls.insert(normalized_url.clone()) {
+                                return Some(crate::crawler::helpers::html_parser::AnchorLink {
+                                    href: normalized_url,
+                                    text: link.text,
+                                    rel: link.rel,
+                                });
+                            }
+                       }
+                   }
                 }
             }
             None

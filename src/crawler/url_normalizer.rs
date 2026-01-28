@@ -65,6 +65,18 @@ pub fn should_crawl_url(url: &str) -> bool {
     true
 }
 
+/// Checks if two domains are effectively the same, ignoring 'www.' prefix
+pub fn is_same_domain(domain: Option<&str>, base: Option<&str>) -> bool {
+    match (domain, base) {
+        (Some(d), Some(b)) => {
+            let d_clean = d.trim_start_matches("www.");
+            let b_clean = b.trim_start_matches("www.");
+            d_clean == b_clean
+        },
+        _ => false,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

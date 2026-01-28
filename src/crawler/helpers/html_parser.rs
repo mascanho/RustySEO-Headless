@@ -200,7 +200,8 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         })
         .collect();
 
-    let outlinks = anchor_links.clone();
+    // Note: outlinks will be set in fetching.rs with absolutized URLs
+    // No need to clone anchor_links here
 
     // Extract image information including size estimates
     let images: Vec<ImageInfo> = document
@@ -374,7 +375,7 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         language,
         indexability,
         anchor_links,
-        outlinks,
+        outlinks: vec![], // Will be set in fetching.rs with absolutized URLs
         images,
         headings,
         headers: vec![], // Reserved for future use
