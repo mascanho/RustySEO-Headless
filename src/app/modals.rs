@@ -134,7 +134,21 @@ impl App {
     pub fn open_selected_issue_url(&mut self) {
         if let Some(selected) = self.issue_urls_state.selected() {
             if selected < self.issue_urls_list.len() {
-                let url = &self.issue_urls_list[selected];
+                let raw_string = &self.issue_urls_list[selected];
+                
+                // Extract just the URL part from various formats:
+                // "URL" - plain URL
+                // "URL (extra info)" - URL with info in parentheses
+                // "URL [ and ] URL" - duplicate content format
+                let url = raw_string
+                    .split(" (")
+                    .next()
+                    .unwrap_or(raw_string)
+                    .split(" [")
+                    .next()
+                    .unwrap_or(raw_string)
+                    .trim();
+
                 crate::ui::modals::options::open_in_browser(url);
                 self.log(format!("Opened URL in browser: {}", url));
             }
@@ -144,8 +158,19 @@ impl App {
     pub fn copy_selected_issue_url(&mut self) {
         if let Some(selected) = self.issue_urls_state.selected() {
             if selected < self.issue_urls_list.len() {
-                let url = self.issue_urls_list[selected].clone();
-                crate::ui::modals::options::copy_to_clipboard(url.clone());
+                let raw_string = &self.issue_urls_list[selected];
+                
+                // Extract just the URL part (same logic as open_selected_issue_url)
+                let url = raw_string
+                    .split(" (")
+                    .next()
+                    .unwrap_or(raw_string)
+                    .split(" [")
+                    .next()
+                    .unwrap_or(raw_string)
+                    .trim();
+                    
+                crate::ui::modals::options::copy_to_clipboard(url.to_string());
                 self.log(format!("Copied URL to clipboard: {}", url));
             }
         }
