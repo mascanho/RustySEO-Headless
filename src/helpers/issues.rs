@@ -119,7 +119,7 @@ impl IssueAnalyzer {
         let mut missing_schema = Vec::new();
 
         for page in page_data {
-            if page.schema.len() == 0 && !page.url.contains("?") || !page.url.contains("#") {
+            if page.schema.len() == 0 {
                 missing_schema.push(page.url.clone());
             }
         }
