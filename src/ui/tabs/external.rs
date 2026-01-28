@@ -1,4 +1,4 @@
-use ratatui::{Frame, layout::Rect};
+use ratatui::{layout::Rect, Frame};
 
 use crate::models::App;
 use crate::ui::components::external_links_table::render_external_links_table;

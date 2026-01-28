@@ -1,4 +1,4 @@
-use ratatui::{Frame, layout::Rect};
+use ratatui::{layout::Rect, Frame};
 
 use crate::models::App;
 use crate::ui::components::js_urls_table::render_js_urls_table;

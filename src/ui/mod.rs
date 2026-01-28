@@ -55,7 +55,6 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         "Keywords",
         "CWV",
         "Custom Extractor",
-        "Reports",
         "Content",
         "Files",
     ];
@@ -91,7 +90,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         AppState::Images => tabs::images::render(f, app, content_area),
         AppState::Redirects => tabs::redirects::render(f, app, content_area),
         AppState::Keywords => tabs::keywords::render(f, app, content_area),
-        AppState::Reports => tabs::reports::render(f, app, content_area),
+        
         AppState::Content => tabs::content::render(f, app, content_area),
         AppState::Files => tabs::files::render(f, app, content_area),
     }

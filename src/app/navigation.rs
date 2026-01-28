@@ -1,5 +1,5 @@
-use crate::models::App;
 use crate::app::AppState;
+use crate::models::App;
 
 impl App {
     pub fn next_page(&mut self) {
@@ -144,8 +144,7 @@ impl App {
             AppState::Javascript => AppState::Keywords,
             AppState::Keywords => AppState::CoreWebVitals,
             AppState::CoreWebVitals => AppState::CustomExtractor,
-            AppState::CustomExtractor => AppState::Reports,
-            AppState::Reports => AppState::Content,
+            AppState::CustomExtractor => AppState::Content,
             AppState::Content => AppState::Files,
             AppState::Files => AppState::Dashboard,
         }
@@ -163,8 +162,7 @@ impl App {
             AppState::Keywords => AppState::Javascript,
             AppState::CoreWebVitals => AppState::Keywords,
             AppState::CustomExtractor => AppState::CoreWebVitals,
-            AppState::Reports => AppState::CustomExtractor,
-            AppState::Content => AppState::Reports,
+            AppState::Content => AppState::CustomExtractor,
             AppState::Files => AppState::Content,
         }
     }
@@ -181,9 +179,8 @@ impl App {
             AppState::Keywords => 7,
             AppState::CoreWebVitals => 8,
             AppState::CustomExtractor => 9,
-            AppState::Reports => 10,
-            AppState::Content => 11,
-            AppState::Files => 12,
+            AppState::Content => 10,
+            AppState::Files => 11,
         }
     }
 
@@ -247,10 +244,9 @@ impl App {
         let i = match self.files_table_state.selected() {
             Some(i) => {
                 if i >= len - 1 {
-                    let total_pages = (self.files_full_filtered_table_data.len()
-                        + self.files_page_size
-                        - 1)
-                        / self.files_page_size;
+                    let total_pages =
+                        (self.files_full_filtered_table_data.len() + self.files_page_size - 1)
+                            / self.files_page_size;
                     if self.files_current_page + 1 < total_pages {
                         self.files_current_page += 1;
                         self.apply_files_pagination();
@@ -538,9 +534,10 @@ impl App {
         let i = match self.extractor_table_state.selected() {
             Some(i) => {
                 if i >= len - 1 {
-                    let total_pages =
-                        (self.extractor_full_filtered_table_data.len() + self.extractor_page_size - 1)
-                            / self.extractor_page_size;
+                    let total_pages = (self.extractor_full_filtered_table_data.len()
+                        + self.extractor_page_size
+                        - 1)
+                        / self.extractor_page_size;
                     if self.extractor_current_page + 1 < total_pages {
                         self.extractor_current_page += 1;
                         self.apply_extractor_pagination();
@@ -605,10 +602,9 @@ impl App {
         let i = match self.images_table_state.selected() {
             Some(i) => {
                 if i >= len - 1 {
-                    let total_pages = (self.images_full_filtered_table_data.len()
-                        + self.images_page_size
-                        - 1)
-                        / self.images_page_size;
+                    let total_pages =
+                        (self.images_full_filtered_table_data.len() + self.images_page_size - 1)
+                            / self.images_page_size;
                     if self.images_current_page + 1 < total_pages {
                         self.images_current_page += 1;
                         self.apply_images_pagination();
@@ -891,9 +887,9 @@ impl App {
     }
 
     pub fn next_redirects_page(&mut self) {
-        let total_pages = (self.redirects_full_filtered_table_data.len() + self.redirects_page_size
-            - 1)
-            / self.redirects_page_size;
+        let total_pages =
+            (self.redirects_full_filtered_table_data.len() + self.redirects_page_size - 1)
+                / self.redirects_page_size;
         if self.redirects_current_page + 1 < total_pages {
             self.redirects_current_page += 1;
             self.apply_redirects_pagination();

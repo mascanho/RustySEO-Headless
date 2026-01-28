@@ -1,9 +1,9 @@
 use ratatui::{
-    Frame,
     layout::{Alignment, Constraint, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table},
+    Frame,
 };
 
 use crate::models::App;
@@ -82,7 +82,10 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             Block::default()
                 .borders(Borders::ALL)
                 .title(Span::styled(
-                    format!(" Keyword Analysis ({}) ", app.keywords_full_filtered_table_data.len()),
+                    format!(
+                        " Keyword Analysis ({}) ",
+                        app.keywords_full_filtered_table_data.len()
+                    ),
                     Style::default()
                         .fg(Color::Yellow)
                         .add_modifier(Modifier::BOLD),

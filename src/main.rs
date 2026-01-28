@@ -1080,7 +1080,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                 && my >= tab_rect.y
                                 && my < tab_rect.y + tab_rect.height
                             {
-                                let num_tabs = 13;
+                                let num_tabs = 12;
                                 let tab_width = tab_rect.width / num_tabs as u16;
                                 if tab_width > 0 {
                                     let tab_index = ((mx - tab_rect.x) / tab_width)
@@ -1097,9 +1097,8 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                         7 => AppState::Keywords,
                                         8 => AppState::CoreWebVitals,
                                         9 => AppState::CustomExtractor,
-                                        10 => AppState::Reports,
-                                        11 => AppState::Content,
-                                        12 => AppState::Files,
+                                        10 => AppState::Content,
+                                        11 => AppState::Files,
                                         _ => app.current_state,
                                     };
                                 }

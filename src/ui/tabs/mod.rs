@@ -1,14 +1,13 @@
 pub mod content;
-pub mod external;
 pub mod css;
 pub mod custom_extractor;
 pub mod cwv;
 pub mod dashboard;
+pub mod external;
 pub mod files;
 pub mod images;
 pub mod internal;
 pub mod javascript;
+pub mod keywords;
 pub mod logs;
 pub mod redirects;
-pub mod reports;
-pub mod keywords;

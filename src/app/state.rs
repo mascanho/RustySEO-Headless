@@ -1,6 +1,6 @@
+use crate::helpers::issues::IssueAnalyzer;
 use crate::models::{App, AppSettings};
 use crate::settings::utils::read::recent_crawls;
-use crate::helpers::issues::IssueAnalyzer;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -21,7 +21,6 @@ pub enum AppState {
     Keywords,
     CoreWebVitals,
     CustomExtractor,
-    Reports,
     Content,
     Files,
 }
