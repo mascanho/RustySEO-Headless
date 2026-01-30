@@ -1,4 +1,5 @@
 use crate::models::AppSettings;
+use crate::tui_println;
 use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
@@ -61,7 +62,7 @@ pub fn init_settings_watcher(tx: Sender<()>) -> Option<RecommendedWatcher> {
             Some(watcher)
         }
         Err(e) => {
-            eprintln!("Failed to create settings watcher: {}", e);
+            tui_println!("Failed to create settings watcher: {}", e);
             None
         }
     }

@@ -29,6 +29,8 @@ pub struct CrawlerConfig {
     pub extractor: bool,
     #[serde(default)]
     pub extractor_text: String,
+    #[serde(default)]
+    pub extractor_type: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -98,6 +100,7 @@ impl Default for AppSettings {
                 enable_javascript: false,
                 max_memory_pages: 1000,
                 extractor: false,
+                extractor_type: "".to_string(),
                 extractor_text: "".to_string(),
             },
             ui: UiConfig {

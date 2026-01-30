@@ -1,10 +1,10 @@
 use crate::models::App;
 use ratatui::{
+    Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Paragraph, Row, Table},
-    Frame,
 };
 
 pub fn render(
@@ -47,10 +47,10 @@ pub fn render(
         let sections = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(9), // Engine
-                Constraint::Length(5), // Viewport
-                Constraint::Length(5), // System
-                Constraint::Min(0),    // Internal
+                Constraint::Length(10), // Engine
+                Constraint::Length(5),  // Viewport
+                Constraint::Length(5),  // System
+                Constraint::Min(0),     // Internal
             ])
             .split(inner_area);
 
@@ -117,6 +117,25 @@ pub fn render(
                 } else {
                     "DISABLED "
                 })
+                .style(Style::default().fg(if settings.crawler.extractor {
+                    Color::Green
+                } else {
+                    Color::Red
+                })),
+            ]), // EXTRACTION TYPE
+            //NOTE: This needs to be improved
+            Row::new(vec![
+                Cell::from("  Extraction Type "),
+                Cell::from(
+                    if !settings.crawler.extractor_type.to_lowercase().is_empty() {
+                        format!(
+                            "{} ",
+                            settings.crawler.extractor_type.to_string().to_uppercase()
+                        )
+                    } else {
+                        "DISABLED ".to_string()
+                    },
+                )
                 .style(Style::default().fg(if settings.crawler.extractor {
                     Color::Green
                 } else {
