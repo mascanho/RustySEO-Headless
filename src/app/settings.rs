@@ -66,6 +66,9 @@ impl App {
 
         self.log(format!("Starting crawl for: {}", url));
         
+        // Spawn robots analysis in background
+        self.spawn_robots_analysis(&url);
+        
         let settings = self.settings.clone().unwrap_or_else(|| AppSettings::load());
 
         tokio::spawn(async move {

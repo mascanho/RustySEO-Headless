@@ -1,10 +1,10 @@
 use crate::{models::App, ui::centered_rect};
 use ratatui::{
-    Frame,
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph},
+    Frame,
 };
 
 pub fn render(f: &mut Frame, app: &mut App) {
@@ -39,11 +39,11 @@ pub fn render(f: &mut Frame, app: &mut App) {
     let list_height = chunks[1].height as usize;
     let total_items = app.issue_urls_list.len();
     let selected = app.issue_urls_state.selected().unwrap_or(0);
-    
+
     // Calculate start_index (scroll offset)
     // We maintain the scroll offset manually in the state because we are feeding a slice to the widget
     let mut start_index = app.issue_urls_state.offset();
-    
+
     // Adjust start_index to keep selected item in view
     if selected >= start_index + list_height {
         start_index = selected.saturating_sub(list_height) + 1;
@@ -51,7 +51,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
     if selected < start_index {
         start_index = selected;
     }
-    
+
     // Ensure start_index is valid
     if start_index >= total_items {
         start_index = total_items.saturating_sub(1);
@@ -89,9 +89,9 @@ pub fn render(f: &mut Frame, app: &mut App) {
     // Create a temporary ListState for the slice
     let mut render_state = ListState::default();
     render_state.select(Some(selected.saturating_sub(start_index)));
-    
+
     f.render_stateful_widget(list, chunks[1], &mut render_state);
-    
+
     // Persist the calculated offset back to the main state
     *app.issue_urls_state.offset_mut() = start_index;
 
@@ -110,9 +110,15 @@ pub fn render(f: &mut Frame, app: &mut App) {
     .alignment(Alignment::Center);
     f.render_widget(info, bottom_chunks[0]);
 
-    // Footer with controls
+    // Footer with controls - show robots loading status
+    let footer_text = if app.robots_urls_loading {
+        " Esc/q: Close | Loading robots.txt... "
+    } else {
+        " Esc/q: Close | ↑/k ↓/j: Navigate | Enter: Open URL | c: Copy URL "
+    };
+
     let footer = Paragraph::new(Span::styled(
-        " Esc/q: Close | ↑/k ↓/j: Navigate | Enter: Open URL | c: Copy URL ",
+        footer_text,
         Style::default().fg(Color::DarkGray).italic(),
     ))
     .alignment(Alignment::Center);

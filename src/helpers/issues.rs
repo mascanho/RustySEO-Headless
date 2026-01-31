@@ -1,6 +1,22 @@
 use std::collections::HashMap;
+use std::sync::LazyLock;
+use std::sync::{Arc, Mutex};
+use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::crawler::helpers::html_parser::{AnchorLink, PageData};
+use crate::crawler::helpers::{
+    html_parser::{AnchorLink, PageData},
+    robots,
+};
+
+// Simple cache for robots.txt results to avoid repeated network requests
+#[derive(Clone, Debug)]
+struct CachedRobotsResult {
+    urls: Vec<String>,
+    timestamp: u64,
+}
+
+static ROBOTS_CACHE: LazyLock<Arc<Mutex<HashMap<String, CachedRobotsResult>>>> =
+    LazyLock::new(|| Arc::new(Mutex::new(HashMap::new())));
 
 pub struct IssueHandler {
     pub name: &'static str,
@@ -97,7 +113,16 @@ impl IssueAnalyzer {
                 name: " Non HTTPS",
                 process: Self::analyse_non_https,
             },
+            // Robots disallow links are handled separately via async crawling
+            // No need to include here since they're added in generate_issues_table_data_with_robots
         ]
+    }
+
+    // GET ALL THE DISALOW LINKS FROM THE ROBOTS
+    pub fn analyse_robots_disallow_links(_page_data: &[PageData]) -> (usize, Vec<String>) {
+        // This function should not be called anymore since we handle robots separately
+        // Return empty result as the actual robots analysis is handled asynchronously
+        (0, vec![])
     }
 
     // GET THE PAGES THAT ARE NOTRR HTTPS SECURE
@@ -455,6 +480,13 @@ impl IssueAnalyzer {
 
     /// Get real URLs for a specific issue type
     pub fn get_urls_for_issue(page_data: &[PageData], issue_type: &str) -> Vec<String> {
+        // Special handling for robots disallow links - perform async analysis
+        if issue_type == " Robots Disallow Links" {
+            // For now, return a placeholder since we can't call async from sync context
+            // This should be handled by the app layer with proper async context
+            return vec!["Loading robots.txt analysis...".to_string()];
+        }
+        
         let handlers = Self::get_handlers();
         if let Some(handler) = handlers.iter().find(|h| h.name == issue_type) {
             (handler.process)(page_data).1
@@ -470,6 +502,12 @@ impl IssueAnalyzer {
         let mut table_data = Vec::new();
 
         for handler in handlers {
+            // Skip robots analysis as it's handled asynchronously
+            if handler.name == " Robots Disallow Links" {
+                // Skip this - robots count will be handled separately
+                continue;
+            }
+            
             let (count, _) = (handler.process)(page_data);
             let percentage = if total_pages > 0 {
                 (count * 100) / total_pages
@@ -483,5 +521,103 @@ impl IssueAnalyzer {
             ]);
         }
         table_data
+    }
+
+    /// Generate issues table data with robots count
+    pub fn generate_issues_table_data_with_robots(page_data: &[PageData], robots_count: usize) -> Vec<Vec<String>> {
+        let total_pages = page_data.len();
+        let handlers = Self::get_handlers();
+        let mut table_data = Vec::new();
+
+        // Add all regular handlers (excluding robots)
+        for handler in handlers {
+            let (count, _) = (handler.process)(page_data);
+            
+            let percentage = if total_pages > 0 {
+                (count * 100) / total_pages
+            } else {
+                0
+            };
+            table_data.push(vec![
+                handler.name.to_string(),
+                count.to_string(),
+                format!("{}%", percentage),
+            ]);
+        }
+
+        // Add robots disallow links as a separate entry
+        let robots_percentage = if total_pages > 0 {
+            (robots_count * 100) / total_pages
+        } else {
+            0
+        };
+        table_data.push(vec![
+            " Robots Disallow Links".to_string(),
+            robots_count.to_string(),
+            format!("{}%", robots_percentage),
+        ]);
+
+        table_data
+    }
+
+    /// Perform actual robots.txt analysis on-demand (async)
+    pub async fn analyze_robots_on_demand(page_data: &[PageData]) -> Vec<String> {
+        let mut blocked_urls = Vec::new();
+        
+        if page_data.is_empty() {
+            return blocked_urls;
+        }
+        
+        // Get the base domain from the first page to construct robots.txt URL
+        if let Some(first_page) = page_data.first() {
+            let base_url = first_page.url.split('/').take(3).collect::<Vec<_>>().join("/");
+            let robots_url = format!("{}/robots.txt", base_url);
+            
+            // Check cache first (cache for 30 minutes for on-demand requests)
+            let current_time = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs();
+            
+            {
+                let cache = ROBOTS_CACHE.lock().unwrap_or_else(|e| e.into_inner());
+                if let Some(cached) = cache.get(&robots_url) {
+                    if current_time - cached.timestamp < 1800 { // 30 minutes cache
+                        return cached.urls.clone();
+                    }
+                }
+            }
+            
+            // Perform async network request with timeout
+            match tokio::time::timeout(
+                std::time::Duration::from_secs(10),
+                robots::extract_robots_blocked_urls(&robots_url)
+            ).await {
+                Ok(Ok(urls)) => {
+                    let filtered_urls: Vec<String> = urls.into_iter()
+                        .filter(|url| !url.trim().is_empty() && url.trim() != "/" && url.trim() != "")
+                        .collect();
+                    
+                    // Cache the result
+                    {
+                        let mut cache = ROBOTS_CACHE.lock().unwrap_or_else(|e| e.into_inner());
+                        cache.insert(robots_url.clone(), CachedRobotsResult {
+                            urls: filtered_urls.clone(),
+                            timestamp: current_time,
+                        });
+                    }
+                    
+                    blocked_urls.extend(filtered_urls);
+                },
+                Ok(Err(_)) => {
+                    // Network error, return empty
+                },
+                Err(_) => {
+                    // Timeout, return empty
+                }
+            }
+        }
+
+        blocked_urls
     }
 }

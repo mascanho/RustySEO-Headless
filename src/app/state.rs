@@ -201,6 +201,9 @@ impl Default for App {
                 state
             },
             current_issue_title: String::new(),
+            robots_urls_loading: false,
+            robots_disallowed_urls: Vec::new(),
+            robots_receiver: None,
             // Files Tab State
             files_table_data: Vec::new(),
             files_table_state: ratatui::widgets::TableState::default(),
@@ -230,6 +233,16 @@ impl Default for App {
             keywords_horizontal_scroll: 0,
             keywords_search_query: String::new(),
             show_keywords_search: false,
+            // Robots Tab State
+            robots_table_data: Vec::new(),
+            robots_table_state: ratatui::widgets::TableState::default(),
+            robots_filtered_table_data: Vec::new(),
+            robots_full_filtered_table_data: Vec::new(),
+            robots_current_page: 0,
+            robots_page_size: 100,
+            robots_horizontal_scroll: 0,
+            robots_search_query: String::new(),
+            show_robots_search: false,
         }
     }
 }

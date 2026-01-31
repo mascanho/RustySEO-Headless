@@ -71,17 +71,24 @@ impl App {
     pub fn handle_issues_enter(&mut self) {
         if let Some(selected) = self.issues_table_state.selected() {
             if selected < self.issues_table_data.len() {
-                let issue_title = &self.issues_table_data[selected][0];
+                let issue_title = self.issues_table_data[selected][0].clone();
                 self.current_issue_title = issue_title.clone();
 
-                // Generate real URLs for the selected issue
-                self.issue_urls_list = self.get_urls_for_issue(issue_title);
-
-                // Reset the list state to select the first item
-                self.issue_urls_state.select(Some(0));
-
-                // Show the modal
-                self.show_issue_urls_modal = true;
+                // Check if this is the robots issue
+                if issue_title == " Robots Disallow Links" {
+                    // For robots, show the cached results directly
+                    self.issue_urls_list = self.get_urls_for_issue(&issue_title);
+                    if self.issue_urls_list.is_empty() {
+                        self.issue_urls_list = vec!["No disallowed URLs found in robots.txt".to_string()];
+                    }
+                    self.issue_urls_state.select(Some(0));
+                    self.show_issue_urls_modal = true;
+                } else {
+                    // Generate real URLs for other issues
+                    self.issue_urls_list = self.get_urls_for_issue(&issue_title);
+                    self.issue_urls_state.select(Some(0));
+                    self.show_issue_urls_modal = true;
+                }
 
                 self.log(format!("Showing URLs for issue: {}", issue_title));
             }
@@ -92,6 +99,7 @@ impl App {
         self.show_issue_urls_modal = false;
         self.issue_urls_list.clear();
         self.current_issue_title.clear();
+        self.robots_urls_loading = false;
         self.issue_urls_state.select(None);
     }
 

@@ -251,6 +251,13 @@ pub struct KeywordEntry {
     pub relevance: usize, // 1 to 10 based on its rank in extracted keywords
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RobotsEntry {
+    pub id: usize,
+    pub url: String,
+    pub blocked_urls: Vec<String>,
+}
+
 pub struct App {
     pub options_modal: bool,
     pub sidebar_visible: bool,
@@ -410,6 +417,9 @@ pub struct App {
     pub issue_urls_list: Vec<String>,
     pub issue_urls_state: ratatui::widgets::ListState,
     pub current_issue_title: String,
+    pub robots_urls_loading: bool,
+    pub robots_disallowed_urls: Vec<String>,
+    pub robots_receiver: Option<tokio::sync::mpsc::Receiver<Vec<String>>>,
     // Files Tab State
     pub files_table_data: Vec<FileEntry>,
     pub files_table_state: ratatui::widgets::TableState,
@@ -439,4 +449,14 @@ pub struct App {
     pub keywords_horizontal_scroll: usize,
     pub keywords_search_query: String,
     pub show_keywords_search: bool,
+    // Robots Tab State
+    pub robots_table_data: Vec<RobotsEntry>,
+    pub robots_table_state: ratatui::widgets::TableState,
+    pub robots_filtered_table_data: Vec<RobotsEntry>,
+    pub robots_full_filtered_table_data: Vec<RobotsEntry>,
+    pub robots_current_page: usize,
+    pub robots_page_size: usize,
+    pub robots_horizontal_scroll: usize,
+    pub robots_search_query: String,
+    pub show_robots_search: bool,
 }
