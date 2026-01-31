@@ -646,25 +646,7 @@ impl App {
     }
 
     pub fn get_current_detail_len(&self) -> usize {
-        let selected_idx = self.table_state.selected().unwrap_or(0);
-        let full_idx = self.current_page * self.page_size + selected_idx;
-        if full_idx >= self.full_filtered_table_data.len() {
-            return 0;
-        }
-        let row_data = &self.full_filtered_table_data[full_idx];
-        let original_id = row_data[0].parse::<usize>().unwrap_or(1);
-
-        // Try to find page data in memory first
-        if let Some(page_data) = self.page_data.iter().find(|pd| pd.id == original_id) {
-            match self.detail_tab {
-                3 => page_data.anchor_links.len(),
-                4 => page_data.outlinks.len(),
-                5 => page_data.images.len(),
-                8 => page_data.headings.len(),
-                _ => 0,
-            }
-        } else if let Some(page_data) = crate::db::load_page_data(original_id) {
-            // Fall back to database if not in memory
+        if let Some(page_data) = &self.selected_page_details {
             match self.detail_tab {
                 3 => page_data.anchor_links.len(),
                 4 => page_data.outlinks.len(),
@@ -678,123 +660,57 @@ impl App {
     }
 
     pub fn move_detail_row_up(&mut self) {
-        let selected_idx = self.table_state.selected().unwrap_or(0);
-        let full_idx = self.current_page * self.page_size + selected_idx;
-        if full_idx >= self.full_filtered_table_data.len() {
-            return;
-        }
-        let row_data = &self.full_filtered_table_data[full_idx];
-        let original_id = row_data[0].parse::<usize>().unwrap_or(1);
-        let page_idx = original_id.saturating_sub(1);
-
-        // Ensure page data is in memory
-        if page_idx >= self.page_data.len() {
-            if let Some(pd) = crate::db::load_page_data(original_id) {
-                self.page_data.push(pd);
-            } else {
-                return;
-            }
-        }
-
         let selected = self.detail_table_state.selected().unwrap_or(0);
+        if selected == 0 { return; }
 
-        match self.detail_tab {
-            3 => {
-                // inlinks
-                if selected > 0 {
-                    self.page_data[page_idx]
-                        .anchor_links
-                        .swap(selected, selected - 1);
+        if let Some(page_data) = &mut self.selected_page_details {
+            match self.detail_tab {
+                3 => {
+                    page_data.anchor_links.swap(selected, selected - 1);
                     self.detail_table_state.select(Some(selected - 1));
                 }
-            }
-            4 => {
-                // outlinks
-                if selected > 0 {
-                    self.page_data[page_idx]
-                        .outlinks
-                        .swap(selected, selected - 1);
+                4 => {
+                    page_data.outlinks.swap(selected, selected - 1);
                     self.detail_table_state.select(Some(selected - 1));
                 }
-            }
-            5 => {
-                // images
-                if selected > 0 {
-                    self.page_data[page_idx].images.swap(selected, selected - 1);
+                5 => {
+                    page_data.images.swap(selected, selected - 1);
                     self.detail_table_state.select(Some(selected - 1));
                 }
-            }
-            8 => {
-                // headings
-                if selected > 0 {
-                    self.page_data[page_idx]
-                        .headings
-                        .swap(selected, selected - 1);
+                8 => {
+                    page_data.headings.swap(selected, selected - 1);
                     self.detail_table_state.select(Some(selected - 1));
                 }
+                _ => {}
             }
-            _ => {}
         }
     }
 
     pub fn move_detail_row_down(&mut self) {
-        let selected_idx = self.table_state.selected().unwrap_or(0);
-        let full_idx = self.current_page * self.page_size + selected_idx;
-        if full_idx >= self.full_filtered_table_data.len() {
-            return;
-        }
-        let row_data = &self.full_filtered_table_data[full_idx];
-        let original_id = row_data[0].parse::<usize>().unwrap_or(1);
-        let page_idx = original_id.saturating_sub(1);
-
-        // Ensure page data is in memory
-        if page_idx >= self.page_data.len() {
-            if let Some(pd) = crate::db::load_page_data(original_id) {
-                self.page_data.push(pd);
-            } else {
-                return;
-            }
-        }
-
         let selected = self.detail_table_state.selected().unwrap_or(0);
         let len = self.get_current_detail_len();
+        if len == 0 || selected >= len - 1 { return; }
 
-        match self.detail_tab {
-            3 => {
-                // inlinks
-                if selected < len.saturating_sub(1) {
-                    self.page_data[page_idx]
-                        .anchor_links
-                        .swap(selected, selected + 1);
+        if let Some(page_data) = &mut self.selected_page_details {
+            match self.detail_tab {
+                3 => {
+                    page_data.anchor_links.swap(selected, selected + 1);
                     self.detail_table_state.select(Some(selected + 1));
                 }
-            }
-            4 => {
-                // outlinks
-                if selected < len.saturating_sub(1) {
-                    self.page_data[page_idx]
-                        .outlinks
-                        .swap(selected, selected + 1);
+                4 => {
+                    page_data.outlinks.swap(selected, selected + 1);
+                    self.detail_table_state.select(Some(selected - 1));
+                }
+                5 => {
+                    page_data.images.swap(selected, selected + 1);
                     self.detail_table_state.select(Some(selected + 1));
                 }
-            }
-            5 => {
-                // images
-                if selected < len.saturating_sub(1) {
-                    self.page_data[page_idx].images.swap(selected, selected + 1);
+                8 => {
+                    page_data.headings.swap(selected, selected + 1);
                     self.detail_table_state.select(Some(selected + 1));
                 }
+                _ => {}
             }
-            8 => {
-                // headings
-                if selected < len.saturating_sub(1) {
-                    self.page_data[page_idx]
-                        .headings
-                        .swap(selected, selected + 1);
-                    self.detail_table_state.select(Some(selected + 1));
-                }
-            }
-            _ => {}
         }
     }
 

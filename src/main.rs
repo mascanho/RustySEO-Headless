@@ -856,7 +856,6 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                 AppState::Files => app.previous_files_row(),
                                 AppState::Redirects => app.previous_redirects_row(),
                                 AppState::Keywords => app.previous_keywords_row(),
-                                _ => {}
                             },
                             KeyCode::Char('j') | KeyCode::Down => match app.current_state {
                                 AppState::Dashboard | AppState::CoreWebVitals => app.next_row(),
@@ -904,7 +903,6 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                 AppState::Files => app.next_files_row(),
                                 AppState::Redirects => app.next_redirects_row(),
                                 AppState::Keywords => app.next_keywords_row(),
-                                _ => {}
                             },
 
                             // Advanced Vim jumps
@@ -933,10 +931,10 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                 {
                                     app.validate_table_state();
                                     if let Some(selected) = app.table_state.selected() {
-                                        if selected < app.table_data.len()
-                                            && selected < app.page_data.len()
-                                        {
-                                            app.show_details = true;
+                                        if selected < app.filtered_table_data.len() {
+                                            let row_data = &app.filtered_table_data[selected];
+                                            let original_id = row_data[0].parse::<usize>().unwrap_or(1);
+                                            app.open_details(original_id);
                                         }
                                     }
                                 } else if app.current_state == AppState::Javascript {
@@ -962,11 +960,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                 if app.current_state == AppState::Dashboard {
                                     app.validate_table_state();
                                     if let Some(selected) = app.table_state.selected() {
-                                        if selected < app.table_data.len()
-                                            && selected < app.page_data.len()
-                                        {
-                                            app.show_dashboard_menu = true;
-                                        } else if selected == app.table_data.len() {
+                                        if selected < app.filtered_table_data.len() {
                                             app.show_dashboard_menu = true;
                                         }
                                     }

@@ -72,15 +72,18 @@ pub fn remove_bookmark(url: &str) {
     }
 }
 
-fn get_db_path() -> PathBuf {
+pub fn get_db_path() -> PathBuf {
     ProjectDirs::from("", "", "rustyseo")
         .expect("Could not determine project directories")
         .data_dir()
         .join("rustyseo.db")
 }
 
-pub fn save_page_data(page_data: &PageData) -> SqliteResult<()> {
-    let conn = Connection::open(get_db_path())?;
+pub fn get_connection() -> SqliteResult<Connection> {
+    Connection::open(get_db_path())
+}
+
+pub fn save_page_data_with_conn(conn: &Connection, page_data: &PageData) -> SqliteResult<()> {
     let data = serde_json::to_string(page_data).map_err(|e| {
         rusqlite::Error::FromSqlConversionFailure(0, rusqlite::types::Type::Text, Box::new(e))
     })?;
@@ -89,6 +92,11 @@ pub fn save_page_data(page_data: &PageData) -> SqliteResult<()> {
         (&(page_data.id as i64), &data),
     )?;
     Ok(())
+}
+
+pub fn save_page_data(page_data: &PageData) -> SqliteResult<()> {
+    let conn = Connection::open(get_db_path())?;
+    save_page_data_with_conn(&conn, page_data)
 }
 
 pub fn load_page_data(id: usize) -> Option<PageData> {
@@ -128,4 +136,16 @@ pub fn get_page_count() -> usize {
         .query_row("SELECT COUNT(*) FROM pages", (), |row| row.get(0))
         .unwrap_or(0);
     count as usize
+}
+
+pub fn get_pages_for_js(conn: &Connection, js_url: &str) -> Vec<String> {
+    let mut stmt = conn.prepare("SELECT url FROM pages WHERE data LIKE ?").unwrap();
+    let rows = stmt.query_map([format!("%{}%", js_url)], |row| row.get(0)).unwrap();
+    rows.filter_map(|r| r.ok()).collect()
+}
+
+pub fn get_pages_for_css(conn: &Connection, css_url: &str) -> Vec<String> {
+    let mut stmt = conn.prepare("SELECT url FROM pages WHERE data LIKE ?").unwrap();
+    let rows = stmt.query_map([format!("%{}%", css_url)], |row| row.get(0)).unwrap();
+    rows.filter_map(|r| r.ok()).collect()
 }

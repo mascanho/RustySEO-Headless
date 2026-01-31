@@ -25,7 +25,14 @@ impl App {
         self.is_crawling = true;
         self.crawl_progress = 0.0;
         self.table_data.clear();
-        self.page_data.clear();
+        self.page_summaries.clear();
+        self.css_counts.clear();
+        self.js_counts.clear();
+        self.image_counts.clear();
+        self.seen_files.clear();
+        self.seen_css.clear();
+        self.seen_js.clear();
+        self.seen_images.clear();
         self.internal_table_data.clear();
         self.external_table_data.clear();
         self.redirects_table_data.clear();

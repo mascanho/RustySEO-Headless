@@ -28,7 +28,6 @@ pub enum AppState {
 impl Default for App {
     fn default() -> Self {
         let table_data = Vec::new();
-        let page_data = Vec::new();
         let table_state = ratatui::widgets::TableState::default();
 
         Self {
@@ -49,7 +48,6 @@ impl Default for App {
             },
             last_crawled_index: 0,
             table_data,
-            page_data,
             total_pages: 0,
             table_state,
             horizontal_scroll: 0,
@@ -243,6 +241,16 @@ impl Default for App {
             robots_horizontal_scroll: 0,
             robots_search_query: String::new(),
             show_robots_search: false,
+            seen_files: std::collections::HashSet::new(),
+            seen_css: std::collections::HashSet::new(),
+            seen_js: std::collections::HashSet::new(),
+            seen_images: std::collections::HashSet::new(),
+            page_summaries: Vec::new(),
+            selected_page_details: None,
+            db_conn: crate::db::get_connection().ok(),
+            css_counts: HashMap::new(),
+            js_counts: HashMap::new(),
+            image_counts: HashMap::new(),
         }
     }
 }

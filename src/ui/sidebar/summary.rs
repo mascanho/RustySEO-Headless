@@ -90,7 +90,7 @@ struct SeoMetrics {
 // --- Main Render Function ---
 
 pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block, accent_color: Color) {
-    let metrics = collect_metrics(&app.page_data);
+    let metrics = collect_metrics(app);
 
     let block = content_block.title(Span::styled(
         " SEO OVERVIEW ",
@@ -98,19 +98,18 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block, ac
             .fg(Color::Cyan)
             .add_modifier(Modifier::BOLD),
     ));
-
+// ... (rest of render is same)
     let inner_area = block.inner(area);
     f.render_widget(block, area);
 
-    // Main layout - split into scrollable sections
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(6),  // Header Stats (Gauge + Key Metrics)
-            Constraint::Length(12), // Charts Area
-            Constraint::Length(11), // SEO Fundamentals
-            Constraint::Length(8),  // Content Structure
-            Constraint::Min(0),     // Images, Resources & Performance
+            Constraint::Length(6),
+            Constraint::Length(12),
+            Constraint::Length(11),
+            Constraint::Length(8),
+            Constraint::Min(0),
         ])
         .margin(1)
         .split(inner_area);
@@ -122,18 +121,18 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block, ac
     render_technical_details(f, chunks[4], &metrics);
 }
 
-// --- Collection Function ---
-
-fn collect_metrics(pages: &[crate::crawler::PageData]) -> SeoMetrics {
+fn collect_metrics(app: &App) -> SeoMetrics {
     let mut m = SeoMetrics::default();
+    let pages = &app.page_summaries;
 
     m.total_pages = pages.len();
+    m.total_css_files = app.css_urls_table_data.len();
+    m.total_js_files = app.js_urls_table_data.len();
 
     for page in pages {
         m.total_size += page.size;
-        m.total_words += page.word_count.unwrap_or(0);
+        m.total_words += page.word_count;
 
-        // HTTP Status
         if page.status.starts_with('2') {
             m.status_2xx += 1;
         } else if page.status.starts_with('3') {
@@ -144,7 +143,6 @@ fn collect_metrics(pages: &[crate::crawler::PageData]) -> SeoMetrics {
             m.status_5xx += 1;
         }
 
-        // Title Analysis
         if !page.title.is_empty() {
             m.pages_with_title += 1;
             if page.title_len < 30 {
@@ -156,7 +154,6 @@ fn collect_metrics(pages: &[crate::crawler::PageData]) -> SeoMetrics {
             }
         }
 
-        // Description Analysis
         if !page.description.is_empty() {
             m.pages_with_desc += 1;
             if page.description_len < 120 {
@@ -168,18 +165,15 @@ fn collect_metrics(pages: &[crate::crawler::PageData]) -> SeoMetrics {
             }
         }
 
-        // H1 Analysis
-        let h1_count = page.headings.iter().filter(|(tag, _)| tag == "h1").count();
-        if h1_count > 0 {
+        if page.h1_count > 0 {
             m.pages_with_h1 += 1;
-            if h1_count > 1 {
+            if page.h1_count > 1 {
                 m.multiple_h1 += 1;
             }
         } else {
             m.missing_h1 += 1;
         }
 
-        // Indexability
         let indexability_lower = page.indexability.to_lowercase();
         if indexability_lower.contains("noindex") {
             m.noindex += 1;
@@ -187,121 +181,59 @@ fn collect_metrics(pages: &[crate::crawler::PageData]) -> SeoMetrics {
             m.indexable += 1;
         }
 
-        // Mobile
         if page.mobile {
             m.mobile_friendly += 1;
         }
 
-        // Heading counts
-        for (tag, _) in &page.headings {
-            match tag.as_str() {
-                "h1" => m.total_h1 += 1,
-                "h2" => m.total_h2 += 1,
-                "h3" => m.total_h3 += 1,
-                "h4" => m.total_h4 += 1,
-                "h5" => m.total_h5 += 1,
-                "h6" => m.total_h6 += 1,
-                _ => {}
-            }
+        m.total_h1 += page.h1_count;
+        m.total_h2 += page.h2_count;
+        m.total_h3 += page.h3_count;
+        m.total_h4 += page.h4_count;
+        m.total_h5 += page.h5_count;
+        m.total_h6 += page.h6_count;
+
+        m.total_internal_links += page.internal_link_count;
+        m.total_external_links += page.external_link_count;
+
+        if page.is_canonical {
+            m.pages_with_canonicals += 1;
         }
 
-        // Links
-        for link in &page.anchor_links {
-            if link.href.starts_with("http://") || link.href.starts_with("https://") {
-                m.total_external_links += 1;
-            } else {
-                m.total_internal_links += 1;
-            }
-        }
+        m.total_images += page.images_count;
+        m.images_missing_alt += page.images_missing_alt;
+        m.images_with_alt += page.images_count.saturating_sub(page.images_missing_alt);
 
-        // Canonicals & Alternates
-        if !page.canonicals.is_empty() {
-            for (rel, _, _) in &page.canonicals {
-                if rel == "canonical" {
-                    m.pages_with_canonicals += 1;
-                    break;
-                }
-            }
-            for (rel, _, _) in &page.canonicals {
-                if rel == "alternate" {
-                    m.pages_with_alternates += 1;
-                    break;
-                }
-            }
-        }
-
-        // Images
-        m.total_images += page.images.len();
-        for img in &page.images {
-            if !img.alt.trim().is_empty() {
-                m.images_with_alt += 1;
-            } else {
-                m.images_missing_alt += 1;
-            }
-        }
-
-        // Resources
-        if let Some(css) = &page.css {
-            m.total_css_files += css.external_css_count;
-            if css.inline_css_size_bytes.unwrap_or(0) > 0 {
-                m.pages_with_inline_css += 1;
-            }
-        }
-        if let Some(js) = &page.javascript {
-            m.total_js_files += js.external_js_count;
-            if js.inline_js_size_bytes.unwrap_or(0) > 0 {
-                m.pages_with_inline_js += 1;
-            }
-        }
-
-        // Performance
-        if let Some(desktop) = &page.cwv_desktop {
-            if let Ok(score) = desktop.performance_score.parse::<f64>() {
-                m.desktop_score_sum += score;
-                m.desktop_samples += 1;
-            }
-        }
-        if let Some(mobile) = &page.cwv_mobile {
-            if let Ok(score) = mobile.performance_score.parse::<f64>() {
-                m.mobile_score_sum += score;
-                m.mobile_samples += 1;
-            }
-        }
-
-        // Schema
-        if !page.schema.is_empty() {
+        if page.has_schema {
             m.pages_with_schema += 1;
-            m.total_schema_objects += page.schema.len();
+            m.total_schema_objects += page.schema_count;
         }
 
-        // Language
         if !page.language.is_empty() {
             m.pages_with_lang += 1;
         }
 
-        // Collect for Sparklines (cap at 100 recent/sample for display)
-        // We push all, let the renderer slice it or we sample here.
-        // For simplicity, let's just push all and we'll slice in render.
-        m.word_count_distribution
-            .push(page.word_count.unwrap_or(0) as u64);
+        if let Some(score) = page.cwv_performance_desktop {
+            m.desktop_score_sum += score;
+            m.desktop_samples += 1;
+        }
+        if let Some(score) = page.cwv_performance_mobile {
+            m.mobile_score_sum += score;
+            m.mobile_samples += 1;
+        }
+
+        m.word_count_distribution.push(page.word_count as u64);
         m.page_size_distribution.push(page.size as u64);
     }
 
-    // Calculate Health Score (0-100)
-    // Base 100, deduct penalties
     if m.total_pages > 0 {
         let error_rate = (m.status_4xx + m.status_5xx) as f64 / m.total_pages as f64;
         let warning_rate = (m.status_3xx) as f64 / m.total_pages as f64;
-        let missing_meta_rate = (m.total_pages - m.pages_with_title + m.total_pages
-            - m.pages_with_desc
-            + m.missing_h1) as f64
-            / (3.0 * m.total_pages as f64);
+        let missing_meta_rate = (m.total_pages.saturating_sub(m.pages_with_title) + m.total_pages.saturating_sub(m.pages_with_desc) + m.missing_h1) as f64 / (3.0 * m.total_pages as f64);
 
         let mut score = 100.0;
-        score -= error_rate * 40.0; // Heavy penalty for errors
-        score -= warning_rate * 10.0; // Slight penalty for redirects
-        score -= missing_meta_rate * 20.0; // Penalty for missing SEO basics
-
+        score -= error_rate * 40.0;
+        score -= warning_rate * 10.0;
+        score -= missing_meta_rate * 20.0;
         m.health_score = score.clamp(0.0, 100.0) as u16;
     } else {
         m.health_score = 100;
@@ -313,7 +245,6 @@ fn collect_metrics(pages: &[crate::crawler::PageData]) -> SeoMetrics {
 // --- Render Functions ---
 
 const ACCENT_COLOR: Color = Color::Rgb(80, 140, 255);
-const DEFAULT_COLOR: Color = Color::Rgb(40, 45, 60);
 
 fn render_header_stats(f: &mut Frame, area: Rect, m: &SeoMetrics, accent: Color) {
     let chunks = Layout::default()

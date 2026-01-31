@@ -1,5 +1,4 @@
-use crate::crawler::helpers::html_parser::PageData;
-use crate::models::App;
+use crate::models::{App, PageSummary};
 use ratatui::{
     Frame,
     layout::Rect,
@@ -10,6 +9,7 @@ use ratatui::{
 
 use std::collections::BTreeMap;
 
+// ... (TreeNode struct and impl same)
 #[derive(Debug, Clone)]
 pub struct TreeNode {
     pub id: String,
@@ -112,7 +112,7 @@ impl TreeNode {
     }
 }
 
-pub fn build_tree_structure(page_data: &[PageData]) -> TreeNode {
+pub fn build_tree_structure(page_data: &[PageSummary]) -> TreeNode {
     let mut root = TreeNode::new(
         "root".to_string(),
         "Website Structure".to_string(),
@@ -126,7 +126,7 @@ pub fn build_tree_structure(page_data: &[PageData]) -> TreeNode {
     }
 
     // Group pages by domain/path
-    let mut domain_map: BTreeMap<String, Vec<&PageData>> = BTreeMap::new();
+    let mut domain_map: BTreeMap<String, Vec<&PageSummary>> = BTreeMap::new();
 
     for page in page_data {
         if let Ok(url) = url::Url::parse(&page.url) {
@@ -151,7 +151,7 @@ pub fn build_tree_structure(page_data: &[PageData]) -> TreeNode {
         );
 
         // Group by path segments
-        let mut path_map: BTreeMap<String, Vec<&PageData>> = BTreeMap::new();
+        let mut path_map: BTreeMap<String, Vec<&PageSummary>> = BTreeMap::new();
 
         for page in pages {
             if let Ok(url) = url::Url::parse(&page.url) {
@@ -221,10 +221,10 @@ pub fn build_tree_structure(page_data: &[PageData]) -> TreeNode {
 const ACCENT_COLOR: Color = Color::Rgb(80, 140, 255);
 
 pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block) {
-    let tree_root = build_tree_structure(&app.page_data);
+    let tree_root = build_tree_structure(&app.page_summaries);
 
     // Update tree state if needed
-    if app.tree_view_expanded_nodes.is_empty() && !app.page_data.is_empty() {
+    if app.tree_view_expanded_nodes.is_empty() && !app.page_summaries.is_empty() {
         // Auto-expand first level
         app.tree_view_expanded_nodes.insert("root".to_string());
     }

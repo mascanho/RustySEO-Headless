@@ -10,7 +10,6 @@ use crate::models::App;
 
 /// Standard colors for consistency
 const ACCENT_COLOR: Color = Color::Rgb(80, 140, 255);
-const BORDER_COLOR: Color = Color::Rgb(40, 45, 60);
 
 /// Renders the Redirects tab with results table
 pub fn render(f: &mut Frame, app: &mut App, area: Rect) {

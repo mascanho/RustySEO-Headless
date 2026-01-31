@@ -35,16 +35,15 @@ pub fn render(f: &mut Frame, app: &mut App) {
         return;
     }
 
+    let page_details = match &app.selected_page_details {
+        Some(details) => details,
+        None => {
+            app.show_details = false;
+            return;
+        }
+    };
+
     let row_data = &app.filtered_table_data[selected_idx];
-
-    // The first column (index 0) of the row data contains the original persistent ID
-    let original_id = row_data[0].parse::<usize>().unwrap_or(1);
-    let page_idx = original_id.saturating_sub(1);
-
-    if page_idx >= app.page_data.len() {
-        app.show_details = false;
-        return;
-    }
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -101,7 +100,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         0 => modal_tabs::general::render(
             f,
             row_data,
-            &app.page_data[page_idx].canonicals,
+            &page_details.canonicals,
             app.detail_scroll,
             chunks[1],
             content_block,
@@ -110,7 +109,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         2 => modal_tabs::checklist::render(f, row_data, chunks[1], content_block),
         3 => modal_tabs::inlinks::render(
             f,
-            &app.page_data[page_idx].anchor_links,
+            &page_details.anchor_links,
             app.detail_horizontal_scroll,
             &mut app.detail_table_state,
             chunks[1],
@@ -118,7 +117,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         ),
         4 => modal_tabs::outlinks::render(
             f,
-            &app.page_data[page_idx].outlinks,
+            &page_details.outlinks,
             app.detail_horizontal_scroll,
             &mut app.detail_table_state,
             chunks[1],
@@ -126,7 +125,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         ),
         5 => modal_tabs::images::render(
             f,
-            &app.page_data[page_idx].images,
+            &page_details.images,
             app.detail_horizontal_scroll,
             &mut app.detail_table_state,
             chunks[1],
@@ -136,7 +135,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
             let schema_block = Block::default().bg(Color::Rgb(25, 15, 35));
             modal_tabs::schema::render(
                 f,
-                &app.page_data[page_idx].schema.clone(),
+                &page_details.schema.clone(),
                 app.detail_scroll,
                 chunks[1],
                 schema_block,
@@ -144,14 +143,14 @@ pub fn render(f: &mut Frame, app: &mut App) {
         }
         7 => modal_tabs::headers::render(
             f,
-            &app.page_data[page_idx].headers.clone(),
+            &page_details.headers.clone(),
             app.detail_scroll,
             chunks[1],
             content_block,
         ),
         8 => modal_tabs::headings::render(
             f,
-            &app.page_data[page_idx].headings.clone(),
+            &page_details.headings.clone(),
             app.detail_horizontal_scroll,
             &mut app.detail_table_state,
             chunks[1],
@@ -206,7 +205,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         .alignment(Alignment::Right);
 
     // File Size
-    let file_size = app.page_data[page_idx].size as u64;
+    let file_size = page_details.size as u64;
 
     let format_size = |size: u64| -> String {
         if size >= 1024 * 1024 {

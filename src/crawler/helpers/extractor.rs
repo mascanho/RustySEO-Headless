@@ -33,15 +33,6 @@ static TEXT_SELECTOR: LazyLock<Selector> = LazyLock::new(|| {
     Selector::parse("p, h1, h2, h3, h4, h5, h6, li, td, th, span, a, blockquote, figcaption, label, legend, dt, dd, summary, cite, strong, em, b, i, u, mark, small, del, ins, sub, sup, time, code, pre, address").unwrap()
 });
 
-// NOTE: Setting up the regex pattern for matching text
-static REGEX_PATTERN: LazyLock<regex::Regex> =
-    LazyLock::new(|| regex::Regex::new(r"\b\w+\b").unwrap());
-
-// NOTE: SETTING UP THE CSS SELECTOR FOR MATCHING TEXT
-static CSS_SELECTOR: LazyLock<Selector> = LazyLock::new(|| {
-    Selector::parse("p, h1, h2, h3, h4, h5, h6, li, td, th, span, a, blockquote, figcaption, label, legend, dt, dd, summary, cite, strong, em, b, i, u, mark, small, del, ins, sub, sup, time, code, pre, address").unwrap()
-});
-
 /// Searches for a text string in the HTML document's visible text content
 ///
 /// # Arguments

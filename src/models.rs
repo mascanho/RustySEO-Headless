@@ -258,6 +258,40 @@ pub struct RobotsEntry {
     pub blocked_urls: Vec<String>,
 }
 
+#[derive(Debug, Clone)]
+pub struct PageSummary {
+    pub id: usize,
+    pub url: String,
+    pub title: String,
+    pub title_len: usize,
+    pub description: String,
+    pub description_len: usize,
+    pub status: String,
+    pub h1_len: usize,
+    pub h1_count: usize,
+    pub h2_count: usize,
+    pub h3_count: usize,
+    pub h4_count: usize,
+    pub h5_count: usize,
+    pub h6_count: usize,
+    pub has_schema: bool,
+    pub schema_count: usize,
+    pub size: usize,
+    pub word_count: usize,
+    pub internal_link_count: usize,
+    pub external_link_count: usize,
+    pub images_count: usize,
+    pub images_missing_alt: usize,
+    pub is_canonical: bool,
+    pub has_png_jpg: bool,
+    pub mobile: bool,
+    pub indexability: String,
+    pub language: String,
+    pub cwv_performance_desktop: Option<f64>,
+    pub cwv_performance_mobile: Option<f64>,
+    pub has_generic_anchors: bool,
+}
+
 pub struct App {
     pub options_modal: bool,
     pub sidebar_visible: bool,
@@ -272,7 +306,8 @@ pub struct App {
     pub bookmarks_state: ratatui::widgets::ListState,
     pub last_crawled_index: usize,
     pub table_data: Vec<Vec<String>>,
-    pub page_data: Vec<crate::crawler::PageData>,
+    pub page_summaries: Vec<PageSummary>,
+    pub selected_page_details: Option<crate::crawler::PageData>,
     pub total_pages: usize,
     pub table_state: ratatui::widgets::TableState,
     pub horizontal_scroll: usize,
@@ -459,4 +494,15 @@ pub struct App {
     pub robots_horizontal_scroll: usize,
     pub robots_search_query: String,
     pub show_robots_search: bool,
+    // Add Sets for O(1) membership checks during large crawls
+    pub seen_files: std::collections::HashSet<String>,
+    pub seen_css: std::collections::HashSet<String>,
+    pub seen_js: std::collections::HashSet<String>,
+    pub seen_images: std::collections::HashSet<String>,
+    // Persistent Database Connection
+    pub db_conn: Option<rusqlite::Connection>,
+    // Faster lookups for aggregate tables during crawl
+    pub css_counts: HashMap<String, usize>,
+    pub js_counts: HashMap<String, usize>,
+    pub image_counts: HashMap<String, usize>,
 }

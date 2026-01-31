@@ -242,8 +242,8 @@ pub fn extract_page_elements(document: &Html) -> PageData {
     let canonicals: Vec<(String, String, Option<String>)> = document
         .select(&CANONICAL_SELECTOR)
         .map(|e| {
-            let rel = e.value().attr("rel").unwrap().to_string();
-            let href = e.value().attr("href").unwrap().to_string();
+            let rel = e.value().attr("rel").unwrap_or_default().to_string();
+            let href = e.value().attr("href").unwrap_or_default().to_string();
             let hreflang = e.value().attr("hreflang").map(|s| s.to_string());
             (rel, href, hreflang)
         })

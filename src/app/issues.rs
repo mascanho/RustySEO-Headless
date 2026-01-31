@@ -5,7 +5,7 @@ impl App {
     /// Populate issues_table_data with real crawled data analysis
     pub fn update_issues_from_crawled_data(&mut self) {
         self.issues_table_data = IssueAnalyzer::generate_issues_table_data_with_robots(
-            &self.page_data, 
+            &self.page_summaries, 
             self.robots_disallowed_urls.len()
         );
     }
@@ -17,7 +17,7 @@ impl App {
             return self.robots_disallowed_urls.clone();
         }
         
-        IssueAnalyzer::get_urls_for_issue(&self.page_data, issue_type)
+        IssueAnalyzer::get_urls_for_issue(&self.page_summaries, issue_type)
     }
 
     /// Spawn background task to fetch robots.txt when crawling starts
@@ -59,7 +59,7 @@ impl App {
                 self.robots_urls_loading = false;
                 
                 // Update issues table if we have page data
-                if !self.page_data.is_empty() {
+                if !self.page_summaries.is_empty() {
                     self.update_issues_from_crawled_data();
                 }
             }
@@ -73,7 +73,7 @@ impl App {
         }
         
         self.robots_urls_loading = true;
-        let urls = IssueAnalyzer::analyze_robots_on_demand(&self.page_data).await;
+        let urls = IssueAnalyzer::analyze_robots_on_demand(&self.page_summaries).await;
         
         self.robots_disallowed_urls = urls;
         self.robots_urls_loading = false;

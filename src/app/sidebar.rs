@@ -90,7 +90,7 @@ impl App {
 
     // Tree View Methods
     pub fn tree_view_next(&mut self) {
-        let tree_root = crate::ui::sidebar::tree_view::build_tree_structure(&self.page_data);
+        let tree_root = crate::ui::sidebar::tree_view::build_tree_structure(&self.page_summaries);
         let total_items = self.count_tree_items(&tree_root);
 
         if total_items > 0 {
@@ -101,7 +101,7 @@ impl App {
     }
 
     pub fn tree_view_previous(&mut self) {
-        let tree_root = crate::ui::sidebar::tree_view::build_tree_structure(&self.page_data);
+        let tree_root = crate::ui::sidebar::tree_view::build_tree_structure(&self.page_summaries);
         let total_items = self.count_tree_items(&tree_root);
 
         if total_items > 0 {
@@ -116,7 +116,7 @@ impl App {
     }
 
     pub fn tree_view_toggle_expand(&mut self) {
-        let tree_root = crate::ui::sidebar::tree_view::build_tree_structure(&self.page_data);
+        let tree_root = crate::ui::sidebar::tree_view::build_tree_structure(&self.page_summaries);
         let node_id = self.get_node_id_at_index(&tree_root, self.tree_view_selected_index);
 
         if let Some(node_id) = node_id {
@@ -129,7 +129,7 @@ impl App {
     }
 
     pub fn tree_view_expand_all(&mut self) {
-        let tree_root = crate::ui::sidebar::tree_view::build_tree_structure(&self.page_data);
+        let tree_root = crate::ui::sidebar::tree_view::build_tree_structure(&self.page_summaries);
         let mut all_node_ids = std::collections::HashSet::new();
         self.collect_all_node_ids(&tree_root, &mut all_node_ids);
         self.tree_view_expanded_nodes = all_node_ids;

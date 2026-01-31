@@ -3,10 +3,8 @@ use std::sync::LazyLock;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::crawler::helpers::{
-    html_parser::{AnchorLink, PageData},
-    robots,
-};
+use crate::models::PageSummary;
+use crate::crawler::helpers::robots;
 
 // Simple cache for robots.txt results to avoid repeated network requests
 #[derive(Clone, Debug)]
@@ -20,7 +18,7 @@ static ROBOTS_CACHE: LazyLock<Arc<Mutex<HashMap<String, CachedRobotsResult>>>> =
 
 pub struct IssueHandler {
     pub name: &'static str,
-    pub process: fn(&[PageData]) -> (usize, Vec<String>),
+    pub process: fn(&[PageSummary]) -> (usize, Vec<String>),
 }
 
 /// Issue analysis functions for detecting website issues from crawled data
@@ -119,17 +117,16 @@ impl IssueAnalyzer {
     }
 
     // GET ALL THE DISALOW LINKS FROM THE ROBOTS
-    pub fn analyse_robots_disallow_links(_page_data: &[PageData]) -> (usize, Vec<String>) {
+    pub fn analyse_robots_disallow_links(_page_data: &[PageSummary]) -> (usize, Vec<String>) {
         // This function should not be called anymore since we handle robots separately
         // Return empty result as the actual robots analysis is handled asynchronously
         (0, vec![])
     }
 
     // GET THE PAGES THAT ARE NOTRR HTTPS SECURE
-    pub fn analyse_non_https(page_data: &[PageData]) -> (usize, Vec<String>) {
+    pub fn analyse_non_https(page_data: &[PageSummary]) -> (usize, Vec<String>) {
         let mut non_https = Vec::new();
 
-        // MAKING THIS GENERIC MATE
         for page in page_data {
             if !page.url.starts_with("https://") {
                 non_https.push(page.url.clone());
@@ -140,11 +137,11 @@ impl IssueAnalyzer {
     }
 
     // FLAGG THE ONES WITH MISSING SCHEMA
-    pub fn analyse_missing_schema(page_data: &[PageData]) -> (usize, Vec<String>) {
+    pub fn analyse_missing_schema(page_data: &[PageSummary]) -> (usize, Vec<String>) {
         let mut missing_schema = Vec::new();
 
         for page in page_data {
-            if page.schema.len() == 0 {
+            if !page.has_schema {
                 missing_schema.push(page.url.clone());
             }
         }
@@ -153,7 +150,7 @@ impl IssueAnalyzer {
     }
 
     // GET THE PAGES WITH LOW INTERNAL LINK COUNT, EXCLUDING PARAMETERISED URLS
-    pub fn analyse_low_internal_link_count(page_data: &[PageData]) -> (usize, Vec<String>) {
+    pub fn analyse_low_internal_link_count(page_data: &[PageSummary]) -> (usize, Vec<String>) {
         let mut low_internal_link_count = Vec::new();
 
         for page in page_data {
@@ -167,60 +164,7 @@ impl IssueAnalyzer {
                 continue;
             }
 
-            // Skip binary files and non-HTML content types
-            let url_lower = page.url.to_lowercase();
-            if url_lower.ends_with(".pdf")
-                || url_lower.ends_with(".jpg")
-                || url_lower.ends_with(".jpeg")
-                || url_lower.ends_with(".png")
-                || url_lower.ends_with(".gif")
-                || url_lower.ends_with(".svg")
-                || url_lower.ends_with(".xml")
-                || url_lower.ends_with(".css")
-                || url_lower.ends_with(".js")
-                || url_lower.contains("/cdn/")
-                || url_lower.contains("/static/")
-                || url_lower.contains("/assets/")
-            {
-                continue;
-            }
-
-            // Filter out external links, nofollow links, and empty links
-            let internal_links: Vec<&AnchorLink> = page
-                .anchor_links
-                .iter()
-                .filter(|anchor| {
-                    // Skip empty hrefs, mailto, tel, javascript links
-                    if anchor.href.is_empty()
-                        || anchor.href.starts_with("mailto:")
-                        || anchor.href.starts_with("tel:")
-                        || anchor.href.starts_with("javascript:")
-                        || anchor.href.starts_with("#")
-                    {
-                        return false;
-                    }
-
-                    // Skip nofollow links
-                    if anchor.rel.to_lowercase().contains("nofollow") {
-                        return false;
-                    }
-
-                    // Skip external links (check if href starts with http and has different domain)
-                    if anchor.href.starts_with("http") {
-                        if let Some(page_domain) = page.url.split('/').nth(2) {
-                            if let Some(link_domain) = anchor.href.split('/').nth(2) {
-                                if page_domain != link_domain {
-                                    return false;
-                                }
-                            }
-                        }
-                    }
-
-                    true
-                })
-                .collect();
-
-            if internal_links.len() < 5 {
+            if page.internal_link_count < 5 {
                 low_internal_link_count.push(format!("{}", page.url));
             }
         }
@@ -229,15 +173,11 @@ impl IssueAnalyzer {
     }
 
     // GET ALL THE STUFF WITH GENERRIC ANCHORS OR EMPTY
-    pub fn analyse_generic_anchors(page_data: &[PageData]) -> (usize, Vec<String>) {
+    pub fn analyse_generic_anchors(page_data: &[PageSummary]) -> (usize, Vec<String>) {
         let mut generic_anchors = Vec::new();
 
         for page in page_data {
-            if page
-                .anchor_links
-                .iter()
-                .any(|anchor| anchor.text.is_empty() || anchor.text.contains("here"))
-            {
+            if page.has_generic_anchors {
                 generic_anchors.push(page.url.clone());
             }
         }
@@ -246,20 +186,13 @@ impl IssueAnalyzer {
     }
 
     // GET ALL THE POAGES WITH MISSING HEADERS
-    pub fn analyse_missing_headers(page_data: &[PageData]) -> (usize, Vec<String>) {
-        let mut missing_headers = Vec::new();
-
-        for page in page_data {
-            if page.headers.is_empty() {
-                missing_headers.push(page.url.clone());
-            }
-        }
-
-        (missing_headers.len(), missing_headers)
+    pub fn analyse_missing_headers(_page_data: &[PageSummary]) -> (usize, Vec<String>) {
+        // Headers are no longer stored in summary to save memory
+        (0, vec![])
     }
 
     // GETS ALL THE HTML PAGES THAT ARE TOO BIG
-    pub fn analyse_big_html_pages(page_data: &[PageData]) -> (usize, Vec<String>) {
+    pub fn analyse_big_html_pages(page_data: &[PageSummary]) -> (usize, Vec<String>) {
         let mut big_html_pages = Vec::new();
 
         for page in page_data {
@@ -272,7 +205,7 @@ impl IssueAnalyzer {
     }
 
     // GET ALL THE URLS THAT HAVE PARAMS
-    pub fn analyse_param_urls(page_data: &[PageData]) -> (usize, Vec<String>) {
+    pub fn analyse_param_urls(page_data: &[PageSummary]) -> (usize, Vec<String>) {
         let mut param_urls = Vec::new();
 
         for page in page_data {
@@ -290,17 +223,11 @@ impl IssueAnalyzer {
     }
 
     // GETS ALL THE URLS that contain PNGs or JPGs
-    pub fn analyse_urls_with_png_or_jpg(page_data: &[PageData]) -> (usize, Vec<String>) {
+    pub fn analyse_urls_with_png_or_jpg(page_data: &[PageSummary]) -> (usize, Vec<String>) {
         let mut image_urls = Vec::new();
 
         for page in page_data {
-            let has_image = page.images.iter().any(|image| {
-                let src = image.src.split('?').next().unwrap().to_ascii_lowercase();
-
-                src.ends_with(".png") || src.ends_with(".jpg") || src.ends_with(".jpeg")
-            });
-
-            if has_image {
+            if page.has_png_jpg {
                 image_urls.push(page.url.clone());
             }
         }
@@ -309,9 +236,7 @@ impl IssueAnalyzer {
     }
 
     /// Detects pages that share the same non-empty title and description.
-    /// This does NOT compare page content, just title and description combinations.
-    /// TODO: Implement this function to detect pages with duplicate content in the body.
-    pub fn analyse_duplicated_content(page_data: &[PageData]) -> (usize, Vec<String>) {
+    pub fn analyse_duplicated_content(page_data: &[PageSummary]) -> (usize, Vec<String>) {
         let mut duplicates = Vec::new();
         let mut content_map: HashMap<String, String> = HashMap::new();
 
@@ -338,7 +263,7 @@ impl IssueAnalyzer {
     }
 
     // GET THE URLS THAT ARE NOT CANONICALISED
-    pub fn analyze_non_canonical_urls(page_data: &[PageData]) -> (usize, Vec<String>) {
+    pub fn analyze_non_canonical_urls(page_data: &[PageSummary]) -> (usize, Vec<String>) {
         let mut urls = Vec::new();
 
         for page in page_data {
@@ -354,7 +279,7 @@ impl IssueAnalyzer {
                 || page.url.contains(".xml")
             {
                 continue;
-            } else if page.canonicals.is_empty() {
+            } else if !page.is_canonical {
                 urls.push(page.url.clone());
             }
         }
@@ -362,11 +287,11 @@ impl IssueAnalyzer {
     }
 
     // GET THE 5XX ERRORS STATUS CODES URLS
-    pub fn analyse_5xx_errors(page_data: &[PageData]) -> (usize, Vec<String>) {
+    pub fn analyse_5xx_errors(page_data: &[PageSummary]) -> (usize, Vec<String>) {
         let mut urls = Vec::new();
 
         for page in page_data {
-            if page.status.contains("5") {
+            if page.status.contains('5') {
                 urls.push(page.url.clone());
             }
         }
@@ -374,11 +299,11 @@ impl IssueAnalyzer {
     }
 
     // GET THE 301 REDIRECTS STATUS CODES URLS
-    pub fn analyse_3xx_redirects(page_data: &[PageData]) -> (usize, Vec<String>) {
+    pub fn analyse_3xx_redirects(page_data: &[PageSummary]) -> (usize, Vec<String>) {
         let mut urls = Vec::new();
 
         for page in page_data {
-            if page.status.contains("3") {
+            if page.status.contains('3') {
                 urls.push(page.url.clone());
             }
         }
@@ -386,10 +311,10 @@ impl IssueAnalyzer {
     }
 
     /// Analyze crawled data to detect 404 errors
-    pub fn analyze_404_errors(page_data: &[PageData]) -> (usize, Vec<String>) {
+    pub fn analyze_404_errors(page_data: &[PageSummary]) -> (usize, Vec<String>) {
         let mut urls = Vec::new();
         for page in page_data {
-            if page.status == "404" || page.status.starts_with("4") {
+            if page.status == "404" || page.status.starts_with('4') {
                 urls.push(page.url.clone());
             }
         }
@@ -397,7 +322,7 @@ impl IssueAnalyzer {
     }
 
     /// Analyze page titles > 60 chars
-    pub fn analyze_long_titles(page_data: &[PageData]) -> (usize, Vec<String>) {
+    pub fn analyze_long_titles(page_data: &[PageSummary]) -> (usize, Vec<String>) {
         let mut urls = Vec::new();
         for page in page_data {
             if page.title_len > 60 {
@@ -408,7 +333,7 @@ impl IssueAnalyzer {
     }
 
     /// Analyze page titles < 30 chars
-    pub fn analyze_short_titles(page_data: &[PageData]) -> (usize, Vec<String>) {
+    pub fn analyze_short_titles(page_data: &[PageSummary]) -> (usize, Vec<String>) {
         let mut urls = Vec::new();
         for page in page_data {
             if page.title_len > 0 && page.title_len < 30 {
@@ -419,23 +344,18 @@ impl IssueAnalyzer {
     }
 
     /// Analyze missing alt text
-    pub fn analyze_missing_alt_text(page_data: &[PageData]) -> (usize, Vec<String>) {
+    pub fn analyze_missing_alt_text(page_data: &[PageSummary]) -> (usize, Vec<String>) {
         let mut urls = Vec::new();
         for page in page_data {
-            let missing = page
-                .images
-                .iter()
-                .filter(|img| img.alt.trim().is_empty())
-                .count();
-            if missing > 0 {
-                urls.push(format!("{} ({} images)", page.url, missing));
+            if page.images_missing_alt > 0 {
+                urls.push(format!("{} ({} images)", page.url, page.images_missing_alt));
             }
         }
         (urls.len(), urls)
     }
 
     /// Analyze missing H1 tags
-    pub fn analyze_missing_h1(page_data: &[PageData]) -> (usize, Vec<String>) {
+    pub fn analyze_missing_h1(page_data: &[PageSummary]) -> (usize, Vec<String>) {
         let mut urls = Vec::new();
         for page in page_data {
             if page.h1_len == 0 {
@@ -446,7 +366,7 @@ impl IssueAnalyzer {
     }
 
     /// Analyze page descriptions > 160 chars
-    pub fn analyze_long_descriptions(page_data: &[PageData]) -> (usize, Vec<String>) {
+    pub fn analyze_long_descriptions(page_data: &[PageSummary]) -> (usize, Vec<String>) {
         let mut urls = Vec::new();
         for page in page_data {
             if page.description_len > 160 {
@@ -457,7 +377,7 @@ impl IssueAnalyzer {
     }
 
     /// Analyze missing page descriptions
-    pub fn analyze_missing_descriptions(page_data: &[PageData]) -> (usize, Vec<String>) {
+    pub fn analyze_missing_descriptions(page_data: &[PageSummary]) -> (usize, Vec<String>) {
         let mut urls = Vec::new();
         for page in page_data {
             if page.description_len == 0 {
@@ -468,7 +388,7 @@ impl IssueAnalyzer {
     }
 
     /// Analyze missing page titles
-    pub fn analyze_missing_titles(page_data: &[PageData]) -> (usize, Vec<String>) {
+    pub fn analyze_missing_titles(page_data: &[PageSummary]) -> (usize, Vec<String>) {
         let mut urls = Vec::new();
         for page in page_data {
             if page.title_len == 0 {
@@ -479,7 +399,7 @@ impl IssueAnalyzer {
     }
 
     /// Get real URLs for a specific issue type
-    pub fn get_urls_for_issue(page_data: &[PageData], issue_type: &str) -> Vec<String> {
+    pub fn get_urls_for_issue(page_data: &[PageSummary], issue_type: &str) -> Vec<String> {
         // Special handling for robots disallow links - perform async analysis
         if issue_type == " Robots Disallow Links" {
             // For now, return a placeholder since we can't call async from sync context
@@ -496,7 +416,7 @@ impl IssueAnalyzer {
     }
 
     /// Generate issues table data
-    pub fn generate_issues_table_data(page_data: &[PageData]) -> Vec<Vec<String>> {
+    pub fn generate_issues_table_data(page_data: &[PageSummary]) -> Vec<Vec<String>> {
         let total_pages = page_data.len();
         let handlers = Self::get_handlers();
         let mut table_data = Vec::new();
@@ -524,7 +444,7 @@ impl IssueAnalyzer {
     }
 
     /// Generate issues table data with robots count
-    pub fn generate_issues_table_data_with_robots(page_data: &[PageData], robots_count: usize) -> Vec<Vec<String>> {
+    pub fn generate_issues_table_data_with_robots(page_data: &[PageSummary], robots_count: usize) -> Vec<Vec<String>> {
         let total_pages = page_data.len();
         let handlers = Self::get_handlers();
         let mut table_data = Vec::new();
@@ -561,7 +481,7 @@ impl IssueAnalyzer {
     }
 
     /// Perform actual robots.txt analysis on-demand (async)
-    pub async fn analyze_robots_on_demand(page_data: &[PageData]) -> Vec<String> {
+    pub async fn analyze_robots_on_demand(page_data: &[PageSummary]) -> Vec<String> {
         let mut blocked_urls = Vec::new();
         
         if page_data.is_empty() {

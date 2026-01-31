@@ -185,18 +185,11 @@ impl App {
     }
 
     pub fn show_js_pages_for_url(&mut self, js_url: String) {
-        self.js_pages_list = self
-            .page_data
-            .iter()
-            .filter(|p| {
-                p.javascript.as_ref().map_or(false, |js| {
-                    js.scripts.iter().any(|s| s.src.as_ref() == Some(&js_url))
-                })
-            })
-            .map(|p| p.url.clone())
-            .collect();
-        self.js_pages_state.select(Some(0));
-        self.show_js_pages_modal = true;
+        if let Some(ref conn) = self.db_conn {
+            self.js_pages_list = crate::db::get_pages_for_js(conn, &js_url);
+            self.js_pages_state.select(Some(0));
+            self.show_js_pages_modal = true;
+        }
     }
 
     pub fn close_js_pages_modal(&mut self) {
@@ -206,18 +199,11 @@ impl App {
     }
 
     pub fn show_css_pages_for_url(&mut self, css_url: String) {
-        self.css_pages_list = self
-            .page_data
-            .iter()
-            .filter(|p| {
-                p.css
-                    .as_ref()
-                    .map_or(false, |css| css.css_urls.contains(&css_url))
-            })
-            .map(|p| p.url.clone())
-            .collect();
-        self.css_pages_state.select(Some(0));
-        self.show_css_pages_modal = true;
+        if let Some(ref conn) = self.db_conn {
+            self.css_pages_list = crate::db::get_pages_for_css(conn, &css_url);
+            self.css_pages_state.select(Some(0));
+            self.show_css_pages_modal = true;
+        }
     }
 
     pub fn close_css_pages_modal(&mut self) {
@@ -243,32 +229,54 @@ impl App {
         let action = self.dashboard_menu_selection;
         self.show_dashboard_menu = false;
 
+        // Get the selected row URL
+        let url = if let Some(selected) = self.table_state.selected() {
+            let full_idx = self.current_page * self.page_size + selected;
+            if let Some(row) = self.full_filtered_table_data.get(full_idx) {
+                row[1].clone()
+            } else {
+                return;
+            }
+        } else {
+            return;
+        };
+
         match action {
             0 => {
-                // Open in browser
-                if let Some(selected) = self.table_state.selected() {
-                    let full_idx = self.current_page * self.page_size + selected;
-                    if let Some(row) = self.full_filtered_table_data.get(full_idx) {
-                        crate::ui::modals::options::open_in_browser(&row[1]);
-                    }
-                }
+                // Copy URL
+                crate::ui::modals::options::copy_to_clipboard(url.clone());
+                self.log(format!("Copied URL to clipboard: {}", url));
             }
             1 => {
-                // Copy to clipboard
-                if let Some(selected) = self.table_state.selected() {
-                    let full_idx = self.current_page * self.page_size + selected;
-                    if let Some(row) = self.full_filtered_table_data.get(full_idx) {
-                        crate::ui::modals::options::copy_to_clipboard(row[1].clone());
-                    }
-                }
+                // Open URL in Browser
+                crate::ui::modals::options::open_in_browser(&url);
+                self.log(format!("Opened URL in browser: {}", url));
             }
             2 => {
-                // View Details
-                self.show_details = true;
+                // Open in Google
+                let google_url = format!("https://www.google.com/search?q={}", url);
+                crate::ui::modals::options::open_in_browser(&google_url);
+                self.log(format!("Opening URL in Google: {}", url));
             }
             3 => {
-                // Export
-                // Add export logic here
+                // Check Keywords
+                self.log(format!("Keywords check for: {}", url));
+            }
+            4 => {
+                // View SEO Score
+                self.log(format!("SEO Score for: {}", url));
+            }
+            5 => {
+                // Extract Links
+                self.log(format!("Extracting links from: {}", url));
+            }
+            6 => {
+                // Screenshot
+                self.log(format!("Taking screenshot of: {}", url));
+            }
+            7 => {
+                // Export Data
+                self.log(format!("Exporting data for: {}", url));
             }
             _ => {}
         }
