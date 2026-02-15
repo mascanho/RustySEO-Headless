@@ -9,6 +9,9 @@ use ratatui::{
 
 mod modal_tabs;
 
+const ACCENT_COLOR: Color = Color::Rgb(80, 140, 255);
+const BORDER_COLOR: Color = Color::Rgb(40, 45, 60);
+
 pub fn render(f: &mut Frame, app: &mut App) {
     let area = f.area();
 
@@ -72,9 +75,10 @@ pub fn render(f: &mut Frame, app: &mut App) {
         .block(
             Block::default()
                 .title(Span::styled(
-                    format!("🔗 {}", row_data[1]),
+                    format!(" {} ", row_data[1]),
                     Style::default()
-                        .fg(Color::Yellow)
+                        .fg(Color::White)
+                        .bg(ACCENT_COLOR)
                         .bold()
                         .add_modifier(Modifier::ITALIC)
                         .add_modifier(Modifier::RAPID_BLINK),
@@ -86,7 +90,8 @@ pub fn render(f: &mut Frame, app: &mut App) {
         .style(Style::default().fg(Color::DarkGray))
         .highlight_style(
             Style::default()
-                .fg(accent_color)
+                .fg(Color::White)
+                .bg(ACCENT_COLOR)
                 .add_modifier(Modifier::BOLD)
                 .add_modifier(Modifier::REVERSED),
         )

@@ -494,6 +494,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                         }
                                     } else {
                                         app.previous_row();
+                                        app.refresh_details_for_current_selection();
                                     }
                                 }
                                 KeyCode::Char('j') => {
@@ -508,6 +509,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                         app.detail_scroll += 1;
                                     } else {
                                         app.next_row();
+                                        app.refresh_details_for_current_selection();
                                     }
                                 }
                                 KeyCode::Up => {
@@ -528,6 +530,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                         }
                                     } else if app.current_state == AppState::Dashboard {
                                         app.previous_row();
+                                        app.refresh_details_for_current_selection();
                                     }
                                 }
                                 KeyCode::Down => {
@@ -545,6 +548,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                         }
                                     } else if app.current_state == AppState::Dashboard {
                                         app.next_row();
+                                        app.refresh_details_for_current_selection();
                                     }
                                 }
                                 _ => {}

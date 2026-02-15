@@ -1,7 +1,7 @@
 use crate::crawler::CrawlMessage;
 use crate::models::App;
+use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
-use std::time::{Instant, Duration};
 
 impl App {
     pub fn on_tick(&mut self) {
@@ -61,28 +61,59 @@ impl App {
                     description_len: page_data.description_len,
                     status: page_data.status.clone(),
                     h1_len: page_data.h1_len,
-                    h1_count: page_data.headings.iter().filter(|(t,_)| t == "h1").count(),
-                    h2_count: page_data.headings.iter().filter(|(t,_)| t == "h2").count(),
-                    h3_count: page_data.headings.iter().filter(|(t,_)| t == "h3").count(),
-                    h4_count: page_data.headings.iter().filter(|(t,_)| t == "h4").count(),
-                    h5_count: page_data.headings.iter().filter(|(t,_)| t == "h5").count(),
-                    h6_count: page_data.headings.iter().filter(|(t,_)| t == "h6").count(),
+                    h1_count: page_data.headings.iter().filter(|(t, _)| t == "h1").count(),
+                    h2_count: page_data.headings.iter().filter(|(t, _)| t == "h2").count(),
+                    h3_count: page_data.headings.iter().filter(|(t, _)| t == "h3").count(),
+                    h4_count: page_data.headings.iter().filter(|(t, _)| t == "h4").count(),
+                    h5_count: page_data.headings.iter().filter(|(t, _)| t == "h5").count(),
+                    h6_count: page_data.headings.iter().filter(|(t, _)| t == "h6").count(),
                     has_schema: !page_data.schema.is_empty(),
                     schema_count: page_data.schema.len(),
                     size: page_data.size,
                     word_count: page_data.word_count.unwrap_or(0),
-                    internal_link_count: page_data.anchor_links.iter().filter(|a| !a.href.starts_with("http") || base_domain.as_ref().map_or(true, |d| a.href.contains(d))).count(),
-                    external_link_count: page_data.anchor_links.iter().filter(|a| a.href.starts_with("http") && base_domain.as_ref().map_or(false, |d| !a.href.contains(d))).count(),
+                    internal_link_count: page_data
+                        .anchor_links
+                        .iter()
+                        .filter(|a| {
+                            !a.href.starts_with("http")
+                                || base_domain.as_ref().map_or(true, |d| a.href.contains(d))
+                        })
+                        .count(),
+                    external_link_count: page_data
+                        .anchor_links
+                        .iter()
+                        .filter(|a| {
+                            a.href.starts_with("http")
+                                && base_domain.as_ref().map_or(false, |d| !a.href.contains(d))
+                        })
+                        .count(),
                     images_count: page_data.images.len(),
-                    images_missing_alt: page_data.images.iter().filter(|i| i.alt.trim().is_empty()).count(),
+                    images_missing_alt: page_data
+                        .images
+                        .iter()
+                        .filter(|i| i.alt.trim().is_empty())
+                        .count(),
                     is_canonical: !page_data.canonicals.is_empty(),
-                    has_png_jpg: page_data.images.iter().any(|i| i.src.to_lowercase().ends_with(".png") || i.src.to_lowercase().ends_with(".jpg") || i.src.to_lowercase().ends_with(".jpeg")),
+                    has_png_jpg: page_data.images.iter().any(|i| {
+                        i.src.to_lowercase().ends_with(".png")
+                            || i.src.to_lowercase().ends_with(".jpg")
+                            || i.src.to_lowercase().ends_with(".jpeg")
+                    }),
                     mobile: page_data.mobile,
                     indexability: page_data.indexability.clone(),
                     language: page_data.language.clone(),
-                    cwv_performance_desktop: page_data.cwv_desktop.as_ref().and_then(|c| c.performance_score.parse::<f64>().ok()),
-                    cwv_performance_mobile: page_data.cwv_mobile.as_ref().and_then(|c| c.performance_score.parse::<f64>().ok()),
-                    has_generic_anchors: page_data.anchor_links.iter().any(|a| a.text.is_empty() || a.text.to_lowercase().contains("here")),
+                    cwv_performance_desktop: page_data
+                        .cwv_desktop
+                        .as_ref()
+                        .and_then(|c| c.performance_score.parse::<f64>().ok()),
+                    cwv_performance_mobile: page_data
+                        .cwv_mobile
+                        .as_ref()
+                        .and_then(|c| c.performance_score.parse::<f64>().ok()),
+                    has_generic_anchors: page_data
+                        .anchor_links
+                        .iter()
+                        .any(|a| a.text.is_empty() || a.text.to_lowercase().contains("here")),
                 };
                 self.page_summaries.push(summary);
 
@@ -106,16 +137,19 @@ impl App {
                     page_data.canonicals.len().to_string(),
                     page_data.size.to_string(),
                     page_data.word_count.unwrap_or(0).to_string(),
-                    page_data.css
+                    page_data
+                        .css
                         .as_ref()
                         .map_or("0 B".to_string(), |css| css.total_size_formatted.clone()),
-                    page_data.css
+                    page_data
+                        .css
                         .as_ref()
                         .map_or("0".to_string(), |css| css.external_css_count.to_string()),
                     page_data.css.as_ref().map_or("0 B".to_string(), |css| {
                         css.inline_css_size_formatted.clone()
                     }),
-                    page_data.css
+                    page_data
+                        .css
                         .as_ref()
                         .and_then(|css| css.css_urls.first())
                         .map_or("inline only".to_string(), |url| url.clone()),
@@ -150,11 +184,14 @@ impl App {
                 for link in &page_data.outlinks {
                     let normalized_to = crate::crawler::url_normalizer::normalize_url(&link.href)
                         .unwrap_or_else(|| link.href.clone());
-                    if normalized_to.starts_with("mailto:") || normalized_to.contains("@") { continue; }
+                    if normalized_to.starts_with("mailto:") || normalized_to.contains("@") {
+                        continue;
+                    }
 
                     let is_internal = base_domain.as_ref().map_or(true, |d| {
                         if let Ok(u) = url::Url::parse(&normalized_to) {
-                            u.host_str().map_or(false, |h| h == d || h.ends_with(&format!(".{}", d)))
+                            u.host_str()
+                                .map_or(false, |h| h == d || h.ends_with(&format!(".{}", d)))
                         } else {
                             !normalized_to.contains("://")
                         }
@@ -169,7 +206,9 @@ impl App {
                             rel: link.rel.clone(),
                         };
                         self.internal_table_data.push(internal_link.clone());
-                        if self.internal_search_query.is_empty() { self.internal_full_filtered_table_data.push(internal_link); }
+                        if self.internal_search_query.is_empty() {
+                            self.internal_full_filtered_table_data.push(internal_link);
+                        }
                     } else {
                         let external_link = crate::models::ExternalLink {
                             id: self.external_table_data.len() + 1,
@@ -179,18 +218,38 @@ impl App {
                             rel: link.rel.clone(),
                         };
                         self.external_table_data.push(external_link.clone());
-                        if self.external_search_query.is_empty() { self.external_full_filtered_table_data.push(external_link); }
+                        if self.external_search_query.is_empty() {
+                            self.external_full_filtered_table_data.push(external_link);
+                        }
                     }
 
                     // Collect Files
-                    let path_part = normalized_to.split('?').next().unwrap_or("").split('#').next().unwrap_or("");
+                    let path_part = normalized_to
+                        .split('?')
+                        .next()
+                        .unwrap_or("")
+                        .split('#')
+                        .next()
+                        .unwrap_or("");
                     if let Some(ext) = path_part.split('.').last() {
                         let ext_lower = ext.to_lowercase();
-                        if !ext_lower.is_empty() && !["html", "htm", "php", "css", "js", "aspx", "asp", "jsp", "png", "jpg", "jpeg", "gif", "svg", "webp", "ico"].contains(&ext_lower.as_str()) {
+                        if !ext_lower.is_empty()
+                            && ![
+                                "html", "htm", "php", "css", "js", "aspx", "asp", "jsp", "png",
+                                "jpg", "jpeg", "gif", "svg", "webp", "ico",
+                            ]
+                            .contains(&ext_lower.as_str())
+                        {
                             if self.seen_files.insert(normalized_to.clone()) {
-                                let file_entry = crate::models::FileEntry { id: self.files_table_data.len() + 1, url: normalized_to, filetype: ext_lower.to_uppercase() };
+                                let file_entry = crate::models::FileEntry {
+                                    id: self.files_table_data.len() + 1,
+                                    url: normalized_to,
+                                    filetype: ext_lower.to_uppercase(),
+                                };
                                 self.files_table_data.push(file_entry.clone());
-                                if self.files_search_query.is_empty() { self.files_full_filtered_table_data.push(file_entry); }
+                                if self.files_search_query.is_empty() {
+                                    self.files_full_filtered_table_data.push(file_entry);
+                                }
                             }
                         }
                     }
@@ -199,19 +258,30 @@ impl App {
                 // O(1) Unique Aggregates Updates
                 if let Some(css_info) = &page_data.css {
                     for css_url in &css_info.css_urls {
-                        let normalized = crate::crawler::url_normalizer::normalize_url(css_url).unwrap_or_else(|| css_url.clone());
+                        let normalized = crate::crawler::url_normalizer::normalize_url(css_url)
+                            .unwrap_or_else(|| css_url.clone());
                         let count = self.css_counts.entry(normalized.clone()).or_insert(0);
                         *count += 1;
                         if *count == 1 {
-                            let entry = crate::models::CssUrl { id: self.css_urls_table_data.len() + 1, url: normalized.clone(), page_count: 1 };
+                            let entry = crate::models::CssUrl {
+                                id: self.css_urls_table_data.len() + 1,
+                                url: normalized.clone(),
+                                page_count: 1,
+                            };
                             self.css_urls_table_data.push(entry.clone());
-                            if self.css_urls_search_query.is_empty() { self.css_urls_full_filtered_table_data.push(entry); }
+                            if self.css_urls_search_query.is_empty() {
+                                self.css_urls_full_filtered_table_data.push(entry);
+                            }
                         } else {
                             // Update count in O(1) by keeping track of IDs? Or just search (it's less frequent now)
                             // Better: if it's already there, we only need to update it sometimes or on-demand.
-                            // To keep it simple but fast for now, we'll only do linear search if it's there, 
+                            // To keep it simple but fast for now, we'll only do linear search if it's there,
                             // but the count check makes it MUCH less frequent.
-                            if let Some(item) = self.css_urls_table_data.iter_mut().find(|c| c.url == normalized) {
+                            if let Some(item) = self
+                                .css_urls_table_data
+                                .iter_mut()
+                                .find(|c| c.url == normalized)
+                            {
                                 item.page_count = *count;
                             }
                         }
@@ -221,14 +291,28 @@ impl App {
                 if let Some(js_info) = &page_data.javascript {
                     for script in &js_info.scripts {
                         if let Some(js_url) = &script.src {
-                            let normalized = crate::crawler::url_normalizer::normalize_url(js_url).unwrap_or_else(|| js_url.clone());
+                            let normalized = crate::crawler::url_normalizer::normalize_url(js_url)
+                                .unwrap_or_else(|| js_url.clone());
                             let count = self.js_counts.entry(normalized.clone()).or_insert(0);
                             *count += 1;
                             if *count == 1 {
-                                let entry = crate::models::JsUrl { id: self.js_urls_table_state.selected().unwrap_or(0) + 1, url: normalized.clone(), script_type: script.script_type.clone(), is_async: script.is_async, is_defer: script.is_defer, page_count: 1 };
+                                let entry = crate::models::JsUrl {
+                                    id: self.js_urls_table_state.selected().unwrap_or(0) + 1,
+                                    url: normalized.clone(),
+                                    script_type: script.script_type.clone(),
+                                    is_async: script.is_async,
+                                    is_defer: script.is_defer,
+                                    page_count: 1,
+                                };
                                 self.js_urls_table_data.push(entry.clone());
-                                if self.js_urls_search_query.is_empty() { self.js_urls_full_filtered_table_data.push(entry); }
-                            } else if let Some(item) = self.js_urls_table_data.iter_mut().find(|j| j.url == normalized) {
+                                if self.js_urls_search_query.is_empty() {
+                                    self.js_urls_full_filtered_table_data.push(entry);
+                                }
+                            } else if let Some(item) = self
+                                .js_urls_table_data
+                                .iter_mut()
+                                .find(|j| j.url == normalized)
+                            {
                                 item.page_count = *count;
                             }
                         }
@@ -239,33 +323,64 @@ impl App {
                     let count = self.image_counts.entry(image.src.clone()).or_insert(0);
                     *count += 1;
                     if *count == 1 {
-                        let entry = crate::models::ImageTableEntry { id: self.images_table_data.len() + 1, url: image.src.clone(), alt: image.alt.clone(), status: "-".to_string(), size: image.size_formatted.clone(), page_count: 1 };
+                        let entry = crate::models::ImageTableEntry {
+                            id: self.images_table_data.len() + 1,
+                            url: image.src.clone(),
+                            alt: image.alt.clone(),
+                            status: "-".to_string(),
+                            size: image.size_formatted.clone(),
+                            page_count: 1,
+                        };
                         self.images_table_data.push(entry.clone());
-                        if self.images_search_query.is_empty() { self.images_full_filtered_table_data.push(entry); }
-                    } else if let Some(item) = self.images_table_data.iter_mut().find(|i| i.url == image.src) {
+                        if self.images_search_query.is_empty() {
+                            self.images_full_filtered_table_data.push(entry);
+                        }
+                    } else if let Some(item) = self
+                        .images_table_data
+                        .iter_mut()
+                        .find(|i| i.url == image.src)
+                    {
                         item.page_count = *count;
                     }
                 }
 
                 // Redirects & Keywords
                 if !page_data.redirect_chain.is_empty() {
-                    let entry = crate::models::RedirectEntry { id: self.redirects_table_data.len() + 1, initial_url: page_data.url.clone(), status_code: page_data.status.parse().unwrap_or(0), chain: page_data.redirect_chain.clone() };
+                    let entry = crate::models::RedirectEntry {
+                        id: self.redirects_table_data.len() + 1,
+                        initial_url: page_data.url.clone(),
+                        status_code: page_data.status.parse().unwrap_or(0),
+                        chain: page_data.redirect_chain.clone(),
+                    };
                     self.redirects_table_data.push(entry.clone());
-                    if self.redirects_search_query.is_empty() { self.redirects_full_filtered_table_data.push(entry); }
+                    if self.redirects_search_query.is_empty() {
+                        self.redirects_full_filtered_table_data.push(entry);
+                    }
                 }
 
                 if let Some(keywords) = &page_data.keywords {
                     let word_count = page_data.word_count.unwrap_or(0);
                     for (i, kw) in keywords.iter().enumerate().take(10) {
-                        let entry = crate::models::KeywordEntry { id: self.keywords_table_data.len() + 1, keyword: kw.clone(), url: page_data.url.clone(), word_count, relevance: i + 1 };
+                        let entry = crate::models::KeywordEntry {
+                            id: self.keywords_table_data.len() + 1,
+                            keyword: kw.clone(),
+                            url: page_data.url.clone(),
+                            word_count,
+                            relevance: i + 1,
+                        };
                         self.keywords_table_data.push(entry.clone());
-                        if self.keywords_search_query.is_empty() { self.keywords_full_filtered_table_data.push(entry); }
+                        if self.keywords_search_query.is_empty() {
+                            self.keywords_full_filtered_table_data.push(entry);
+                        }
                     }
                 }
 
-                self.url_to_status.insert(page_data.url.clone(), page_data.status.clone());
+                self.url_to_status
+                    .insert(page_data.url.clone(), page_data.status.clone());
                 self.table_data.push(row.clone());
-                if self.search_query.is_empty() { self.full_filtered_table_data.push(row); }
+                if self.search_query.is_empty() {
+                    self.full_filtered_table_data.push(row);
+                }
             }
 
             // Apply pagination incrementally
@@ -283,7 +398,7 @@ impl App {
             self.apply_images_pagination();
 
             // Rate-limited Issues Update (every 15s)
-            static LAST_ISSUES_UPDATE: std::sync::LazyLock<std::sync::Mutex<Instant>> = 
+            static LAST_ISSUES_UPDATE: std::sync::LazyLock<std::sync::Mutex<Instant>> =
                 std::sync::LazyLock::new(|| std::sync::Mutex::new(Instant::now()));
             if LAST_ISSUES_UPDATE.lock().unwrap().elapsed() > Duration::from_secs(15) {
                 self.update_issues_from_crawled_data();
@@ -331,10 +446,12 @@ impl App {
             while let Ok(log) = rx.try_recv() {
                 logs.push(log);
                 count += 1;
-                if count > 50 { break; }
+                if count > 50 {
+                    break;
+                }
             }
         }
-        
+
         if !logs.is_empty() {
             for log in logs {
                 self.log(log);
@@ -347,6 +464,19 @@ impl App {
         if let Some(page_data) = crate::db::load_page_data(id) {
             self.selected_page_details = Some(page_data);
             self.show_details = true;
+        }
+    }
+
+    pub fn refresh_details_for_current_selection(&mut self) {
+        if let Some(selected) = self.table_state.selected() {
+            if selected < self.filtered_table_data.len() {
+                let row_data = &self.filtered_table_data[selected];
+                if let Ok(id) = row_data[0].parse::<usize>() {
+                    if let Some(page_data) = crate::db::load_page_data(id) {
+                        self.selected_page_details = Some(page_data);
+                    }
+                }
+            }
         }
     }
 

@@ -33,7 +33,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         "H2",
         "Len",
         "Status",
-        "Mobile",
+        "Size",
         "Lang",
         "Indexable",
     ];
@@ -78,7 +78,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             data[8].clone(),            // H2
             data[9].clone(),            // H2 Len
             data[10].clone(),           // Status
-            data[11].clone(),           // Mobile
+            data[17].clone(),           // Page size
             data[12].clone(),           // Language
             data[13].clone(),           // Indexability
         ];
@@ -151,13 +151,21 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 }
             }
 
+            // IF MOBILE NEED TO BE USED UNCOMMENT THIS
+            // if j == 11 {
+            // Mobile column
+            // content = if content == "true" {
+            // "Yes".to_string()
+            // } else {
+            // "No".to_string()
+            // };
+            // }
+
             if j == 11 {
-                // Mobile column
-                content = if content == "true" {
-                    "Yes".to_string()
-                } else {
-                    "No".to_string()
-                };
+                let size = data[17].clone();
+                let size = size.trim().parse::<usize>().unwrap_or(0);
+                let size = size / 1024;
+                content = format!("{} KB", size);
             }
 
             if j == 3 {
@@ -240,7 +248,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         Constraint::Length(15),           // H2
         Constraint::Length(7),            // H2 Len
         Constraint::Length(8),            // Status
-        Constraint::Length(8),            // Mobile
+        Constraint::Length(8),            // Page Size
         Constraint::Length(6),            // Lang
         Constraint::Min(8),               // Indexable
     ];
