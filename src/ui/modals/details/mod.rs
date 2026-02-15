@@ -60,15 +60,15 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     // Render Tabs
     let titles = vec![
-        "General",
-        "Analysis",
-        "Checklist",
-        "Inlinks",
-        "Outlinks",
-        "Images",
-        "Schema",
-        "Headers",
-        "Headings",
+        " General ",
+        " Analysis ",
+        " Checklist ",
+        " Inlinks ",
+        " Outlinks ",
+        " Images ",
+        " Schema ",
+        " Headers ",
+        " Headings ",
     ];
 
     let tabs = Tabs::new(titles)
