@@ -1,9 +1,9 @@
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table},
-    Frame,
 };
 
 use crate::models::App;
@@ -162,6 +162,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             // }
 
             if j == 11 {
+                // HANDLE THE SIZE CALCULATIONS TO DISPLAY KB
                 let size = data[17].clone();
                 let size = size.trim().parse::<usize>().unwrap_or(0);
                 let size = size / 1024;
