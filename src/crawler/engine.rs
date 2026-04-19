@@ -1,9 +1,9 @@
 use headless_chrome::{Browser, LaunchOptions};
 use reqwest::Client;
 use std::collections::HashSet;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use tokio::sync::{Mutex, Semaphore, mpsc};
+use std::sync::Arc;
+use tokio::sync::{mpsc, Mutex, Semaphore};
 use tokio::time::Duration;
 use url::Url;
 
@@ -76,6 +76,8 @@ impl CrawlEngine {
             pagespeed_config: None,
         }
     }
+
+    // This is a bit of a hack to ensure that the crawler doesn't get too far ahead of the UI.
 
     pub fn with_pagespeed(mut self, config: Option<crate::models::PageSpeedConfig>) -> Self {
         self.pagespeed_config = config;
@@ -163,14 +165,14 @@ impl CrawlEngine {
         // Factor of 10 allows building a backlog without dropping links too early
         let queue_capacity = std::cmp::max(self.max_pages * 10, 200_000);
         let mut queue = crate::crawler::queue::CrawlQueue::with_max_size(Some(queue_capacity));
-        
+
         if let Some(normalized_start) = crate::crawler::url_normalizer::normalize_url(start_url) {
-             queue.push(normalized_start.clone(), None);
-             // Mark start URL as seen immediately to prevent re-queuing
-             self.visited.lock().await.insert(normalized_start);
+            queue.push(normalized_start.clone(), None);
+            // Mark start URL as seen immediately to prevent re-queuing
+            self.visited.lock().await.insert(normalized_start);
         } else {
-             tracing::error!("Invalid start URL: {}", start_url);
-             return;
+            tracing::error!("Invalid start URL: {}", start_url);
+            return;
         }
 
         // Try to discover URLs from sitemap.xml and robots.txt
@@ -188,19 +190,25 @@ impl CrawlEngine {
                 for url in sitemap_urls {
                     // Only add URLs from the same domain
                     if let Ok(parsed) = Url::parse(&url) {
-                        if crate::crawler::url_normalizer::is_same_domain(parsed.domain(), base_url.domain()) {
-                            if let Some(normalized_url) = crate::crawler::url_normalizer::normalize_url(&url) {
-                                 if crate::crawler::url_normalizer::should_crawl_url(&normalized_url) {
-                                      if !visited.contains(&normalized_url) {
-                                          if queue.push(normalized_url.clone(), None) {
-                                              visited.insert(normalized_url);
-                                              added += 1;
-                                          } else {
-                                              tracing::warn!("[QUEUE] Queue at capacity, skipping sitemap URL: {}", url);
-                                              break;
-                                          }
-                                      }
-                                 }
+                        if crate::crawler::url_normalizer::is_same_domain(
+                            parsed.domain(),
+                            base_url.domain(),
+                        ) {
+                            if let Some(normalized_url) =
+                                crate::crawler::url_normalizer::normalize_url(&url)
+                            {
+                                if crate::crawler::url_normalizer::should_crawl_url(&normalized_url)
+                                {
+                                    if !visited.contains(&normalized_url) {
+                                        if queue.push(normalized_url.clone(), None) {
+                                            visited.insert(normalized_url);
+                                            added += 1;
+                                        } else {
+                                            tracing::warn!("[QUEUE] Queue at capacity, skipping sitemap URL: {}", url);
+                                            break;
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -222,7 +230,6 @@ impl CrawlEngine {
 
                 // URLs in queue are already normalized, filtered, and marked "seen" (visited)
                 // We proceed directly to processing
-
 
                 let engine = self.clone();
                 let base_url_clone = base_url.clone();
@@ -267,16 +274,17 @@ impl CrawlEngine {
                             let mut added_count = 0;
                             {
                                 let mut visited = self.visited.lock().await; // Lock once
-                                
+
                                 for link in &data.anchor_links {
                                     // Links are already normalized and filtered by fetch_and_process
-                                    
+
                                     if visited.contains(&link.href) {
                                         duplicate_count += 1;
                                         tracing::debug!("[LINK] Duplicate (Seen): {}", link.href);
                                     } else {
                                         // Attempt to add to queue FIRST
-                                        if queue.push(link.href.clone(), Some(current_url.clone())) {
+                                        if queue.push(link.href.clone(), Some(current_url.clone()))
+                                        {
                                             // Successfully queued -> Mark as visited/seen
                                             visited.insert(link.href.clone());
                                             new_links.push(link.href.clone()); // for logging/stats
@@ -284,11 +292,14 @@ impl CrawlEngine {
                                             tracing::debug!("[LINK] NEW -> Queue: {}", link.href);
                                         } else {
                                             // Queue full
-                                            tracing::warn!("Queue full, dropping link: {}", link.href);
+                                            tracing::warn!(
+                                                "Queue full, dropping link: {}",
+                                                link.href
+                                            );
                                             // Stop processing links if queue is full?
                                             // Or continue counting duplicates?
                                             // Assuming push returns false means full, we can break.
-                                            break; 
+                                            break;
                                         }
                                     }
                                 }
@@ -299,7 +310,6 @@ impl CrawlEngine {
 
                             // We already added them to queue in the loop
 
-                            
                             // Warn if we couldn't add all links due to capacity
                             if added_count < new_links.len() {
                                 tracing::warn!(
