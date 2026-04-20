@@ -117,7 +117,7 @@ impl App {
                 };
                 self.page_summaries.push(summary);
 
-                let row = vec![
+                let mut row = vec![
                     current_id.to_string(),
                     page_data.url.clone(),
                     page_data.title.clone(),
@@ -155,15 +155,7 @@ impl App {
                         .map_or("inline only".to_string(), |url| url.clone()),
                 ];
 
-                // 2b. Add top 10 keywords to the row
-                let mut row = row;
-                let mut keywords = page_data.keywords.clone().unwrap_or_default();
-                keywords.resize(10, String::new());
-                for kw in keywords {
-                    row.push(kw);
-                }
-
-                // 2c. Add CWV data
+                // 2b. Add CWV data
                 let d = page_data.cwv_desktop.clone().unwrap_or_default();
                 row.push(d.performance_score);
                 row.push(d.fcp);
@@ -179,6 +171,15 @@ impl App {
                 row.push(m.cls);
                 row.push(m.tbt);
                 row.push(m.speed_index);
+
+                // Add Top 10 Keywords
+                for kw in &page_data.keywords {
+                    row.push(kw.clone());
+                }
+                // Fill remaining keyword slots with empty strings if less than 10
+                for _ in page_data.keywords.len()..10 {
+                    row.push(String::new());
+                }
 
                 // Populate internal and external links
                 for link in &page_data.outlinks {
@@ -358,28 +359,14 @@ impl App {
                     }
                 }
 
-                if let Some(keywords) = &page_data.keywords {
-                    let word_count = page_data.word_count.unwrap_or(0);
-                    for (i, kw) in keywords.iter().enumerate().take(10) {
-                        let entry = crate::models::KeywordEntry {
-                            id: self.keywords_table_data.len() + 1,
-                            keyword: kw.clone(),
-                            url: page_data.url.clone(),
-                            word_count,
-                            relevance: i + 1,
-                        };
-                        self.keywords_table_data.push(entry.clone());
-                        if self.keywords_search_query.is_empty() {
-                            self.keywords_full_filtered_table_data.push(entry);
-                        }
-                    }
-                }
-
                 self.url_to_status
                     .insert(page_data.url.clone(), page_data.status.clone());
                 self.table_data.push(row.clone());
                 if self.search_query.is_empty() {
-                    self.full_filtered_table_data.push(row);
+                    self.full_filtered_table_data.push(row.clone());
+                }
+                if self.content_search_query.is_empty() {
+                    self.content_full_filtered_table_data.push(row);
                 }
             }
 
@@ -394,7 +381,6 @@ impl App {
             self.apply_content_pagination();
             self.apply_files_pagination();
             self.apply_redirects_pagination();
-            self.apply_keywords_pagination();
             self.apply_images_pagination();
 
             // Rate-limited Issues Update (every 15s)
@@ -427,7 +413,6 @@ impl App {
                 self.apply_content_filter();
                 self.apply_files_filter();
                 self.apply_redirects_filter();
-                self.apply_keywords_filter();
                 self.last_search_time = None;
             }
         }

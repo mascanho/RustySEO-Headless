@@ -8,6 +8,5 @@ pub mod files;
 pub mod images;
 pub mod internal;
 pub mod javascript;
-pub mod keywords;
 pub mod logs;
 pub mod redirects;

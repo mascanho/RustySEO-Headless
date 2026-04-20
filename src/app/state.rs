@@ -18,11 +18,10 @@ pub enum AppState {
     Images,
     Css,
     Javascript,
-    Keywords,
     CoreWebVitals,
-    CustomExtractor,
     Content,
     Files,
+    CustomExtractor,
 }
 
 impl Default for App {
@@ -221,16 +220,6 @@ impl Default for App {
             redirects_horizontal_scroll: 0,
             redirects_search_query: String::new(),
             show_redirects_search: false,
-            // Keywords Tab State
-            keywords_table_data: Vec::new(),
-            keywords_table_state: ratatui::widgets::TableState::default(),
-            keywords_filtered_table_data: Vec::new(),
-            keywords_full_filtered_table_data: Vec::new(),
-            keywords_current_page: 0,
-            keywords_page_size: 100,
-            keywords_horizontal_scroll: 0,
-            keywords_search_query: String::new(),
-            show_keywords_search: false,
             // Robots Tab State
             robots_table_data: Vec::new(),
             robots_table_state: ratatui::widgets::TableState::default(),

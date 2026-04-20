@@ -52,11 +52,10 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         "Images",
         "CSS",
         "Javascript",
-        "Keywords",
         "CWV",
-        "Custom Extractor",
         "Content",
         "Files",
+        "Custom Extractor",
     ];
     let tabs = Tabs::new(titles)
         .block(
@@ -89,7 +88,6 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         AppState::CustomExtractor => tabs::custom_extractor::render(f, app, content_area),
         AppState::Images => tabs::images::render(f, app, content_area),
         AppState::Redirects => tabs::redirects::render(f, app, content_area),
-        AppState::Keywords => tabs::keywords::render(f, app, content_area),
         
         AppState::Content => tabs::content::render(f, app, content_area),
         AppState::Files => tabs::files::render(f, app, content_area),

@@ -78,8 +78,8 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 data[18].clone(),           // Word Count
             ];
 
-            // Add Top 10 Keywords (Indices 23 to 32)
-            for j in 23..33 {
+            // Add Top 10 Keywords (Indices 35 to 44)
+            for j in 35..45 {
                 if let Some(kw) = data.get(j) {
                     displayed_data.push(kw.clone());
                 } else {

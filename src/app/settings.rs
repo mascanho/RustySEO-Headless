@@ -36,7 +36,6 @@ impl App {
         self.internal_table_data.clear();
         self.external_table_data.clear();
         self.redirects_table_data.clear();
-        self.keywords_table_data.clear();
         self.css_urls_table_data.clear();
         self.js_urls_table_data.clear();
         self.extractor_table_data.clear();
@@ -47,7 +46,6 @@ impl App {
         self.internal_current_page = 0;
         self.external_current_page = 0;
         self.redirects_current_page = 0;
-        self.keywords_current_page = 0;
         self.css_urls_current_page = 0;
         self.js_urls_current_page = 0;
         self.content_current_page = 0;
@@ -59,7 +57,6 @@ impl App {
         self.apply_internal_filter();
         self.apply_external_filter();
         self.apply_redirects_filter();
-        self.apply_keywords_filter();
         self.apply_css_urls_filter();
         self.apply_js_urls_filter();
         self.apply_extractor_filter();

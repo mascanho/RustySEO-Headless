@@ -116,9 +116,9 @@ pub struct PageData {
     pub word_count: Option<usize>,
     pub css: Option<CssInfo>,
     pub javascript: Option<JavascriptInfo>,
-    pub keywords: Option<Vec<String>>,
     pub cwv_desktop: Option<CwvData>,
     pub cwv_mobile: Option<CwvData>,
+    pub keywords: Vec<String>,
     pub extraction: Option<ExtractionResult>,
     pub redirect_chain: Vec<crate::models::RedirectHop>,
 }
@@ -346,9 +346,6 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         },
     );
 
-    // GETS THE KEYWORDS FROM THE CRAWLED PAGE
-    let keywords = extract_keywords(document);
-
     // GETS THE EXTRACTION FROM THE CRAWLED PAGE
     // IF THE EXTRACTOR IS ACTIVATED THEN WE CALL THE EXTRACTOR WITH THE CONFIGURED TEXT
     let extraction = if APP_SETTINGS.crawler.extractor {
@@ -386,9 +383,9 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         word_count,
         css: Some(css),
         javascript: Some(javascript),
-        keywords: Some(keywords),
         cwv_desktop: None,
         cwv_mobile: None,
+        keywords: extract_keywords(document),
         extraction,
         redirect_chain: vec![],
     }

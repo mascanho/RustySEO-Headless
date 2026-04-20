@@ -25,10 +25,7 @@ pub mod server;
 pub mod settings;
 pub mod ui;
 
-use crate::{
-    app::AppState, cli::Cli, crawler::CrawlEngine, models::App,
-    ui::ui,
-};
+use crate::{app::AppState, cli::Cli, crawler::CrawlEngine, models::App, ui::ui};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -267,22 +264,6 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             }
                             KeyCode::Backspace => {
                                 app.redirects_search_query.pop();
-                                app.last_search_time = Some(std::time::Instant::now());
-                            }
-                            _ => {}
-                        }
-                    } else if app.show_keywords_search {
-                        match key.code {
-                            KeyCode::Enter | KeyCode::Esc => {
-                                app.show_keywords_search = false;
-                                app.apply_keywords_filter();
-                            }
-                            KeyCode::Char(c) => {
-                                app.keywords_search_query.push(c);
-                                app.last_search_time = Some(std::time::Instant::now());
-                            }
-                            KeyCode::Backspace => {
-                                app.keywords_search_query.pop();
                                 app.last_search_time = Some(std::time::Instant::now());
                             }
                             _ => {}
@@ -806,8 +787,6 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                     app.show_files_search = true;
                                 } else if app.current_state == AppState::Redirects {
                                     app.show_redirects_search = true;
-                                } else if app.current_state == AppState::Keywords {
-                                    app.show_keywords_search = true;
                                 }
                             }
 
@@ -859,7 +838,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                 }
                                 AppState::Files => app.previous_files_row(),
                                 AppState::Redirects => app.previous_redirects_row(),
-                                AppState::Keywords => app.previous_keywords_row(),
+                                // AppState::Keywords => app.previous_keywords_row(),
                             },
                             KeyCode::Char('j') | KeyCode::Down => match app.current_state {
                                 AppState::Dashboard | AppState::CoreWebVitals => app.next_row(),
@@ -906,7 +885,6 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                 }
                                 AppState::Files => app.next_files_row(),
                                 AppState::Redirects => app.next_redirects_row(),
-                                AppState::Keywords => app.next_keywords_row(),
                             },
 
                             // Advanced Vim jumps
@@ -921,7 +899,9 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                     AppState::Files => {
                                         if !app.files_filtered_table_data.is_empty() {
                                             app.files_table_state.select(Some(
-                                                app.files_filtered_table_data.len().saturating_sub(1),
+                                                app.files_filtered_table_data
+                                                    .len()
+                                                    .saturating_sub(1),
                                             ));
                                         }
                                     }
@@ -937,7 +917,8 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                     if let Some(selected) = app.table_state.selected() {
                                         if selected < app.filtered_table_data.len() {
                                             let row_data = &app.filtered_table_data[selected];
-                                            let original_id = row_data[0].parse::<usize>().unwrap_or(1);
+                                            let original_id =
+                                                row_data[0].parse::<usize>().unwrap_or(1);
                                             app.open_details(original_id);
                                         }
                                     }
@@ -990,7 +971,6 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                 }
                                 AppState::Files => app.next_files_page(),
                                 AppState::Redirects => app.next_redirects_page(),
-                                AppState::Keywords => app.next_keywords_page(),
                                 _ => {}
                             },
                             KeyCode::Char('[') => match app.current_state {
@@ -1010,7 +990,6 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                 }
                                 AppState::Files => app.previous_files_page(),
                                 AppState::Redirects => app.previous_redirects_page(),
-                                AppState::Keywords => app.previous_keywords_page(),
                                 _ => {}
                             },
 
@@ -1033,9 +1012,10 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             KeyCode::Char('5') => app.current_state = AppState::Images,
                             KeyCode::Char('6') => app.current_state = AppState::Css,
                             KeyCode::Char('7') => app.current_state = AppState::Javascript,
-                            KeyCode::Char('8') => app.current_state = AppState::Keywords,
-                            KeyCode::Char('9') => app.current_state = AppState::CoreWebVitals,
-                            KeyCode::Char('0') => app.current_state = AppState::CustomExtractor,
+                            KeyCode::Char('8') => app.current_state = AppState::CoreWebVitals,
+                            KeyCode::Char('9') => app.current_state = AppState::Content,
+                            KeyCode::Char('0') => app.current_state = AppState::Files,
+                            KeyCode::Char('e') => app.current_state = AppState::CustomExtractor,
                             _ => {}
                         }
                     }
@@ -1079,7 +1059,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                 && my >= tab_rect.y
                                 && my < tab_rect.y + tab_rect.height
                             {
-                                let num_tabs = 12;
+                                let num_tabs = 11;
                                 let tab_width = tab_rect.width / num_tabs as u16;
                                 if tab_width > 0 {
                                     let tab_index = ((mx - tab_rect.x) / tab_width)
@@ -1093,11 +1073,10 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                         4 => AppState::Images,
                                         5 => AppState::Css,
                                         6 => AppState::Javascript,
-                                        7 => AppState::Keywords,
-                                        8 => AppState::CoreWebVitals,
-                                        9 => AppState::CustomExtractor,
-                                        10 => AppState::Content,
-                                        11 => AppState::Files,
+                                        7 => AppState::CoreWebVitals,
+                                        8 => AppState::Content,
+                                        9 => AppState::Files,
+                                        10 => AppState::CustomExtractor,
                                         _ => app.current_state,
                                     };
                                 }
@@ -1139,7 +1118,6 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             || app.current_state == AppState::Javascript
                             || app.current_state == AppState::Css
                             || app.current_state == AppState::Redirects
-                            || app.current_state == AppState::Keywords
                         {
                             if let Some(rect) = app.table_rect {
                                 if mouse.column >= rect.x
@@ -1177,8 +1155,6 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                                 }
                                             } else if app.current_state == AppState::Redirects {
                                                 app.previous_redirects_row();
-                                            } else if app.current_state == AppState::Keywords {
-                                                app.previous_keywords_row();
                                             }
                                         }
                                         MouseEventKind::ScrollDown => {
@@ -1212,8 +1188,6 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                                 }
                                             } else if app.current_state == AppState::Redirects {
                                                 app.next_redirects_row();
-                                            } else if app.current_state == AppState::Keywords {
-                                                app.next_keywords_row();
                                             }
                                         }
                                         _ => {}

@@ -66,22 +66,41 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
         let start = app.current_page * app.page_size;
         let full_idx = start + i;
-        let displayed_data = vec![
-            (full_idx + 1).to_string(), // Sequential ID
-            data[1].clone(),            // URL
-            data[2].clone(),            // Title
-            data[3].clone(),            // Title Len
-            data[6].clone(),            // Desc
-            data[7].clone(),            // Desc Len
-            data[4].clone(),            // H1
-            data[5].clone(),            // H1 Len
-            data[8].clone(),            // H2
-            data[9].clone(),            // H2 Len
-            data[10].clone(),           // Status
-            data[17].clone(),           // Page size
-            data[12].clone(),           // Language
-            data[13].clone(),           // Indexability
-        ];
+        let displayed_data = if data.len() >= 33 {
+            vec![
+                (full_idx + 1).to_string(),
+                data[1].clone(),
+                data[2].clone(),
+                data[3].clone(),
+                data[6].clone(),
+                data[7].clone(),
+                data[4].clone(),
+                data[5].clone(),
+                data[8].clone(),
+                data[9].clone(),
+                data[10].clone(),
+                data[17].clone(),
+                data[12].clone(),
+                data[13].clone(),
+            ]
+        } else {
+            vec![
+                (full_idx + 1).to_string(),
+                data.get(1).cloned().unwrap_or_default(),
+                data.get(2).cloned().unwrap_or_default(),
+                data.get(3).cloned().unwrap_or_default(),
+                data.get(6).cloned().unwrap_or_default(),
+                data.get(7).cloned().unwrap_or_default(),
+                data.get(4).cloned().unwrap_or_default(),
+                data.get(5).cloned().unwrap_or_default(),
+                data.get(8).cloned().unwrap_or_default(),
+                data.get(9).cloned().unwrap_or_default(),
+                data.get(10).cloned().unwrap_or_default(),
+                data.get(17).cloned().unwrap_or_default(),
+                data.get(12).cloned().unwrap_or_default(),
+                data.get(13).cloned().unwrap_or_default(),
+            ]
+        };
 
         let cells = displayed_data.iter().enumerate().map(|(j, c)| {
             let mut content = if j == 1 || j == 2 || j == 4 || j == 6 || j == 8 {
