@@ -49,7 +49,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     if !cli.url.is_empty() {
         // Handle the actions here
-        let crawler = CrawlEngine::new().await;
+        let crawler = CrawlEngine::new()
+            .await
+            .with_db_persistence(None);
         crawler.crawl(&cli.url, true).await;
         return Ok(());
     } else {

@@ -31,6 +31,8 @@ pub struct CrawlerConfig {
     pub extractor_text: String,
     #[serde(default)]
     pub extractor_type: String,
+    #[serde(default)]
+    pub batch_size: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -102,6 +104,7 @@ impl Default for AppSettings {
                 extractor: false,
                 extractor_type: "".to_string(),
                 extractor_text: "".to_string(),
+                batch_size: 50,
             },
             ui: UiConfig {
                 theme: "Oceanic".to_string(),

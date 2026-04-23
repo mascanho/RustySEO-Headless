@@ -1,10 +1,10 @@
-use crate::models::{App, AppSettings};
 use crate::crawler::CrawlEngine;
+use crate::models::{App, AppSettings};
 
 impl App {
     pub fn open_settings_file(&mut self) {
         let path = crate::models::AppSettings::path();
-        
+
         // Use runtime OS detection for more reliability
         let cmd = match std::env::consts::OS {
             "macos" => "open",
@@ -52,7 +52,7 @@ impl App {
         self.extractor_current_page = 0;
         self.images_current_page = 0;
         self.files_current_page = 0;
-        
+
         self.apply_filter();
         self.apply_internal_filter();
         self.apply_external_filter();
@@ -69,19 +69,20 @@ impl App {
         self.crawl_receiver = Some(rx);
 
         self.log(format!("Starting crawl for: {}", url));
-        
+
         // Spawn robots analysis in background
         self.spawn_robots_analysis(&url);
-        
+
         let settings = self.settings.clone().unwrap_or_else(|| AppSettings::load());
 
         tokio::spawn(async move {
-            let crawler = CrawlEngine::new().await
+            let crawler = CrawlEngine::new()
+                .await
                 .with_max_pages(settings.crawler.max_pages)
                 .with_concurrency(settings.crawler.concurrency)
                 .with_javascript(settings.crawler.enable_javascript)
                 .with_pagespeed(Some(settings.connectors.pagespeed));
-            
+
             crawler.crawl_concurrently(&url, tx).await;
         });
     }

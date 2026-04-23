@@ -7,9 +7,12 @@ use tokio::sync::{mpsc, Mutex, Semaphore};
 use tokio::time::Duration;
 use url::Url;
 
+use crate::app::settings;
 use crate::crawler::fetching::fetch_and_process;
 use crate::crawler::helpers::html_parser::PageData;
 use crate::crawler::helpers::user_agents::user_agents;
+use crate::db;
+use crate::models::AppSettings;
 use crate::settings::utils::create::add_recent_entry;
 
 #[derive(Clone)]
@@ -25,6 +28,9 @@ pub struct CrawlEngine {
     enable_javascript: bool,
     browser: Option<Arc<Browser>>,
     pagespeed_config: Option<crate::models::PageSpeedConfig>,
+    enable_db_persist: bool,
+    pending_pages: Arc<Mutex<Vec<PageData>>>,
+    db_batch_size: usize,
 }
 
 impl std::fmt::Debug for CrawlEngine {
@@ -54,6 +60,7 @@ impl CrawlEngine {
 
         let default_ua = user_agents_vec[0].clone();
         let concurrency_limit = 10; // Default limit
+        let db_batch_size = AppSettings::load().crawler.batch_size;
 
         Self {
             client: Client::builder()
@@ -74,6 +81,9 @@ impl CrawlEngine {
             enable_javascript: false,
             browser: None,
             pagespeed_config: None,
+            enable_db_persist: false,
+            pending_pages: Arc::new(Mutex::new(Vec::with_capacity(db_batch_size))),
+            db_batch_size,
         }
     }
 
@@ -110,6 +120,64 @@ impl CrawlEngine {
         self.concurrency_limit = limit;
         self.semaphore = Arc::new(Semaphore::new(limit));
         self
+    }
+
+    /// Enables DB persistence with configurable batch size
+    pub fn with_db_persistence(mut self, batch_size: Option<usize>) -> Self {
+        if db::get_connection().is_ok() {
+            self.enable_db_persist = true;
+            self.db_batch_size = batch_size.unwrap_or(self.db_batch_size);
+
+            tracing::info!(
+                "DB persistence enabled with batch size {}",
+                self.db_batch_size
+            );
+        } else {
+            tracing::warn!("Failed to open DB connection, persistence disabled");
+        }
+        self
+    }
+
+    /// Flush pending pages to DB
+    async fn flush_pending_pages(&self) {
+        if !self.enable_db_persist {
+            return;
+        }
+        let mut pending = self.pending_pages.lock().await;
+        if pending.is_empty() {
+            return;
+        }
+        let pages_to_save: Vec<PageData> = pending.drain(..).collect();
+        if let Ok(conn) = db::get_connection() {
+            let mut saved = 0;
+            for page_data in pages_to_save {
+                if db::save_page_data_with_conn(&conn, &page_data).is_ok() {
+                    saved += 1;
+                }
+            }
+            if saved > 0 {
+                tracing::debug!("Flushed {} pages to DB", saved);
+            }
+        }
+    }
+
+    /// Add page to pending buffer, flush if batch full
+    async fn add_pending_page(&self, page_data: PageData) {
+        if !self.enable_db_persist {
+            return;
+        }
+        let mut pending = self.pending_pages.lock().await;
+        pending.push(page_data);
+        if pending.len() >= self.db_batch_size {
+            let pages_to_save: Vec<PageData> = pending.drain(..).collect();
+            drop(pending);
+            if let Ok(conn) = db::get_connection() {
+                for page_data in pages_to_save {
+                    let _ = db::save_page_data_with_conn(&conn, &page_data);
+                }
+                tracing::debug!("Batch flush: {} pages saved to DB", self.db_batch_size);
+            }
+        }
     }
 
     /// Primary entry point for crawling.
@@ -354,7 +422,14 @@ impl CrawlEngine {
                         // Send result back
                         self.success_count.fetch_add(1, Ordering::SeqCst);
                         self.stats.increment_crawled();
-                        let _ = tx.send(crate::crawler::CrawlMessage::Page(data)).await;
+                        let _ = tx
+                            .send(crate::crawler::CrawlMessage::Page(data.clone()))
+                            .await;
+
+                        // Persist to DB if enabled (batched)
+                        if self.enable_db_persist {
+                            self.add_pending_page(data).await;
+                        }
 
                         // Send progress update
                         let scanned = self.success_count.load(Ordering::SeqCst) as usize;
@@ -400,5 +475,10 @@ impl CrawlEngine {
 
         // Final stats
         tracing::warn!("[CRAWL COMPLETE] {}", self.stats.get_summary());
+
+        // Flush any remaining pending pages to DB
+        if self.enable_db_persist {
+            self.flush_pending_pages().await;
+        }
     }
 }
