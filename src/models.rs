@@ -318,6 +318,7 @@ pub struct App {
     pub show_dashboard_menu: bool,
     pub dashboard_menu_selection: usize,
     pub crawl_progress: f64,
+    pub queued_urls: usize,
     pub input: String,
     pub input_mode: bool,
     pub cursor_position: usize,

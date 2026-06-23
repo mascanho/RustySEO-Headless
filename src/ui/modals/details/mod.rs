@@ -115,6 +115,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         3 => modal_tabs::inlinks::render(
             f,
             &page_details.anchor_links,
+            &app.url_to_status,
             app.detail_horizontal_scroll,
             &mut app.detail_table_state,
             chunks[1],
@@ -123,6 +124,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         4 => modal_tabs::outlinks::render(
             f,
             &page_details.outlinks,
+            &app.url_to_status,
             app.detail_horizontal_scroll,
             &mut app.detail_table_state,
             chunks[1],

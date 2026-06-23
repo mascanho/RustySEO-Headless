@@ -67,6 +67,7 @@ impl Default for App {
             show_dashboard_menu: false,
             dashboard_menu_selection: 0,
             crawl_progress: 0.0,
+            queued_urls: 0,
             input: String::new(),
             input_mode: false,
             cursor_position: 0,

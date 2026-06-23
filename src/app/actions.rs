@@ -26,6 +26,7 @@ impl App {
                         } else {
                             (scanned as f64 / total as f64).min(1.0)
                         };
+                        self.queued_urls = queued;
                     }
                     Err(mpsc::error::TryRecvError::Empty) => break,
                     Err(mpsc::error::TryRecvError::Disconnected) => {

@@ -82,6 +82,11 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         ),
         Span::styled(" | ", Style::default().fg(border_color)),
         Span::styled(
+            format!(" Queued: {}", app.queued_urls),
+            Style::default().fg(Color::DarkGray),
+        ),
+        Span::styled(" | ", Style::default().fg(border_color)),
+        Span::styled(
             format!(" Logs(L): {} ", app.logs_data.len()),
             Style::default().fg(Color::Yellow),
         ),
