@@ -714,6 +714,18 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                     KeyCode::BackTab => app.previous_sidebar_tab(),
                                     _ => {}
                                 }
+                            } else if app.sidebar_tab == 5 || app.sidebar_tab == 6 {
+                                // Robots / Sitemaps — scrollable
+                                match key.code {
+                                    KeyCode::Up | KeyCode::Char('k') => app.sidebar_scroll_up(),
+                                    KeyCode::Down | KeyCode::Char('j') => app.sidebar_scroll_down(),
+                                    KeyCode::Esc | KeyCode::Char('h') | KeyCode::Left => {
+                                        app.sidebar_visible = false;
+                                    }
+                                    KeyCode::Tab => app.next_sidebar_tab(),
+                                    KeyCode::BackTab => app.previous_sidebar_tab(),
+                                    _ => {}
+                                }
                             } else {
                                 match key.code {
                                     KeyCode::Esc | KeyCode::Char('h') | KeyCode::Left => {

@@ -115,15 +115,17 @@ impl App {
     }
 
     pub fn next_sidebar_tab(&mut self) {
-        self.sidebar_tab = (self.sidebar_tab + 1) % 6;
+        self.sidebar_tab = (self.sidebar_tab + 1) % 7;
+        self.sidebar_scroll = 0;
     }
 
     pub fn previous_sidebar_tab(&mut self) {
         self.sidebar_tab = if self.sidebar_tab == 0 {
-            5
+            6
         } else {
             self.sidebar_tab - 1
         };
+        self.sidebar_scroll = 0;
     }
 
     pub fn reset(&mut self) {

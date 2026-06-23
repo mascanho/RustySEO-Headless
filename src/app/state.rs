@@ -35,6 +35,7 @@ impl Default for App {
             task_panel_visible: false,
             current_state: AppState::Dashboard,
             sidebar_tab: 0,
+            sidebar_scroll: 0,
             bookmarks: vec![],
             bookmark_index: 0,
             bookmark_input: String::new(),
@@ -201,6 +202,8 @@ impl Default for App {
             current_issue_title: String::new(),
             robots_urls_loading: false,
             robots_disallowed_urls: Vec::new(),
+            robots_txt_content: String::new(),
+            sitemap_urls: Vec::new(),
             robots_receiver: None,
             // Files Tab State
             files_table_data: Vec::new(),

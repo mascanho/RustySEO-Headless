@@ -20,45 +20,86 @@ impl App {
         IssueAnalyzer::get_urls_for_issue(&self.page_summaries, issue_type)
     }
 
-    /// Spawn background task to fetch robots.txt when crawling starts
+    /// Spawn background task to fetch robots.txt + sitemaps when crawling starts.
     pub fn spawn_robots_analysis(&mut self, start_url: &str) {
-        // Only spawn if not already loading and no results exist
         if self.robots_urls_loading || !self.robots_disallowed_urls.is_empty() {
             return;
         }
 
         self.robots_urls_loading = true;
-        
-        // Create channel for communication
-        let (tx, rx) = tokio::sync::mpsc::channel(100);
+
+        let (tx, rx) = tokio::sync::mpsc::channel(1);
         self.robots_receiver = Some(rx);
-        
+
         let start_url = start_url.to_string();
-        
-        // Spawn background task
+
         tokio::spawn(async move {
-            // Fetch robots.txt in background
             let base_url = start_url.split('/').take(3).collect::<Vec<_>>().join("/");
             let robots_url = format!("{}/robots.txt", base_url);
-            
-            let result = match crate::crawler::helpers::robots::extract_robots_blocked_urls(&robots_url).await {
-                Ok(urls) => urls,
-                Err(_) => Vec::new(),
+
+            let client = reqwest::Client::builder()
+                .timeout(std::time::Duration::from_secs(10))
+                .build()
+                .unwrap_or_default();
+
+            // Fetch raw robots.txt
+            let raw_content = async {
+                let resp = client.get(&robots_url).send().await.ok()?;
+                if !resp.status().is_success() {
+                    return None;
+                }
+                resp.text().await.ok()
+            }
+            .await
+            .unwrap_or_default();
+
+            // Parse disallowed URLs from raw content
+            let disallowed_urls = {
+                let mut urls = Vec::new();
+                for line in raw_content.lines() {
+                    let line = line.trim();
+                    if line.to_ascii_lowercase().starts_with("disallow:") {
+                        if let Some(path) = line.splitn(2, ':').nth(1) {
+                            let path = path.trim();
+                            if !path.is_empty() && path != "/" {
+                                let full = if path.starts_with('/') {
+                                    format!("{}{}", base_url, path)
+                                } else {
+                                    path.to_string()
+                                };
+                                urls.push(full);
+                            } else if path == "/" {
+                                urls.push("All pages blocked (Disallow: /)".to_string());
+                            }
+                        }
+                    }
+                }
+                urls
             };
-            
-            // Send result back to main thread
-            let _ = tx.send(result).await;
+
+            // Discover sitemap URLs
+            let sitemap_urls =
+                crate::crawler::sitemap::discover_additional_urls(&start_url, &client).await;
+
+            let _ = tx
+                .send(crate::models::RobotsResult {
+                    disallowed_urls,
+                    raw_content,
+                    sitemap_urls,
+                })
+                .await;
         });
     }
 
-    /// Check for robots analysis results and update app state
+    /// Check for robots/sitemaps results and update app state.
     pub fn check_robots_results(&mut self) {
         if let Some(ref mut rx) = self.robots_receiver {
-            if let Ok(urls) = rx.try_recv() {
-                self.robots_disallowed_urls = urls;
+            if let Ok(result) = rx.try_recv() {
+                self.robots_disallowed_urls = result.disallowed_urls;
+                self.robots_txt_content = result.raw_content;
+                self.sitemap_urls = result.sitemap_urls;
                 self.robots_urls_loading = false;
-                
-                // Update issues table if we have page data
+
                 if !self.page_summaries.is_empty() {
                     self.update_issues_from_crawled_data();
                 }

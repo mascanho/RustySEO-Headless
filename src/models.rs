@@ -4,6 +4,13 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
+/// Payload sent back from the background robots/sitemaps fetch task.
+pub struct RobotsResult {
+    pub disallowed_urls: Vec<String>,
+    pub raw_content: String,
+    pub sitemap_urls: Vec<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AppSettings {
     pub crawler: CrawlerConfig,
@@ -292,6 +299,7 @@ pub struct App {
     pub task_panel_visible: bool,
     pub current_state: AppState,
     pub sidebar_tab: usize,
+    pub sidebar_scroll: usize,
     pub bookmarks: Vec<String>,
     pub bookmark_index: usize,
     pub bookmark_input: String,
@@ -449,7 +457,9 @@ pub struct App {
     pub current_issue_title: String,
     pub robots_urls_loading: bool,
     pub robots_disallowed_urls: Vec<String>,
-    pub robots_receiver: Option<tokio::sync::mpsc::Receiver<Vec<String>>>,
+    pub robots_txt_content: String,
+    pub sitemap_urls: Vec<String>,
+    pub robots_receiver: Option<tokio::sync::mpsc::Receiver<RobotsResult>>,
     // Files Tab State
     pub files_table_data: Vec<FileEntry>,
     pub files_table_state: ratatui::widgets::TableState,

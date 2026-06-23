@@ -7,7 +7,7 @@ use ratatui::{
 };
 
 use crate::models::App;
-use crate::ui::sidebar::{actions, bookmarks, issues, settings, summary, tree_view};
+use crate::ui::sidebar::{bookmarks, issues, robots, settings, sitemaps, summary, tree_view};
 
 /// Standard colors for consistency
 const ACCENT_COLOR: Color = Color::Rgb(80, 140, 255);
@@ -20,7 +20,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     let area = f.area();
 
-    let width = (area.width / 3).max(35).min(area.width);
+    let width = (area.width * 38 / 100).max(35).min(area.width);
     let modal_area = Rect {
         x: area.width.saturating_sub(width),
         y: 0,
@@ -46,7 +46,8 @@ pub fn render(f: &mut Frame, app: &mut App) {
         "Bookmarks",
         "Tree",
         "Settings",
-        "Filter",
+        "Robots",
+        "Sitemaps",
     ];
     let sidebar_tabs = Tabs::new(sidebar_titles)
         .block(
@@ -100,7 +101,8 @@ pub fn render(f: &mut Frame, app: &mut App) {
             ACCENT_COLOR,
             BORDER_COLOR,
         ),
-        5 => actions::render(f, app, sidebar_content_area, content_block),
+        5 => robots::render(f, app, sidebar_content_area, content_block),
+        6 => sitemaps::render(f, app, sidebar_content_area, content_block),
         _ => {}
     }
 }
