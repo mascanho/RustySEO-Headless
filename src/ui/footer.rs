@@ -1,9 +1,9 @@
 use ratatui::{
-    Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Borders, Gauge, Paragraph},
+    Frame,
 };
 
 use crate::app::AppState;
@@ -54,6 +54,11 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         " STATUS: IDLE ".to_string()
     };
 
+    let max_pages_number = app
+        .settings
+        .as_ref()
+        .map(|s| s.crawler.max_pages)
+        .unwrap_or(0);
     let status_text = vec![Line::from(vec![
         Span::styled(
             status_prefix,
@@ -141,14 +146,15 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         Span::styled(" | ", Style::default().fg(border_color)),
         // MAX PAGES
         Span::styled("Max URLs: ", Style::default().fg(Color::Gray)),
+        // Shortten the text to include "K" > 1000 or "M" > 1000000
         Span::styled(
-            format!(
-                "{}",
-                app.settings
-                    .as_ref()
-                    .map(|s| s.crawler.max_pages)
-                    .unwrap_or(0)
-            ),
+            if max_pages_number < 1000 {
+                format!("{}", max_pages_number)
+            } else if max_pages_number < 1_000_000 {
+                format!("{}K", max_pages_number / 1000)
+            } else {
+                format!("{}M", max_pages_number / 1_000_000)
+            },
             Style::default().fg(Color::Rgb(200, 100, 255)),
         ),
         // FINDING
