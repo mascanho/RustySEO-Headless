@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs ls -la)",
+      "Bash(git log *)",
+      "Bash(git stash *)",
+      "Bash(cargo build *)",
+      "Skill(run)",
+      "Bash(tmux kill-session *)",
+      "Bash(tmux new-session *)",
+      "Bash(timeout 40 bash -c 'until tmux capture-pane -t rustyseo -p | grep -qi \"url\\\\|crawl\\\\|RustySEO\"; do sleep 0.5; done')",
+      "Bash(tmux capture-pane *)",
+      "Bash(tmux send-keys *)",
+      "Read(//home/mascanho/.local/share/rustyseo/**)",
+      "Bash(find / -iname \"rustyseo.db\")",
+      "Bash(cp /home/mascanho/.local/share/rustyseo/rustyseo.db /home/mascanho/.local/share/rustyseo/rustyseo.db.bak)",
+      "Bash(sqlite3 /home/mascanho/.local/share/rustyseo/rustyseo.db \"DELETE FROM pages;\")",
+      "Bash(timeout 90 cargo run --quiet -- --url https://books.toscrape.com/)",
+      "Bash(sqlite3 /home/mascanho/.local/share/rustyseo/rustyseo.db \"SELECT COUNT\\(*\\) FROM pages;\")",
+      "Bash(pkill -9 -f \"target/debug/RustySEO-CLI\")",
+      "Bash(python3 *)",
+      "Bash(sqlite3 /home/mascanho/.local/share/rustyseo/rustyseo.db \"SELECT COUNT\\(*\\) FROM pages WHERE json_extract\\(data,'\\\\$.url'\\) LIKE '%slimstock%';\")",
+      "Bash(sqlite3 /home/mascanho/.local/share/rustyseo/rustyseo.db \"SELECT COUNT\\(*\\) FROM pages WHERE json_extract\\(data,'\\\\$.url'\\) LIKE '%books.toscrape%';\")",
+      "Bash(sqlite3 /home/mascanho/.local/share/rustyseo/rustyseo.db \"SELECT id, json_extract\\(data,'\\\\$.url'\\) FROM pages ORDER BY id LIMIT 15;\")",
+      "Bash(sqlite3 /home/mascanho/.local/share/rustyseo/rustyseo.db \"SELECT MIN\\(id\\), MAX\\(id\\) FROM pages;\")",
+      "Bash(DUMP_JSON=/tmp/claude-1000/-home-mascanho-Coding-cli-rusty/56733c83-76f8-4435-bef8-8138d8ede112/scratchpad/crawl_dump.json timeout 60 cargo run --quiet -- --url https://books.toscrape.com/)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(timeout 30 env XDG_DATA_HOME=/tmp/claude-1000/-home-mascanho-Coding-cli-rusty/56733c83-76f8-4435-bef8-8138d8ede112/scratchpad/fake_xdg2 cargo run --quiet -- --url https://books.toscrape.com/catalogue/the-grand-design_405/index.html)"
+    ]
+  }
+}

@@ -99,6 +99,27 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     f.render_widget(tabs, chunks[0]);
 
+    // Outlinks should only ever be links that leave the crawled domain - same-domain
+    // links already have their own "Inlinks" (internal links) tab, so without this
+    // filter the Outlinks tab just duplicates it.
+    let base_domain = url::Url::parse(&app.input_url)
+        .ok()
+        .and_then(|u| u.host_str().map(str::to_string));
+    let external_outlinks: Vec<crate::crawler::helpers::html_parser::AnchorLink> = page_details
+        .outlinks
+        .iter()
+        .filter(|link| {
+            let link_domain = url::Url::parse(&link.href)
+                .ok()
+                .and_then(|u| u.host_str().map(str::to_string));
+            !crate::crawler::url_normalizer::is_same_domain(
+                link_domain.as_deref(),
+                base_domain.as_deref(),
+            )
+        })
+        .cloned()
+        .collect();
+
     // Render Content based on tab
     let content_block = Block::default().bg(Color::Rgb(20, 20, 30));
     match app.detail_tab {
@@ -123,7 +144,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         ),
         4 => modal_tabs::outlinks::render(
             f,
-            &page_details.outlinks,
+            &external_outlinks,
             &app.url_to_status,
             app.detail_horizontal_scroll,
             &mut app.detail_table_state,

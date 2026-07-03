@@ -219,7 +219,19 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         .select(&HEADING_SELECTOR)
         .map(|e| {
             let tag = e.value().name().to_string();
-            let text = e.text().collect::<String>();
+            let mut text = e.text().collect::<String>().trim().to_string();
+            if text.is_empty() {
+                // Some headings carry no text node at all - e.g. a site logo
+                // wrapped in <h1><img alt="..."></h1> - fall back to the
+                // contained image's alt text so the heading isn't shown blank.
+                if let Some(alt) = e
+                    .select(&IMG_SELECTOR)
+                    .next()
+                    .and_then(|img| img.value().attr("alt"))
+                {
+                    text = alt.trim().to_string();
+                }
+            }
             (tag, text)
         })
         .collect();

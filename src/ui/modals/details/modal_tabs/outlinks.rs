@@ -117,7 +117,7 @@ pub fn render(
             block
                 .title(Span::styled(
                     format!(
-                        " ↗️  Outgoing Links ({}) {} ",
+                        " ↗️  External Links ({}) {} ",
                         anchor_links.len(),
                         scroll_indicator
                     ),

@@ -324,7 +324,7 @@ impl CrawlEngine {
             // Wait for at least one task to complete
             if let Some(res) = join_set.join_next().await {
                 match res {
-                    Ok(Ok(data)) => {
+                    Ok(Ok(mut data)) => {
                         // Extract new links BEFORE sending result to ensure consistency
                         let current_url = data.url.clone();
                         let current_success = self.success_count.load(Ordering::SeqCst);
@@ -420,7 +420,10 @@ impl CrawlEngine {
                         }
 
                         // Send result back
-                        self.success_count.fetch_add(1, Ordering::SeqCst);
+                        // Assign a stable, unique sequence id before this page is persisted -
+                        // without it every page defaults to id 0 and each DB write via
+                        // INSERT OR REPLACE silently clobbers the previous page's row.
+                        data.id = self.success_count.fetch_add(1, Ordering::SeqCst) + 1;
                         self.stats.increment_crawled();
                         let _ = tx
                             .send(crate::crawler::CrawlMessage::Page(data.clone()))
