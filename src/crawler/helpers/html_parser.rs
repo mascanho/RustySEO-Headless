@@ -92,6 +92,10 @@ impl Default for CwvData {
 pub struct PageData {
     pub id: usize,
     pub url: String,
+    /// The literal URL that was queued/requested, before any redirects were followed.
+    /// Differs from `url` only when the request resulted in one or more redirects.
+    #[serde(default)]
+    pub requested_url: String,
     pub title: String,
     pub title_len: usize,
     pub h1: String,
@@ -371,6 +375,7 @@ pub fn extract_page_elements(document: &Html) -> PageData {
     PageData {
         id: 0,               // Will be set by calling code
         url: "".to_string(), // Will be set by calling code
+        requested_url: "".to_string(), // Will be set by calling code
         title: title.clone(),
         title_len: title.len(),
         h1: h1.clone(),

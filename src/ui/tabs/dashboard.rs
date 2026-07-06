@@ -36,6 +36,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         "Size",
         "Lang",
         "Indexable",
+        "Link Score",
     ];
 
     let header = Row::new(header_titles.iter().map(|h| {
@@ -66,6 +67,11 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
         let start = app.current_page * app.page_size;
         let full_idx = start + i;
+        let link_score = data
+            .get(1)
+            .and_then(|url| app.link_scores.get(url))
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "-".to_string());
         let displayed_data = if data.len() >= 33 {
             vec![
                 (full_idx + 1).to_string(),
@@ -82,6 +88,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 data[17].clone(),
                 data[12].clone(),
                 data[13].clone(),
+                link_score,
             ]
         } else {
             vec![
@@ -99,6 +106,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 data.get(17).cloned().unwrap_or_default(),
                 data.get(12).cloned().unwrap_or_default(),
                 data.get(13).cloned().unwrap_or_default(),
+                link_score,
             ]
         };
 
@@ -223,11 +231,30 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 }
             }
 
-            let content = if j == 3 || j == 5 || j == 7 || j == 9 || j == 10 || j == 11 {
+            // Link Score column: color-code by strength (1-100), "-" if not yet analysed
+            if j == 14 {
+                if let Ok(score) = content.parse::<u32>() {
+                    if !is_selected {
+                        cell_style = cell_style.fg(if score >= 70 {
+                            Color::Green
+                        } else if score >= 40 {
+                            Color::Yellow
+                        } else {
+                            Color::Red
+                        });
+                    }
+                } else if !is_selected {
+                    cell_style = cell_style.fg(Color::DarkGray);
+                }
+            }
+
+            let content = if j == 3 || j == 5 || j == 7 || j == 9 || j == 10 || j == 11 || j == 14
+            {
                 let w = match j {
                     3 | 5 => 5,
                     7 | 9 => 7,
                     10 | 11 => 8,
+                    14 => 11,
                     _ => unreachable!(),
                 };
                 let l = content.len();
@@ -270,7 +297,8 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         Constraint::Length(8),            // Status
         Constraint::Length(8),            // Page Size
         Constraint::Length(6),            // Lang
-        Constraint::Min(8),               // Indexable
+        Constraint::Length(13),           // Indexable
+        Constraint::Length(13),           // Link Score
     ];
 
     let total_pages = (app.full_filtered_table_data.len() + app.page_size - 1) / app.page_size;

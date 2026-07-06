@@ -358,6 +358,35 @@ impl App {
                     if self.redirects_search_query.is_empty() {
                         self.redirects_full_filtered_table_data.push(entry);
                     }
+
+                    // Link Score: every hop (including the originally requested URL)
+                    // resolves to the final destination, so inbound links to any of
+                    // them can be bypassed straight to the page that was actually crawled.
+                    if page_data.requested_url != page_data.url {
+                        self.redirect_map
+                            .insert(page_data.requested_url.clone(), page_data.url.clone());
+                    }
+                    for hop in &page_data.redirect_chain {
+                        if hop.url != page_data.url {
+                            self.redirect_map.insert(hop.url.clone(), page_data.url.clone());
+                        }
+                    }
+                }
+
+                // Link Score: record the canonical target when a page canonicalises
+                // to a different URL, so its inbound links can flow to that target.
+                if let Some((_, href, _)) = page_data
+                    .canonicals
+                    .iter()
+                    .find(|(_, href, _)| !href.trim().is_empty())
+                {
+                    let normalized_canonical =
+                        crate::crawler::url_normalizer::normalize_url(href)
+                            .unwrap_or_else(|| href.clone());
+                    if normalized_canonical != page_data.url {
+                        self.canonical_map
+                            .insert(page_data.url.clone(), normalized_canonical);
+                    }
                 }
 
                 self.url_to_status
@@ -399,6 +428,9 @@ impl App {
             self.crawl_progress = 1.0;
             self.log("SYSTEM - Crawl finished successfully.");
             self.update_issues_from_crawled_data();
+            self.log("SYSTEM - Running Crawl Analysis (Link Score)...");
+            self.compute_link_scores();
+            self.log("SYSTEM - Link Score analysis complete.");
         }
 
         // Search Debouncing (unchanged)

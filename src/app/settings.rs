@@ -42,6 +42,9 @@ impl App {
         self.images_table_data.clear();
         self.files_table_data.clear();
         self.url_to_status.clear();
+        self.redirect_map.clear();
+        self.canonical_map.clear();
+        self.link_scores.clear();
         self.current_page = 0;
         self.internal_current_page = 0;
         self.external_current_page = 0;

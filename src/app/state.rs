@@ -244,6 +244,9 @@ impl Default for App {
             css_counts: HashMap::new(),
             js_counts: HashMap::new(),
             image_counts: HashMap::new(),
+            redirect_map: HashMap::new(),
+            canonical_map: HashMap::new(),
+            link_scores: HashMap::new(),
         }
     }
 }

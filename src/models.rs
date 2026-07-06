@@ -500,4 +500,12 @@ pub struct App {
     pub css_counts: HashMap<String, usize>,
     pub js_counts: HashMap<String, usize>,
     pub image_counts: HashMap<String, usize>,
+
+    // Link Score (Crawl Analysis)
+    /// Maps a requested (pre-redirect) URL to the final URL it resolves to.
+    pub redirect_map: HashMap<String, String>,
+    /// Maps a URL to the (different) URL its canonical tag points to.
+    pub canonical_map: HashMap<String, String>,
+    /// Final Link Score (1-100) per eligible URL, populated by Crawl Analysis.
+    pub link_scores: HashMap<String, u32>,
 }

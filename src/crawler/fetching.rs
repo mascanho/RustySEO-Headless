@@ -201,6 +201,8 @@ async fn fetch_standard(
     // on a site that trailing-slash- or https-redirects every internal link).
     page_data.url = crate::crawler::url_normalizer::normalize_url(&current_url)
         .unwrap_or_else(|| current_url.clone());
+    page_data.requested_url = crate::crawler::url_normalizer::normalize_url(url)
+        .unwrap_or_else(|| url.to_string());
     page_data.status = status;
     page_data.headers = headers_list;
     page_data.redirect_chain = redirect_chain;
@@ -297,6 +299,7 @@ async fn fetch_js(url: &str, base_url: &Url, browser: Arc<Browser>) -> Result<Pa
     let document = Html::parse_document(&html_content);
     let mut page_data = extract_page_elements(&document);
     page_data.url = url.to_string();
+    page_data.requested_url = url.to_string();
     page_data.status = status;
     page_data.headers = vec!["Requested-Mode: JavaScript".to_string()];
 
