@@ -1,6 +1,7 @@
 pub mod actions;
 pub mod input;
 pub mod issues;
+pub mod link_score;
 pub mod modals;
 pub mod navigation;
 pub mod processing;

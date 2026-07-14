@@ -4,6 +4,13 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
+/// Payload sent back from the background robots/sitemaps fetch task.
+pub struct RobotsResult {
+    pub disallowed_urls: Vec<String>,
+    pub raw_content: String,
+    pub sitemap_urls: Vec<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AppSettings {
     pub crawler: CrawlerConfig,
@@ -31,6 +38,8 @@ pub struct CrawlerConfig {
     pub extractor_text: String,
     #[serde(default)]
     pub extractor_type: String,
+    #[serde(default)]
+    pub batch_size: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -102,6 +111,7 @@ impl Default for AppSettings {
                 extractor: false,
                 extractor_type: "".to_string(),
                 extractor_text: "".to_string(),
+                batch_size: 50,
             },
             ui: UiConfig {
                 theme: "Oceanic".to_string(),
@@ -243,15 +253,6 @@ pub struct RedirectEntry {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct KeywordEntry {
-    pub id: usize,
-    pub keyword: String,
-    pub url: String,
-    pub word_count: usize,
-    pub relevance: usize, // 1 to 10 based on its rank in extracted keywords
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct RobotsEntry {
     pub id: usize,
     pub url: String,
@@ -298,6 +299,7 @@ pub struct App {
     pub task_panel_visible: bool,
     pub current_state: AppState,
     pub sidebar_tab: usize,
+    pub sidebar_scroll: usize,
     pub bookmarks: Vec<String>,
     pub bookmark_index: usize,
     pub bookmark_input: String,
@@ -324,6 +326,7 @@ pub struct App {
     pub show_dashboard_menu: bool,
     pub dashboard_menu_selection: usize,
     pub crawl_progress: f64,
+    pub queued_urls: usize,
     pub input: String,
     pub input_mode: bool,
     pub cursor_position: usize,
@@ -454,7 +457,9 @@ pub struct App {
     pub current_issue_title: String,
     pub robots_urls_loading: bool,
     pub robots_disallowed_urls: Vec<String>,
-    pub robots_receiver: Option<tokio::sync::mpsc::Receiver<Vec<String>>>,
+    pub robots_txt_content: String,
+    pub sitemap_urls: Vec<String>,
+    pub robots_receiver: Option<tokio::sync::mpsc::Receiver<RobotsResult>>,
     // Files Tab State
     pub files_table_data: Vec<FileEntry>,
     pub files_table_state: ratatui::widgets::TableState,
@@ -474,16 +479,6 @@ pub struct App {
     pub redirects_horizontal_scroll: usize,
     pub redirects_search_query: String,
     pub show_redirects_search: bool,
-    // Keywords Tab State
-    pub keywords_table_data: Vec<KeywordEntry>,
-    pub keywords_table_state: ratatui::widgets::TableState,
-    pub keywords_filtered_table_data: Vec<KeywordEntry>,
-    pub keywords_full_filtered_table_data: Vec<KeywordEntry>,
-    pub keywords_current_page: usize,
-    pub keywords_page_size: usize,
-    pub keywords_horizontal_scroll: usize,
-    pub keywords_search_query: String,
-    pub show_keywords_search: bool,
     // Robots Tab State
     pub robots_table_data: Vec<RobotsEntry>,
     pub robots_table_state: ratatui::widgets::TableState,
@@ -505,4 +500,12 @@ pub struct App {
     pub css_counts: HashMap<String, usize>,
     pub js_counts: HashMap<String, usize>,
     pub image_counts: HashMap<String, usize>,
+
+    // Link Score (Crawl Analysis)
+    /// Maps a requested (pre-redirect) URL to the final URL it resolves to.
+    pub redirect_map: HashMap<String, String>,
+    /// Maps a URL to the (different) URL its canonical tag points to.
+    pub canonical_map: HashMap<String, String>,
+    /// Final Link Score (1-100) per eligible URL, populated by Crawl Analysis.
+    pub link_scores: HashMap<String, u32>,
 }

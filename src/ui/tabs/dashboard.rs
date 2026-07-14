@@ -1,9 +1,9 @@
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table},
-    Frame,
 };
 
 use crate::models::App;
@@ -36,6 +36,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         "Size",
         "Lang",
         "Indexable",
+        "Link Score",
     ];
 
     let header = Row::new(header_titles.iter().map(|h| {
@@ -66,22 +67,48 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
         let start = app.current_page * app.page_size;
         let full_idx = start + i;
-        let displayed_data = vec![
-            (full_idx + 1).to_string(), // Sequential ID
-            data[1].clone(),            // URL
-            data[2].clone(),            // Title
-            data[3].clone(),            // Title Len
-            data[6].clone(),            // Desc
-            data[7].clone(),            // Desc Len
-            data[4].clone(),            // H1
-            data[5].clone(),            // H1 Len
-            data[8].clone(),            // H2
-            data[9].clone(),            // H2 Len
-            data[10].clone(),           // Status
-            data[17].clone(),           // Page size
-            data[12].clone(),           // Language
-            data[13].clone(),           // Indexability
-        ];
+        let link_score = data
+            .get(1)
+            .and_then(|url| app.link_scores.get(url))
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "-".to_string());
+        let displayed_data = if data.len() >= 33 {
+            vec![
+                (full_idx + 1).to_string(),
+                data[1].clone(),
+                data[2].clone(),
+                data[3].clone(),
+                data[6].clone(),
+                data[7].clone(),
+                data[4].clone(),
+                data[5].clone(),
+                data[8].clone(),
+                data[9].clone(),
+                data[10].clone(),
+                data[17].clone(),
+                data[12].clone(),
+                data[13].clone(),
+                link_score,
+            ]
+        } else {
+            vec![
+                (full_idx + 1).to_string(),
+                data.get(1).cloned().unwrap_or_default(),
+                data.get(2).cloned().unwrap_or_default(),
+                data.get(3).cloned().unwrap_or_default(),
+                data.get(6).cloned().unwrap_or_default(),
+                data.get(7).cloned().unwrap_or_default(),
+                data.get(4).cloned().unwrap_or_default(),
+                data.get(5).cloned().unwrap_or_default(),
+                data.get(8).cloned().unwrap_or_default(),
+                data.get(9).cloned().unwrap_or_default(),
+                data.get(10).cloned().unwrap_or_default(),
+                data.get(17).cloned().unwrap_or_default(),
+                data.get(12).cloned().unwrap_or_default(),
+                data.get(13).cloned().unwrap_or_default(),
+                link_score,
+            ]
+        };
 
         let cells = displayed_data.iter().enumerate().map(|(j, c)| {
             let mut content = if j == 1 || j == 2 || j == 4 || j == 6 || j == 8 {
@@ -162,6 +189,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             // }
 
             if j == 11 {
+                // HANDLE THE SIZE CALCULATIONS TO DISPLAY KB
                 let size = data[17].clone();
                 let size = size.trim().parse::<usize>().unwrap_or(0);
                 let size = size / 1024;
@@ -203,11 +231,30 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 }
             }
 
-            let content = if j == 3 || j == 5 || j == 7 || j == 9 || j == 10 || j == 11 {
+            // Link Score column: color-code by strength (1-100), "-" if not yet analysed
+            if j == 14 {
+                if let Ok(score) = content.parse::<u32>() {
+                    if !is_selected {
+                        cell_style = cell_style.fg(if score >= 70 {
+                            Color::Green
+                        } else if score >= 40 {
+                            Color::Yellow
+                        } else {
+                            Color::Red
+                        });
+                    }
+                } else if !is_selected {
+                    cell_style = cell_style.fg(Color::DarkGray);
+                }
+            }
+
+            let content = if j == 3 || j == 5 || j == 7 || j == 9 || j == 10 || j == 11 || j == 14
+            {
                 let w = match j {
                     3 | 5 => 5,
                     7 | 9 => 7,
                     10 | 11 => 8,
+                    14 => 11,
                     _ => unreachable!(),
                 };
                 let l = content.len();
@@ -250,7 +297,8 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         Constraint::Length(8),            // Status
         Constraint::Length(8),            // Page Size
         Constraint::Length(6),            // Lang
-        Constraint::Min(8),               // Indexable
+        Constraint::Length(13),           // Indexable
+        Constraint::Length(13),           // Link Score
     ];
 
     let total_pages = (app.full_filtered_table_data.len() + app.page_size - 1) / app.page_size;

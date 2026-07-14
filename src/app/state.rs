@@ -18,11 +18,10 @@ pub enum AppState {
     Images,
     Css,
     Javascript,
-    Keywords,
     CoreWebVitals,
-    CustomExtractor,
     Content,
     Files,
+    CustomExtractor,
 }
 
 impl Default for App {
@@ -36,6 +35,7 @@ impl Default for App {
             task_panel_visible: false,
             current_state: AppState::Dashboard,
             sidebar_tab: 0,
+            sidebar_scroll: 0,
             bookmarks: vec![],
             bookmark_index: 0,
             bookmark_input: String::new(),
@@ -68,6 +68,7 @@ impl Default for App {
             show_dashboard_menu: false,
             dashboard_menu_selection: 0,
             crawl_progress: 0.0,
+            queued_urls: 0,
             input: String::new(),
             input_mode: false,
             cursor_position: 0,
@@ -201,6 +202,8 @@ impl Default for App {
             current_issue_title: String::new(),
             robots_urls_loading: false,
             robots_disallowed_urls: Vec::new(),
+            robots_txt_content: String::new(),
+            sitemap_urls: Vec::new(),
             robots_receiver: None,
             // Files Tab State
             files_table_data: Vec::new(),
@@ -221,16 +224,6 @@ impl Default for App {
             redirects_horizontal_scroll: 0,
             redirects_search_query: String::new(),
             show_redirects_search: false,
-            // Keywords Tab State
-            keywords_table_data: Vec::new(),
-            keywords_table_state: ratatui::widgets::TableState::default(),
-            keywords_filtered_table_data: Vec::new(),
-            keywords_full_filtered_table_data: Vec::new(),
-            keywords_current_page: 0,
-            keywords_page_size: 100,
-            keywords_horizontal_scroll: 0,
-            keywords_search_query: String::new(),
-            show_keywords_search: false,
             // Robots Tab State
             robots_table_data: Vec::new(),
             robots_table_state: ratatui::widgets::TableState::default(),
@@ -251,6 +244,9 @@ impl Default for App {
             css_counts: HashMap::new(),
             js_counts: HashMap::new(),
             image_counts: HashMap::new(),
+            redirect_map: HashMap::new(),
+            canonical_map: HashMap::new(),
+            link_scores: HashMap::new(),
         }
     }
 }

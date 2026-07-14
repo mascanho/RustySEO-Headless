@@ -45,7 +45,6 @@ pub fn render(f: &mut Frame, app: &mut App) {
         ListItem::new(" Copy URL"),
         ListItem::new(" Open URL in Browser"),
         ListItem::new(" Open in Google"),
-        ListItem::new(" Check Keywords"),
         ListItem::new(" View SEO Score"),
         ListItem::new(" Extract Links"),
         ListItem::new(" Screenshot"),
@@ -117,15 +116,10 @@ pub fn handle_action(app: &mut App, action_index: usize) {
                 .insert(0, format!("Opening URL in Google: {}", url));
         }
         3 => {
-            // Check Keywords
-            app.logs_data
-                .insert(0, format!("Keywords check for: {}", url));
-        }
-        4 => {
             // View SEO Score
             app.logs_data.insert(0, format!("SEO Score for: {}", url));
         }
-        5 => {
+        4 => {
             // Extract Links
             app.logs_data
                 .insert(0, format!("Extracting links from: {}", url));

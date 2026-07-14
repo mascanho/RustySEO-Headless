@@ -1,10 +1,10 @@
-use crate::models::{App, AppSettings};
 use crate::crawler::CrawlEngine;
+use crate::models::{App, AppSettings};
 
 impl App {
     pub fn open_settings_file(&mut self) {
         let path = crate::models::AppSettings::path();
-        
+
         // Use runtime OS detection for more reliability
         let cmd = match std::env::consts::OS {
             "macos" => "open",
@@ -36,30 +36,30 @@ impl App {
         self.internal_table_data.clear();
         self.external_table_data.clear();
         self.redirects_table_data.clear();
-        self.keywords_table_data.clear();
         self.css_urls_table_data.clear();
         self.js_urls_table_data.clear();
         self.extractor_table_data.clear();
         self.images_table_data.clear();
         self.files_table_data.clear();
         self.url_to_status.clear();
+        self.redirect_map.clear();
+        self.canonical_map.clear();
+        self.link_scores.clear();
         self.current_page = 0;
         self.internal_current_page = 0;
         self.external_current_page = 0;
         self.redirects_current_page = 0;
-        self.keywords_current_page = 0;
         self.css_urls_current_page = 0;
         self.js_urls_current_page = 0;
         self.content_current_page = 0;
         self.extractor_current_page = 0;
         self.images_current_page = 0;
         self.files_current_page = 0;
-        
+
         self.apply_filter();
         self.apply_internal_filter();
         self.apply_external_filter();
         self.apply_redirects_filter();
-        self.apply_keywords_filter();
         self.apply_css_urls_filter();
         self.apply_js_urls_filter();
         self.apply_extractor_filter();
@@ -72,19 +72,20 @@ impl App {
         self.crawl_receiver = Some(rx);
 
         self.log(format!("Starting crawl for: {}", url));
-        
+
         // Spawn robots analysis in background
         self.spawn_robots_analysis(&url);
-        
+
         let settings = self.settings.clone().unwrap_or_else(|| AppSettings::load());
 
         tokio::spawn(async move {
-            let crawler = CrawlEngine::new().await
+            let crawler = CrawlEngine::new()
+                .await
                 .with_max_pages(settings.crawler.max_pages)
                 .with_concurrency(settings.crawler.concurrency)
                 .with_javascript(settings.crawler.enable_javascript)
                 .with_pagespeed(Some(settings.connectors.pagespeed));
-            
+
             crawler.crawl_concurrently(&url, tx).await;
         });
     }

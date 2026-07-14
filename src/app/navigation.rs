@@ -115,15 +115,17 @@ impl App {
     }
 
     pub fn next_sidebar_tab(&mut self) {
-        self.sidebar_tab = (self.sidebar_tab + 1) % 6;
+        self.sidebar_tab = (self.sidebar_tab + 1) % 7;
+        self.sidebar_scroll = 0;
     }
 
     pub fn previous_sidebar_tab(&mut self) {
         self.sidebar_tab = if self.sidebar_tab == 0 {
-            5
+            6
         } else {
             self.sidebar_tab - 1
         };
+        self.sidebar_scroll = 0;
     }
 
     pub fn reset(&mut self) {
@@ -141,29 +143,27 @@ impl App {
             AppState::Redirects => AppState::Images,
             AppState::Images => AppState::Css,
             AppState::Css => AppState::Javascript,
-            AppState::Javascript => AppState::Keywords,
-            AppState::Keywords => AppState::CoreWebVitals,
-            AppState::CoreWebVitals => AppState::CustomExtractor,
-            AppState::CustomExtractor => AppState::Content,
+            AppState::Javascript => AppState::CoreWebVitals,
+            AppState::CoreWebVitals => AppState::Content,
             AppState::Content => AppState::Files,
-            AppState::Files => AppState::Dashboard,
+            AppState::Files => AppState::CustomExtractor,
+            AppState::CustomExtractor => AppState::Dashboard,
         }
     }
 
     pub fn previous_state(&mut self) {
         self.current_state = match self.current_state {
-            AppState::Dashboard => AppState::Files,
+            AppState::Dashboard => AppState::CustomExtractor,
             AppState::External => AppState::Dashboard,
             AppState::Internal => AppState::External,
             AppState::Redirects => AppState::Internal,
             AppState::Images => AppState::Redirects,
             AppState::Css => AppState::Images,
             AppState::Javascript => AppState::Css,
-            AppState::Keywords => AppState::Javascript,
-            AppState::CoreWebVitals => AppState::Keywords,
-            AppState::CustomExtractor => AppState::CoreWebVitals,
-            AppState::Content => AppState::CustomExtractor,
+            AppState::CoreWebVitals => AppState::Javascript,
+            AppState::Content => AppState::CoreWebVitals,
             AppState::Files => AppState::Content,
+            AppState::CustomExtractor => AppState::Files,
         }
     }
 
@@ -176,11 +176,10 @@ impl App {
             AppState::Images => 4,
             AppState::Css => 5,
             AppState::Javascript => 6,
-            AppState::Keywords => 7,
-            AppState::CoreWebVitals => 8,
-            AppState::CustomExtractor => 9,
-            AppState::Content => 10,
-            AppState::Files => 11,
+            AppState::CoreWebVitals => 7,
+            AppState::Content => 8,
+            AppState::Files => 9,
+            AppState::CustomExtractor => 10,
         }
     }
 
@@ -816,75 +815,6 @@ impl App {
         if self.redirects_current_page > 0 {
             self.redirects_current_page -= 1;
             self.apply_redirects_pagination();
-        }
-    }
-
-    pub fn next_keywords_row(&mut self) {
-        let len = self.keywords_filtered_table_data.len();
-        if len == 0 {
-            return;
-        }
-        let i = match self.keywords_table_state.selected() {
-            Some(i) => {
-                if i >= len - 1 {
-                    let total_pages = (self.keywords_full_filtered_table_data.len()
-                        + self.keywords_page_size
-                        - 1)
-                        / self.keywords_page_size.max(1);
-                    if self.keywords_current_page + 1 < total_pages {
-                        self.keywords_current_page += 1;
-                        self.apply_keywords_pagination();
-                        0
-                    } else {
-                        len - 1
-                    }
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.keywords_table_state.select(Some(i));
-    }
-
-    pub fn previous_keywords_row(&mut self) {
-        let len = self.keywords_filtered_table_data.len();
-        if len == 0 {
-            return;
-        }
-        let i = match self.keywords_table_state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    if self.keywords_current_page > 0 {
-                        self.keywords_current_page -= 1;
-                        self.apply_keywords_pagination();
-                        self.keywords_filtered_table_data.len().saturating_sub(1)
-                    } else {
-                        0
-                    }
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.keywords_table_state.select(Some(i));
-    }
-
-    pub fn next_keywords_page(&mut self) {
-        let total_pages = (self.keywords_full_filtered_table_data.len() + self.keywords_page_size
-            - 1)
-            / self.keywords_page_size.max(1);
-        if self.keywords_current_page + 1 < total_pages {
-            self.keywords_current_page += 1;
-            self.apply_keywords_pagination();
-        }
-    }
-
-    pub fn previous_keywords_page(&mut self) {
-        if self.keywords_current_page > 0 {
-            self.keywords_current_page -= 1;
-            self.apply_keywords_pagination();
         }
     }
 }

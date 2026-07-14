@@ -63,18 +63,18 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         let displayed_data = vec![
             (full_idx + 1).to_string(), // 0: Sequential ID
             data[1].clone(),            // 1: URL
-            data[33].clone(),           // 2: D: Score
-            data[34].clone(),           // 3: D: FCP
-            data[35].clone(),           // 4: D: LCP
-            data[36].clone(),           // 5: D: CLS
-            data[37].clone(),           // 6: D: TBT
-            data[38].clone(),           // 7: D: SI
-            data[39].clone(),           // 8: M: Score
-            data[40].clone(),           // 9: M: FCP
-            data[41].clone(),           // 10: M: LCP
-            data[42].clone(),           // 11: M: CLS
-            data[43].clone(),           // 12: M: TBT
-            data[44].clone(),           // 13: M: SI
+            data[23].clone(),          // 2: D: Score
+            data[24].clone(),          // 3: D: FCP
+            data[25].clone(),          // 4: D: LCP
+            data[26].clone(),          // 5: D: CLS
+            data[27].clone(),          // 6: D: TBT
+            data[28].clone(),          // 7: D: SI
+            data[29].clone(),          // 8: M: Score
+            data[30].clone(),          // 9: M: FCP
+            data[31].clone(),          // 10: M: LCP
+            data[32].clone(),          // 11: M: CLS
+            data[33].clone(),          // 12: M: TBT
+            data[34].clone(),          // 13: M: SI
         ];
 
         let cells = displayed_data.iter().enumerate().map(|(j, c)| {

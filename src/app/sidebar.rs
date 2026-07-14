@@ -3,10 +3,19 @@ use directories::ProjectDirs;
 
 impl App {
     pub fn set_sidebar_tab(&mut self, index: usize) {
-        if index < 6 {
+        if index < 7 {
             self.sidebar_tab = index;
+            self.sidebar_scroll = 0;
             self.sidebar_visible = true;
         }
+    }
+
+    pub fn sidebar_scroll_down(&mut self) {
+        self.sidebar_scroll = self.sidebar_scroll.saturating_add(1);
+    }
+
+    pub fn sidebar_scroll_up(&mut self) {
+        self.sidebar_scroll = self.sidebar_scroll.saturating_sub(1);
     }
 
     pub fn next_bookmark(&mut self) {

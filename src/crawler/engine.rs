@@ -1,15 +1,18 @@
 use headless_chrome::{Browser, LaunchOptions};
 use reqwest::Client;
 use std::collections::HashSet;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use tokio::sync::{Mutex, Semaphore, mpsc};
+use std::sync::Arc;
+use tokio::sync::{mpsc, Mutex, Semaphore};
 use tokio::time::Duration;
 use url::Url;
 
+use crate::app::settings;
 use crate::crawler::fetching::fetch_and_process;
 use crate::crawler::helpers::html_parser::PageData;
 use crate::crawler::helpers::user_agents::user_agents;
+use crate::db;
+use crate::models::AppSettings;
 use crate::settings::utils::create::add_recent_entry;
 
 #[derive(Clone)]
@@ -25,6 +28,9 @@ pub struct CrawlEngine {
     enable_javascript: bool,
     browser: Option<Arc<Browser>>,
     pagespeed_config: Option<crate::models::PageSpeedConfig>,
+    enable_db_persist: bool,
+    pending_pages: Arc<Mutex<Vec<PageData>>>,
+    db_batch_size: usize,
 }
 
 impl std::fmt::Debug for CrawlEngine {
@@ -54,6 +60,7 @@ impl CrawlEngine {
 
         let default_ua = user_agents_vec[0].clone();
         let concurrency_limit = 10; // Default limit
+        let db_batch_size = AppSettings::load().crawler.batch_size;
 
         Self {
             client: Client::builder()
@@ -74,8 +81,13 @@ impl CrawlEngine {
             enable_javascript: false,
             browser: None,
             pagespeed_config: None,
+            enable_db_persist: false,
+            pending_pages: Arc::new(Mutex::new(Vec::with_capacity(db_batch_size))),
+            db_batch_size,
         }
     }
+
+    // This is a bit of a hack to ensure that the crawler doesn't get too far ahead of the UI.
 
     pub fn with_pagespeed(mut self, config: Option<crate::models::PageSpeedConfig>) -> Self {
         self.pagespeed_config = config;
@@ -108,6 +120,64 @@ impl CrawlEngine {
         self.concurrency_limit = limit;
         self.semaphore = Arc::new(Semaphore::new(limit));
         self
+    }
+
+    /// Enables DB persistence with configurable batch size
+    pub fn with_db_persistence(mut self, batch_size: Option<usize>) -> Self {
+        if db::get_connection().is_ok() {
+            self.enable_db_persist = true;
+            self.db_batch_size = batch_size.unwrap_or(self.db_batch_size);
+
+            tracing::info!(
+                "DB persistence enabled with batch size {}",
+                self.db_batch_size
+            );
+        } else {
+            tracing::warn!("Failed to open DB connection, persistence disabled");
+        }
+        self
+    }
+
+    /// Flush pending pages to DB
+    async fn flush_pending_pages(&self) {
+        if !self.enable_db_persist {
+            return;
+        }
+        let mut pending = self.pending_pages.lock().await;
+        if pending.is_empty() {
+            return;
+        }
+        let pages_to_save: Vec<PageData> = pending.drain(..).collect();
+        if let Ok(conn) = db::get_connection() {
+            let mut saved = 0;
+            for page_data in pages_to_save {
+                if db::save_page_data_with_conn(&conn, &page_data).is_ok() {
+                    saved += 1;
+                }
+            }
+            if saved > 0 {
+                tracing::debug!("Flushed {} pages to DB", saved);
+            }
+        }
+    }
+
+    /// Add page to pending buffer, flush if batch full
+    async fn add_pending_page(&self, page_data: PageData) {
+        if !self.enable_db_persist {
+            return;
+        }
+        let mut pending = self.pending_pages.lock().await;
+        pending.push(page_data);
+        if pending.len() >= self.db_batch_size {
+            let pages_to_save: Vec<PageData> = pending.drain(..).collect();
+            drop(pending);
+            if let Ok(conn) = db::get_connection() {
+                for page_data in pages_to_save {
+                    let _ = db::save_page_data_with_conn(&conn, &page_data);
+                }
+                tracing::debug!("Batch flush: {} pages saved to DB", self.db_batch_size);
+            }
+        }
     }
 
     /// Primary entry point for crawling.
@@ -163,14 +233,14 @@ impl CrawlEngine {
         // Factor of 10 allows building a backlog without dropping links too early
         let queue_capacity = std::cmp::max(self.max_pages * 10, 200_000);
         let mut queue = crate::crawler::queue::CrawlQueue::with_max_size(Some(queue_capacity));
-        
+
         if let Some(normalized_start) = crate::crawler::url_normalizer::normalize_url(start_url) {
-             queue.push(normalized_start.clone(), None);
-             // Mark start URL as seen immediately to prevent re-queuing
-             self.visited.lock().await.insert(normalized_start);
+            queue.push(normalized_start.clone(), None);
+            // Mark start URL as seen immediately to prevent re-queuing
+            self.visited.lock().await.insert(normalized_start);
         } else {
-             tracing::error!("Invalid start URL: {}", start_url);
-             return;
+            tracing::error!("Invalid start URL: {}", start_url);
+            return;
         }
 
         // Try to discover URLs from sitemap.xml and robots.txt
@@ -188,19 +258,25 @@ impl CrawlEngine {
                 for url in sitemap_urls {
                     // Only add URLs from the same domain
                     if let Ok(parsed) = Url::parse(&url) {
-                        if crate::crawler::url_normalizer::is_same_domain(parsed.domain(), base_url.domain()) {
-                            if let Some(normalized_url) = crate::crawler::url_normalizer::normalize_url(&url) {
-                                 if crate::crawler::url_normalizer::should_crawl_url(&normalized_url) {
-                                      if !visited.contains(&normalized_url) {
-                                          if queue.push(normalized_url.clone(), None) {
-                                              visited.insert(normalized_url);
-                                              added += 1;
-                                          } else {
-                                              tracing::warn!("[QUEUE] Queue at capacity, skipping sitemap URL: {}", url);
-                                              break;
-                                          }
-                                      }
-                                 }
+                        if crate::crawler::url_normalizer::is_same_domain(
+                            parsed.domain(),
+                            base_url.domain(),
+                        ) {
+                            if let Some(normalized_url) =
+                                crate::crawler::url_normalizer::normalize_url(&url)
+                            {
+                                if crate::crawler::url_normalizer::should_crawl_url(&normalized_url)
+                                {
+                                    if !visited.contains(&normalized_url) {
+                                        if queue.push(normalized_url.clone(), None) {
+                                            visited.insert(normalized_url);
+                                            added += 1;
+                                        } else {
+                                            tracing::warn!("[QUEUE] Queue at capacity, skipping sitemap URL: {}", url);
+                                            break;
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -222,7 +298,6 @@ impl CrawlEngine {
 
                 // URLs in queue are already normalized, filtered, and marked "seen" (visited)
                 // We proceed directly to processing
-
 
                 let engine = self.clone();
                 let base_url_clone = base_url.clone();
@@ -249,7 +324,7 @@ impl CrawlEngine {
             // Wait for at least one task to complete
             if let Some(res) = join_set.join_next().await {
                 match res {
-                    Ok(Ok(data)) => {
+                    Ok(Ok(mut data)) => {
                         // Extract new links BEFORE sending result to ensure consistency
                         let current_url = data.url.clone();
                         let current_success = self.success_count.load(Ordering::SeqCst);
@@ -267,16 +342,17 @@ impl CrawlEngine {
                             let mut added_count = 0;
                             {
                                 let mut visited = self.visited.lock().await; // Lock once
-                                
+
                                 for link in &data.anchor_links {
                                     // Links are already normalized and filtered by fetch_and_process
-                                    
+
                                     if visited.contains(&link.href) {
                                         duplicate_count += 1;
                                         tracing::debug!("[LINK] Duplicate (Seen): {}", link.href);
                                     } else {
                                         // Attempt to add to queue FIRST
-                                        if queue.push(link.href.clone(), Some(current_url.clone())) {
+                                        if queue.push(link.href.clone(), Some(current_url.clone()))
+                                        {
                                             // Successfully queued -> Mark as visited/seen
                                             visited.insert(link.href.clone());
                                             new_links.push(link.href.clone()); // for logging/stats
@@ -284,11 +360,14 @@ impl CrawlEngine {
                                             tracing::debug!("[LINK] NEW -> Queue: {}", link.href);
                                         } else {
                                             // Queue full
-                                            tracing::warn!("Queue full, dropping link: {}", link.href);
+                                            tracing::warn!(
+                                                "Queue full, dropping link: {}",
+                                                link.href
+                                            );
                                             // Stop processing links if queue is full?
                                             // Or continue counting duplicates?
                                             // Assuming push returns false means full, we can break.
-                                            break; 
+                                            break;
                                         }
                                     }
                                 }
@@ -299,7 +378,6 @@ impl CrawlEngine {
 
                             // We already added them to queue in the loop
 
-                            
                             // Warn if we couldn't add all links due to capacity
                             if added_count < new_links.len() {
                                 tracing::warn!(
@@ -342,9 +420,19 @@ impl CrawlEngine {
                         }
 
                         // Send result back
-                        self.success_count.fetch_add(1, Ordering::SeqCst);
+                        // Assign a stable, unique sequence id before this page is persisted -
+                        // without it every page defaults to id 0 and each DB write via
+                        // INSERT OR REPLACE silently clobbers the previous page's row.
+                        data.id = self.success_count.fetch_add(1, Ordering::SeqCst) + 1;
                         self.stats.increment_crawled();
-                        let _ = tx.send(crate::crawler::CrawlMessage::Page(data)).await;
+                        let _ = tx
+                            .send(crate::crawler::CrawlMessage::Page(data.clone()))
+                            .await;
+
+                        // Persist to DB if enabled (batched)
+                        if self.enable_db_persist {
+                            self.add_pending_page(data).await;
+                        }
 
                         // Send progress update
                         let scanned = self.success_count.load(Ordering::SeqCst) as usize;
@@ -390,5 +478,10 @@ impl CrawlEngine {
 
         // Final stats
         tracing::warn!("[CRAWL COMPLETE] {}", self.stats.get_summary());
+
+        // Flush any remaining pending pages to DB
+        if self.enable_db_persist {
+            self.flush_pending_pages().await;
+        }
     }
 }

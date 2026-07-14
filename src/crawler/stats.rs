@@ -1,5 +1,7 @@
-use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
+
+use crate::models::AppSettings;
 
 /// Statistics tracker for crawl operations
 #[derive(Debug, Clone)]
@@ -44,12 +46,13 @@ impl CrawlStats {
 
     pub fn get_summary(&self) -> String {
         format!(
-            "Crawled: {}, Failed: {}, Links Found: {}, Filtered: {}, Duplicates: {}",
+            "Crawled: {}, Failed: {}, Links Found: {}, Filtered: {}, Duplicates: {}, Batch Size Intertion: {}",
             self.pages_crawled.load(Ordering::SeqCst),
             self.pages_failed.load(Ordering::SeqCst),
             self.links_discovered.load(Ordering::SeqCst),
             self.links_filtered.load(Ordering::SeqCst),
             self.links_duplicate.load(Ordering::SeqCst),
+            AppSettings::load().crawler.batch_size
         )
     }
 }

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use ratatui::{
     Frame,
     layout::{Constraint, Rect},
@@ -9,6 +11,7 @@ use ratatui::{
 pub fn render(
     f: &mut Frame,
     anchor_links: &[crate::crawler::helpers::html_parser::AnchorLink],
+    url_to_status: &HashMap<String, String>,
     horizontal_scroll: usize,
     table_state: &mut TableState,
     area: Rect,
@@ -16,7 +19,7 @@ pub fn render(
 ) {
     let accent_color = Color::Rgb(80, 140, 255);
 
-    let header_titles = ["#", "Link", "Anchor Text"];
+    let header_titles = ["#", "Link", "Anchor Text", "Status"];
 
     let header = Row::new(header_titles.iter().map(|h| {
         Cell::from(format!(" {} ", h)).style(
@@ -44,57 +47,62 @@ pub fn render(
                 .add_modifier(Modifier::BOLD);
         }
 
-        let displayed_data = [(i + 1).to_string(), link.href.clone(), link.text.clone()];
-
-        let cells = displayed_data.iter().enumerate().map(|(j, c)| {
-            let content = if j == 1 {
-                // Link column
-                let content = c.as_str();
-                if content.len() > 100 {
-                    let start = horizontal_scroll.min(content.len().saturating_sub(50));
-                    let end = (start + 100).min(content.len());
-                    if start > 0 {
-                        format!("…{}", &content[start..end])
-                    } else {
-                        content[start..end].to_string()
-                    }
+        let link_display = {
+            let content = link.href.as_str();
+            if content.len() > 100 {
+                let start = horizontal_scroll.min(content.len().saturating_sub(50));
+                let end = (start + 100).min(content.len());
+                if start > 0 {
+                    format!("…{}", &content[start..end])
                 } else {
-                    content.to_string()
+                    content[start..end].to_string()
                 }
             } else {
-                c.as_str().to_string()
-            };
+                content.to_string()
+            }
+        };
 
-            let padded_content = if j == 0 {
-                // Index
-                let w = 4;
-                let l = content.len();
-                if l < w {
-                    let left_pad = (w - l) / 2;
-                    let right_pad = w - l - left_pad;
-                    format!(
-                        "{}{}{}",
-                        " ".repeat(left_pad),
-                        content,
-                        " ".repeat(right_pad)
-                    )
-                } else {
-                    content
-                }
+        let idx_str = {
+            let s = (i + 1).to_string();
+            let w = 4;
+            let l = s.len();
+            if l < w {
+                let left_pad = (w - l) / 2;
+                let right_pad = w - l - left_pad;
+                format!("{}{}{}", " ".repeat(left_pad), s, " ".repeat(right_pad))
             } else {
-                content
-            };
+                s
+            }
+        };
 
-            Cell::from(padded_content)
-        });
+        let status = url_to_status
+            .get(&link.href)
+            .and_then(|s| s.split_whitespace().next())
+            .unwrap_or("—")
+            .to_string();
 
-        Row::new(cells).style(row_style).height(1)
+        let status_color = match status.parse::<u16>().unwrap_or(0) / 100 {
+            2 => Color::Green,
+            3 => Color::Yellow,
+            4 | 5 => Color::Red,
+            _ => Color::DarkGray,
+        };
+
+        let cells = vec![
+            Cell::from(idx_str).style(row_style),
+            Cell::from(link_display).style(row_style),
+            Cell::from(link.text.clone()).style(row_style),
+            Cell::from(format!(" {} ", status)).style(row_style.fg(status_color).add_modifier(Modifier::BOLD)),
+        ];
+
+        Row::new(cells).height(1)
     });
 
     let widths = [
-        Constraint::Length(4), // #
-        Constraint::Min(50),   // Link
-        Constraint::Min(30),   // Anchor Text
+        Constraint::Length(4),  // #
+        Constraint::Min(50),    // Link
+        Constraint::Min(30),    // Anchor Text
+        Constraint::Length(8),  // Status
     ];
 
     let scroll_indicator = if horizontal_scroll > 0 {
@@ -109,7 +117,7 @@ pub fn render(
             block
                 .title(Span::styled(
                     format!(
-                        " ↗️  Outgoing Links ({}) {} ",
+                        " ↗️  External Links ({}) {} ",
                         anchor_links.len(),
                         scroll_indicator
                     ),

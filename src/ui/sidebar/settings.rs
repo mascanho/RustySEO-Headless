@@ -1,10 +1,10 @@
 use crate::models::App;
 use ratatui::{
-    Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Paragraph, Row, Table},
+    Frame,
 };
 
 pub fn render(
@@ -76,6 +76,16 @@ pub fn render(
                 } else {
                     Color::Red
                 })),
+            ]),
+            Row::new(vec![
+                Cell::from("  Batch Size"),
+                Cell::from(format!("{}", settings.crawler.batch_size)).style(Style::default().fg(
+                    if settings.crawler.batch_size == 50 {
+                        Color::Green
+                    } else {
+                        Color::Red
+                    },
+                )),
             ]),
             Row::new(vec![
                 Cell::from("  JavaScript"),
