@@ -225,33 +225,23 @@ impl App {
                         }
                     }
 
-                    // Collect Files
-                    let path_part = normalized_to
-                        .split('?')
-                        .next()
-                        .unwrap_or("")
-                        .split('#')
-                        .next()
-                        .unwrap_or("");
-                    if let Some(ext) = path_part.split('.').last() {
-                        let ext_lower = ext.to_lowercase();
-                        if !ext_lower.is_empty()
-                            && ![
-                                "html", "htm", "php", "css", "js", "aspx", "asp", "jsp", "png",
-                                "jpg", "jpeg", "gif", "svg", "webp", "ico",
-                            ]
-                            .contains(&ext_lower.as_str())
-                        {
-                            if self.seen_files.insert(normalized_to.clone()) {
-                                let file_entry = crate::models::FileEntry {
-                                    id: self.files_table_data.len() + 1,
-                                    url: normalized_to,
-                                    filetype: ext_lower.to_uppercase(),
-                                };
-                                self.files_table_data.push(file_entry.clone());
-                                if self.files_search_query.is_empty() {
-                                    self.files_full_filtered_table_data.push(file_entry);
-                                }
+                    // Collect Files - only flag URLs whose path basename ends in a
+                    // recognized downloadable file extension (see
+                    // url_normalizer::extract_file_extension). This avoids the domain's
+                    // TLD or unrelated dotted path segments (e.g. "/v1.2/blog") being
+                    // mistaken for a file extension.
+                    if let Some(ext) =
+                        crate::crawler::url_normalizer::extract_file_extension(&normalized_to)
+                    {
+                        if self.seen_files.insert(normalized_to.clone()) {
+                            let file_entry = crate::models::FileEntry {
+                                id: self.files_table_data.len() + 1,
+                                url: normalized_to,
+                                filetype: ext.to_uppercase(),
+                            };
+                            self.files_table_data.push(file_entry.clone());
+                            if self.files_search_query.is_empty() {
+                                self.files_full_filtered_table_data.push(file_entry);
                             }
                         }
                     }
@@ -431,6 +421,36 @@ impl App {
             self.log("SYSTEM - Running Crawl Analysis (Link Score)...");
             self.compute_link_scores();
             self.log("SYSTEM - Link Score analysis complete.");
+
+            let check_external_links = self
+                .settings
+                .as_ref()
+                .map(|s| s.crawler.check_external_links)
+                .unwrap_or(false);
+            if check_external_links {
+                self.start_external_link_check();
+            }
+        }
+
+        // Drain any external link status check results as they stream in.
+        if let Some(ref mut rx) = self.external_status_receiver {
+            let mut finished = false;
+            loop {
+                match rx.try_recv() {
+                    Ok((url, status)) => {
+                        self.url_to_status.insert(url, status);
+                    }
+                    Err(mpsc::error::TryRecvError::Empty) => break,
+                    Err(mpsc::error::TryRecvError::Disconnected) => {
+                        finished = true;
+                        break;
+                    }
+                }
+            }
+            if finished {
+                self.external_status_receiver = None;
+                self.log("SYSTEM - External link check complete.");
+            }
         }
 
         // Search Debouncing (unchanged)

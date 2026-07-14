@@ -40,6 +40,8 @@ pub struct CrawlerConfig {
     pub extractor_type: String,
     #[serde(default)]
     pub batch_size: usize,
+    #[serde(default)]
+    pub check_external_links: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -112,6 +114,7 @@ impl Default for AppSettings {
                 extractor_type: "".to_string(),
                 extractor_text: "".to_string(),
                 batch_size: 50,
+                check_external_links: false,
             },
             ui: UiConfig {
                 theme: "Oceanic".to_string(),
@@ -394,6 +397,7 @@ pub struct App {
     pub internal_search_query: String,
     pub show_internal_search: bool,
     pub url_to_status: HashMap<String, String>,
+    pub external_status_receiver: Option<tokio::sync::mpsc::Receiver<(String, String)>>,
     // Javascript URLs Tab State
     pub js_urls_table_data: Vec<JsUrl>,
     pub js_urls_table_state: ratatui::widgets::TableState,

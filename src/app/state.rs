@@ -131,6 +131,7 @@ impl Default for App {
             css_urls_search_query: String::new(),
             show_css_urls_search: false,
             url_to_status: HashMap::new(),
+            external_status_receiver: None,
             js_urls_table_data: Vec::new(),
             js_urls_table_state: ratatui::widgets::TableState::default(),
             js_urls_filtered_table_data: Vec::new(),
