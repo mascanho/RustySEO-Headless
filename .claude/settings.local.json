@@ -26,7 +26,9 @@
       "Bash(DUMP_JSON=/tmp/claude-1000/-home-mascanho-Coding-cli-rusty/56733c83-76f8-4435-bef8-8138d8ede112/scratchpad/crawl_dump.json timeout 60 cargo run --quiet -- --url https://books.toscrape.com/)",
       "Bash(echo \"exit: $?\")",
       "Bash(timeout 30 env XDG_DATA_HOME=/tmp/claude-1000/-home-mascanho-Coding-cli-rusty/56733c83-76f8-4435-bef8-8138d8ede112/scratchpad/fake_xdg2 cargo run --quiet -- --url https://books.toscrape.com/catalogue/the-grand-design_405/index.html)",
-      "Bash(cargo test *)"
+      "Bash(cargo test *)",
+      "Bash(cargo tree *)",
+      "Read(//home/mascanho/.cargo/registry/src/**)"
     ]
   }
 }
