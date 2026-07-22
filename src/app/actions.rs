@@ -76,12 +76,26 @@ impl App {
                     }
                 });
 
+                // Browsers block/warn on HTTPS pages loading resources over plain HTTP -
+                // check the three visible-resource kinds (anchor hyperlinks to other
+                // sites don't count; only embedded resources trigger the browser warning).
+                let has_mixed_content = page_data.url.starts_with("https://")
+                    && (page_data.images.iter().any(|i| i.src.starts_with("http://"))
+                        || page_data
+                            .css
+                            .as_ref()
+                            .is_some_and(|c| c.css_urls.iter().any(|u| u.starts_with("http://")))
+                        || page_data.javascript.as_ref().is_some_and(|j| {
+                            j.js_urls.iter().any(|u| u.starts_with("http://"))
+                        }));
+
                 // Create PageSummary for memory efficiency
                 let summary = crate::models::PageSummary {
                     id: current_id,
                     url: page_data.url.clone(),
                     title: page_data.title.clone(),
                     title_len: page_data.title_len,
+                    h1: page_data.h1.clone(),
                     description: page_data.description.clone(),
                     description_len: page_data.description_len,
                     status: page_data.status.clone(),
@@ -142,6 +156,7 @@ impl App {
                     has_noindex_header,
                     canonical_target,
                     canonical_count,
+                    has_mixed_content,
                 };
                 self.page_summaries.push(summary);
 

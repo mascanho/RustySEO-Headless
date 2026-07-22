@@ -132,6 +132,30 @@ impl IssueAnalyzer {
                 process: Self::analyse_noindex_header,
             },
             IssueHandler {
+                name: " Duplicate H1 Tags",
+                process: Self::analyse_duplicate_h1,
+            },
+            IssueHandler {
+                name: " Mixed Content (HTTP Resources on HTTPS Page)",
+                process: Self::analyse_mixed_content,
+            },
+            IssueHandler {
+                name: " Underscores in URL",
+                process: Self::analyse_underscore_urls,
+            },
+            IssueHandler {
+                name: " Uppercase Characters in URL",
+                process: Self::analyse_uppercase_urls,
+            },
+            IssueHandler {
+                name: " Non-ASCII Characters in URL",
+                process: Self::analyse_non_ascii_urls,
+            },
+            IssueHandler {
+                name: " URL Too Long (> 115 chars)",
+                process: Self::analyse_long_urls,
+            },
+            IssueHandler {
                 name: " Generic or Empty Anchors",
                 process: Self::analyse_generic_anchors,
             },
@@ -147,8 +171,9 @@ impl IssueAnalyzer {
                 name: " Non HTTPS",
                 process: Self::analyse_non_https,
             },
-            // Robots disallow links, Orphan Pages, Redirect Chains, and Broken Internal
-            // Links are handled separately since they need whole-crawl link-graph data
+            // Robots disallow links, Orphan Pages, Redirect Chains, Broken Internal Links,
+            // Internal Nofollow Links, Canonical Points to Broken Page, and Redirects to
+            // Error are handled separately since they need whole-crawl link-graph data
             // that isn't available per-page - see App::update_issues_from_crawled_data.
         ]
     }
@@ -220,6 +245,48 @@ impl IssueAnalyzer {
             }
         }
 
+        (broken.len(), broken)
+    }
+
+    /// Internal links marked `rel="nofollow"` - usually unintentional on same-site
+    /// links, and it wastes crawl budget/link equity that could flow internally.
+    pub fn analyse_internal_nofollow_links(internal_links: &[InternalLink]) -> (usize, Vec<String>) {
+        let mut flagged = Vec::new();
+        for link in internal_links {
+            if link.rel.to_lowercase().contains("nofollow") {
+                flagged.push(format!("{} -> {}", link.source, link.destination));
+            }
+        }
+        (flagged.len(), flagged)
+    }
+
+    /// Pages that canonicalise to another URL which itself returns a 4xx/5xx -
+    /// the canonical signal points nowhere useful.
+    pub fn analyse_canonical_points_to_broken(
+        page_data: &[PageSummary],
+        url_to_status: &HashMap<String, String>,
+    ) -> (usize, Vec<String>) {
+        let mut broken = Vec::new();
+        for page in page_data {
+            if let Some(target) = &page.canonical_target
+                && let Some(status) = url_to_status.get(target)
+                && (status.starts_with('4') || status.starts_with('5'))
+            {
+                broken.push(format!("{} -> {} ({})", page.url, target, status));
+            }
+        }
+        (broken.len(), broken)
+    }
+
+    /// Redirects whose final destination is not a 2xx - a redirect loop, or one
+    /// that ultimately lands on a broken page.
+    pub fn analyse_redirects_to_error(redirects: &[RedirectEntry]) -> (usize, Vec<String>) {
+        let mut broken = Vec::new();
+        for entry in redirects {
+            if !(200..300).contains(&entry.status_code) {
+                broken.push(format!("{} (final status: {})", entry.initial_url, entry.status_code));
+            }
+        }
         (broken.len(), broken)
     }
 
@@ -433,6 +500,86 @@ impl IssueAnalyzer {
         for page in page_data {
             if page.has_noindex_header {
                 urls.push(page.url.clone());
+            }
+        }
+        (urls.len(), urls)
+    }
+
+    /// Pages sharing the exact same (non-empty) H1 - same signal problem as
+    /// duplicate titles, just for the on-page heading instead of the `<title>`.
+    pub fn analyse_duplicate_h1(page_data: &[PageSummary]) -> (usize, Vec<String>) {
+        let mut seen: HashMap<&str, &str> = HashMap::new();
+        let mut duplicates = Vec::new();
+        for page in page_data {
+            let h1 = page.h1.trim();
+            if h1.is_empty() {
+                continue;
+            }
+            if let Some(existing_url) = seen.get(h1) {
+                duplicates.push(format!("{} [ and ]  {}", existing_url, page.url));
+            } else {
+                seen.insert(h1, &page.url);
+            }
+        }
+        (duplicates.len(), duplicates)
+    }
+
+    /// HTTPS pages that load an image, stylesheet, or script over plain HTTP -
+    /// browsers block or warn on this, and it can break the page for visitors.
+    pub fn analyse_mixed_content(page_data: &[PageSummary]) -> (usize, Vec<String>) {
+        let mut urls = Vec::new();
+        for page in page_data {
+            if page.has_mixed_content {
+                urls.push(page.url.clone());
+            }
+        }
+        (urls.len(), urls)
+    }
+
+    /// URLs containing underscores - search engines treat them as word joiners
+    /// rather than separators, unlike hyphens.
+    pub fn analyse_underscore_urls(page_data: &[PageSummary]) -> (usize, Vec<String>) {
+        let mut urls = Vec::new();
+        for page in page_data {
+            if page.url.contains('_') {
+                urls.push(page.url.clone());
+            }
+        }
+        (urls.len(), urls)
+    }
+
+    /// URLs containing uppercase characters - can cause duplicate-content issues
+    /// on case-sensitive servers and looks inconsistent in the SERP.
+    pub fn analyse_uppercase_urls(page_data: &[PageSummary]) -> (usize, Vec<String>) {
+        let mut urls = Vec::new();
+        for page in page_data {
+            if page.url.chars().any(|c| c.is_uppercase()) {
+                urls.push(page.url.clone());
+            }
+        }
+        (urls.len(), urls)
+    }
+
+    /// URLs containing non-ASCII characters (unencoded), which can render or copy
+    /// inconsistently across browsers, tools, and search engines.
+    pub fn analyse_non_ascii_urls(page_data: &[PageSummary]) -> (usize, Vec<String>) {
+        let mut urls = Vec::new();
+        for page in page_data {
+            if !page.url.is_ascii() {
+                urls.push(page.url.clone());
+            }
+        }
+        (urls.len(), urls)
+    }
+
+    /// URLs longer than 115 characters - Google's general guidance threshold
+    /// before URLs risk being truncated in the SERP.
+    pub fn analyse_long_urls(page_data: &[PageSummary]) -> (usize, Vec<String>) {
+        let mut urls = Vec::new();
+        for page in page_data {
+            let len = page.url.chars().count();
+            if len > 115 {
+                urls.push(format!("{} ({} chars)", page.url, len));
             }
         }
         (urls.len(), urls)
@@ -748,6 +895,28 @@ impl IssueAnalyzer {
             " Broken Internal Links".to_string(),
             broken_count.to_string(),
             format!("{}%", percentage(broken_count)),
+        ]);
+
+        let (nofollow_count, _) = Self::analyse_internal_nofollow_links(internal_links);
+        table_data.push(vec![
+            " Internal Nofollow Links".to_string(),
+            nofollow_count.to_string(),
+            format!("{}%", percentage(nofollow_count)),
+        ]);
+
+        let (broken_canonical_count, _) =
+            Self::analyse_canonical_points_to_broken(page_data, url_to_status);
+        table_data.push(vec![
+            " Canonical Points to Broken Page".to_string(),
+            broken_canonical_count.to_string(),
+            format!("{}%", percentage(broken_canonical_count)),
+        ]);
+
+        let (redirect_error_count, _) = Self::analyse_redirects_to_error(redirects);
+        table_data.push(vec![
+            " Redirects to Error Page".to_string(),
+            redirect_error_count.to_string(),
+            format!("{}%", percentage(redirect_error_count)),
         ]);
 
         table_data

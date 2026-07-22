@@ -36,7 +36,8 @@
       "Bash(cargo add *)",
       "Bash(find / -maxdepth 8 -ipath \"*registry/src*\" -iname \"*xlsxwriter*\")",
       "Bash(find / -maxdepth 4 -iname \"*.cargo*\")",
-      "Bash(RUST_TEST_THREADS=1 cargo test --bin RustySEO-CLI export::tests::exports_real_xlsx -- --nocapture)"
+      "Bash(RUST_TEST_THREADS=1 cargo test --bin RustySEO-CLI export::tests::exports_real_xlsx -- --nocapture)",
+      "Bash(grep -n 'table_data.push\\(vec!\\\\[$' src/helpers/issues.rs)"
     ]
   }
 }

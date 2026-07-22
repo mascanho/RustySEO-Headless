@@ -294,6 +294,7 @@ pub struct PageSummary {
     pub url: String,
     pub title: String,
     pub title_len: usize,
+    pub h1: String,
     pub description: String,
     pub description_len: usize,
     pub status: String,
@@ -328,6 +329,8 @@ pub struct PageSummary {
     pub canonical_target: Option<String>,
     /// Number of `rel="canonical"` tags found (should be 0 or 1; >1 is a bug).
     pub canonical_count: usize,
+    /// True if an HTTPS page loads an image, stylesheet, or script over plain HTTP.
+    pub has_mixed_content: bool,
 }
 
 pub struct App {

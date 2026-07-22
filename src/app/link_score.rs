@@ -185,6 +185,7 @@ mod tests {
             url: url.to_string(),
             title: String::new(),
             title_len: 0,
+            h1: String::new(),
             description: String::new(),
             description_len: 0,
             status: status.to_string(),
@@ -214,6 +215,7 @@ mod tests {
             has_noindex_header: false,
             canonical_target: None,
             canonical_count: 0,
+            has_mixed_content: false,
         }
     }
 

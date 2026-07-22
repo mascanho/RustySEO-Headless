@@ -38,6 +38,19 @@ impl App {
                 )
                 .1;
             }
+            " Internal Nofollow Links" => {
+                return IssueAnalyzer::analyse_internal_nofollow_links(&self.internal_table_data).1;
+            }
+            " Canonical Points to Broken Page" => {
+                return IssueAnalyzer::analyse_canonical_points_to_broken(
+                    &self.page_summaries,
+                    &self.url_to_status,
+                )
+                .1;
+            }
+            " Redirects to Error Page" => {
+                return IssueAnalyzer::analyse_redirects_to_error(&self.redirects_table_data).1;
+            }
             _ => {}
         }
 
