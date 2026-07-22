@@ -272,7 +272,7 @@ impl App {
             }
             6 => {
                 // Export Data
-                self.export_overview_csv();
+                self.export_all_tabs();
             }
             _ => {}
         }
@@ -369,16 +369,19 @@ impl App {
         });
     }
 
-    /// Poll for a completed screenshot capture and log the outcome. Called every tick.
+    /// Poll for a completed screenshot capture, log the outcome, and pop up the
+    /// "complete" modal. Called every tick.
     pub fn check_screenshot_results(&mut self) {
         if let Some(ref mut rx) = self.screenshot_receiver {
             match rx.try_recv() {
                 Ok(Ok(path)) => {
                     self.log(format!("Screenshot saved: {}", path));
+                    self.show_action_result(true, "Screenshot Complete", path);
                     self.screenshot_receiver = None;
                 }
                 Ok(Err(e)) => {
                     self.log(format!("Screenshot failed: {}", e));
+                    self.show_action_result(false, "Screenshot Failed", e);
                     self.screenshot_receiver = None;
                 }
                 Err(tokio::sync::mpsc::error::TryRecvError::Empty) => {}
@@ -389,11 +392,38 @@ impl App {
         }
     }
 
-    /// Export the full Overview table to a timestamped CSV file.
-    fn export_overview_csv(&mut self) {
-        match crate::app::menu_actions::write_overview_csv(&self.table_data) {
-            Ok(path) => self.log(format!("Exported {} rows to: {}", self.table_data.len(), path)),
-            Err(e) => self.log(format!("Export failed: {}", e)),
+    /// Export every application tab (Overview, External, Internal, Redirects, Images,
+    /// CSS, Javascript, CWV, Content, Files, Custom Extractor) to a workbook mirroring
+    /// each tab's exact columns, one sheet per tab. Falls back to a zip of per-tab CSVs
+    /// if any sheet would be too large for Excel/Sheets to open comfortably.
+    fn export_all_tabs(&mut self) {
+        match crate::app::export::export_all_tabs(self) {
+            Ok(summary) => {
+                let message = format!(
+                    "Exported {} rows across {} tabs ({})\n{}",
+                    summary.total_rows, summary.sheet_count, summary.format, summary.path
+                );
+                self.log(format!(
+                    "Exported {} rows across {} tabs ({}) to: {}",
+                    summary.total_rows, summary.sheet_count, summary.format, summary.path
+                ));
+                self.show_action_result(true, "Export Complete", message);
+            }
+            Err(e) => {
+                self.log(format!("Export failed: {}", e));
+                self.show_action_result(false, "Export Failed", e);
+            }
         }
+    }
+
+    fn show_action_result(&mut self, success: bool, title: &str, message: String) {
+        self.action_result_success = success;
+        self.action_result_title = title.to_string();
+        self.action_result_message = message;
+        self.show_action_result_modal = true;
+    }
+
+    pub fn close_action_result_modal(&mut self) {
+        self.show_action_result_modal = false;
     }
 }

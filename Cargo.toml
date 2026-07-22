@@ -28,3 +28,5 @@ rusqlite = { version = "0.38", features = ["bundled"] }
 publicsuffix = "2.2"
 notify = "6.1.1"
 tui-piechart = "0.2.8"
+rust_xlsxwriter = { version = "0.96.0", default-features = false, features = ["constant_memory"] }
+zip = { version = "8.6.0", default-features = false, features = ["deflate"] }

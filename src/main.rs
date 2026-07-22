@@ -534,6 +534,20 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             continue;
                         }
 
+                        // MODAL PRIORITY 2.4: Action Result (Screenshot / Export Data complete)
+                        // Highest priority among these so a background task finishing
+                        // (e.g. a screenshot) can always be dismissed immediately, even
+                        // if another Actions Menu modal is open underneath it.
+                        if app.show_action_result_modal {
+                            match key.code {
+                                KeyCode::Char('q') | KeyCode::Esc | KeyCode::Enter => {
+                                    app.close_action_result_modal()
+                                }
+                                _ => {}
+                            }
+                            continue;
+                        }
+
                         // MODAL PRIORITY 2.5: Dashboard Menu
                         if app.show_dashboard_menu {
                             match key.code {

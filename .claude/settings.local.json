@@ -32,7 +32,11 @@
       "Bash(python3 -c ' *)",
       "Bash(xargs ls)",
       "Bash(grep -n \"MODAL PRIORITY\\\\|if app\\\\.\\\\w* {$\\\\|} else if app\\\\.\" src/main.rs)",
-      "Bash(cargo clippy *)"
+      "Bash(cargo clippy *)",
+      "Bash(cargo add *)",
+      "Bash(find / -maxdepth 8 -ipath \"*registry/src*\" -iname \"*xlsxwriter*\")",
+      "Bash(find / -maxdepth 4 -iname \"*.cargo*\")",
+      "Bash(RUST_TEST_THREADS=1 cargo test --bin RustySEO-CLI export::tests::exports_real_xlsx -- --nocapture)"
     ]
   }
 }

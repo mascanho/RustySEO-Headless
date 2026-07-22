@@ -362,6 +362,12 @@ pub struct App {
     pub page_links_state: ratatui::widgets::ListState,
     // Screenshot capture (Actions Menu -> Screenshot), resolved in on_tick
     pub screenshot_receiver: Option<tokio::sync::mpsc::Receiver<Result<String, String>>>,
+    // "Complete" modal shown once a background/long-running Actions Menu task
+    // (Screenshot, Export Data) finishes.
+    pub show_action_result_modal: bool,
+    pub action_result_title: String,
+    pub action_result_message: String,
+    pub action_result_success: bool,
     pub crawl_progress: f64,
     pub queued_urls: usize,
     pub input: String,

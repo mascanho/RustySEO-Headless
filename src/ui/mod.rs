@@ -115,6 +115,10 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         modals::page_links::render(f, app);
     }
 
+    if app.show_action_result_modal {
+        modals::action_result::render(f, app);
+    }
+
     // Render Input Modal when in input mode
     if app.input_mode {
         let modal_area = centered_rect(25, 6, size);

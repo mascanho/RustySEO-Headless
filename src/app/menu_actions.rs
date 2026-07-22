@@ -1,5 +1,6 @@
 //! Real implementations backing the Actions Menu entries that used to be log-only
-//! stubs: on-page SEO scoring, screenshot capture, and CSV export.
+//! stubs: on-page SEO scoring and screenshot capture. See `app::export` for the
+//! multi-tab "Export Data" action.
 
 use crate::models::{SeoScoreBreakdown, SeoScoreFactor};
 use headless_chrome::{protocol::cdp::Page::CaptureScreenshotFormatOption, Browser, LaunchOptions};
@@ -186,103 +187,5 @@ pub fn capture_screenshot(url: &str) -> Result<String, String> {
         .map_err(|e| format!("Capture failed: {}", e))?;
 
     std::fs::write(&path, png_data).map_err(|e| format!("Failed to write screenshot: {}", e))?;
-    Ok(path.display().to_string())
-}
-
-const OVERVIEW_CSV_HEADER: [&str; 45] = [
-    "ID",
-    "URL",
-    "Title",
-    "Title Length",
-    "H1",
-    "H1 Length",
-    "Description",
-    "Description Length",
-    "H2",
-    "H2 Length",
-    "Status",
-    "Mobile Friendly",
-    "Language",
-    "Indexability",
-    "Anchor Links",
-    "Content Type",
-    "Canonicals",
-    "Size (bytes)",
-    "Word Count",
-    "CSS Total Size",
-    "External CSS Count",
-    "Inline CSS Size",
-    "First CSS URL",
-    "CWV Desktop Performance",
-    "CWV Desktop FCP",
-    "CWV Desktop LCP",
-    "CWV Desktop CLS",
-    "CWV Desktop TBT",
-    "CWV Desktop Speed Index",
-    "CWV Mobile Performance",
-    "CWV Mobile FCP",
-    "CWV Mobile LCP",
-    "CWV Mobile CLS",
-    "CWV Mobile TBT",
-    "CWV Mobile Speed Index",
-    "Keyword 1",
-    "Keyword 2",
-    "Keyword 3",
-    "Keyword 4",
-    "Keyword 5",
-    "Keyword 6",
-    "Keyword 7",
-    "Keyword 8",
-    "Keyword 9",
-    "Keyword 10",
-];
-
-fn csv_escape(field: &str) -> String {
-    if field.contains(',') || field.contains('"') || field.contains('\n') {
-        format!("\"{}\"", field.replace('"', "\"\""))
-    } else {
-        field.to_string()
-    }
-}
-
-fn exports_dir() -> Result<std::path::PathBuf, String> {
-    let dirs = directories::ProjectDirs::from("", "", "rustyseo")
-        .ok_or("Could not determine project directories")?;
-    let dir = dirs.data_dir().join("exports");
-    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    Ok(dir)
-}
-
-/// Write every crawled row to a timestamped CSV file and return its path.
-pub fn write_overview_csv(table_data: &[Vec<String>]) -> Result<String, String> {
-    if table_data.is_empty() {
-        return Err("No data to export yet".to_string());
-    }
-
-    let dir = exports_dir()?;
-    let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
-    let path = dir.join(format!("overview_{}.csv", timestamp));
-
-    let mut content = String::new();
-    content.push_str(
-        &OVERVIEW_CSV_HEADER
-            .iter()
-            .map(|h| csv_escape(h))
-            .collect::<Vec<_>>()
-            .join(","),
-    );
-    content.push('\n');
-
-    for row in table_data {
-        content.push_str(
-            &row.iter()
-                .map(|field| csv_escape(field))
-                .collect::<Vec<_>>()
-                .join(","),
-        );
-        content.push('\n');
-    }
-
-    std::fs::write(&path, content).map_err(|e| format!("Failed to write CSV: {}", e))?;
     Ok(path.display().to_string())
 }
