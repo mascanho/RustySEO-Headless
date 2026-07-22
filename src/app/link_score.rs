@@ -211,6 +211,9 @@ mod tests {
             cwv_performance_desktop: None,
             cwv_performance_mobile: None,
             has_generic_anchors: false,
+            has_noindex_header: false,
+            canonical_target: None,
+            canonical_count: 0,
         }
     }
 

@@ -53,6 +53,29 @@ impl App {
                     let _ = crate::db::save_page_data_with_conn(conn, &page_data);
                 }
 
+                // A page can be blocked from indexing via the X-Robots-Tag response
+                // header even when its meta robots tag looks fine, so check both.
+                let has_noindex_header = page_data.headers.iter().any(|h| {
+                    let lower = h.to_lowercase();
+                    lower.starts_with("x-robots-tag") && lower.contains("noindex")
+                });
+
+                let canonical_tags: Vec<&(String, String, Option<String>)> = page_data
+                    .canonicals
+                    .iter()
+                    .filter(|(rel, _, _)| rel.eq_ignore_ascii_case("canonical"))
+                    .collect();
+                let canonical_count = canonical_tags.len();
+                let canonical_target = canonical_tags.first().and_then(|(_, href, _)| {
+                    let normalized = crate::crawler::url_normalizer::normalize_url(href)
+                        .unwrap_or_else(|| href.clone());
+                    if normalized == page_data.url {
+                        None
+                    } else {
+                        Some(normalized)
+                    }
+                });
+
                 // Create PageSummary for memory efficiency
                 let summary = crate::models::PageSummary {
                     id: current_id,
@@ -116,6 +139,9 @@ impl App {
                         .anchor_links
                         .iter()
                         .any(|a| a.text.is_empty() || a.text.to_lowercase().contains("here")),
+                    has_noindex_header,
+                    canonical_target,
+                    canonical_count,
                 };
                 self.page_summaries.push(summary);
 

@@ -320,6 +320,14 @@ pub struct PageSummary {
     pub cwv_performance_desktop: Option<f64>,
     pub cwv_performance_mobile: Option<f64>,
     pub has_generic_anchors: bool,
+    /// True if an `X-Robots-Tag` response header contains `noindex` - a page can be
+    /// blocked from indexing this way even when its meta robots tag looks fine.
+    pub has_noindex_header: bool,
+    /// Normalized href of the page's `rel="canonical"` tag, if present and it
+    /// points somewhere other than the page's own URL.
+    pub canonical_target: Option<String>,
+    /// Number of `rel="canonical"` tags found (should be 0 or 1; >1 is a bug).
+    pub canonical_count: usize,
 }
 
 pub struct App {

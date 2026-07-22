@@ -5,18 +5,42 @@ impl App {
     /// Populate issues_table_data with real crawled data analysis
     pub fn update_issues_from_crawled_data(&mut self) {
         self.issues_table_data = IssueAnalyzer::generate_issues_table_data_with_robots(
-            &self.page_summaries, 
-            self.robots_disallowed_urls.len()
+            &self.page_summaries,
+            self.robots_disallowed_urls.len(),
+            &self.internal_table_data,
+            &self.redirects_table_data,
+            &self.url_to_status,
+            &self.input_url,
         );
     }
 
     /// Get real URLs for a specific issue type
     pub fn get_urls_for_issue(&self, issue_type: &str) -> Vec<String> {
-        // Special handling for robots disallow links - use cached results
-        if issue_type == " Robots Disallow Links" {
-            return self.robots_disallowed_urls.clone();
+        // Special handling for whole-crawl checks that need link-graph data beyond
+        // a single page's summary - use cached results or recompute directly.
+        match issue_type {
+            " Robots Disallow Links" => return self.robots_disallowed_urls.clone(),
+            " Orphan Pages" => {
+                return IssueAnalyzer::analyse_orphan_pages(
+                    &self.page_summaries,
+                    &self.internal_table_data,
+                    &self.input_url,
+                )
+                .1;
+            }
+            " Redirect Chains (> 1 hop)" => {
+                return IssueAnalyzer::analyse_redirect_chains(&self.redirects_table_data).1;
+            }
+            " Broken Internal Links" => {
+                return IssueAnalyzer::analyse_broken_internal_links(
+                    &self.internal_table_data,
+                    &self.url_to_status,
+                )
+                .1;
+            }
+            _ => {}
         }
-        
+
         IssueAnalyzer::get_urls_for_issue(&self.page_summaries, issue_type)
     }
 
