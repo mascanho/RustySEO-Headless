@@ -30,7 +30,6 @@ impl Default for App {
         let table_state = ratatui::widgets::TableState::default();
 
         Self {
-            options_modal: false,
             sidebar_visible: false,
             task_panel_visible: false,
             current_state: AppState::Dashboard,
@@ -67,6 +66,12 @@ impl Default for App {
             show_details: false,
             show_dashboard_menu: false,
             dashboard_menu_selection: 0,
+            show_seo_score_modal: false,
+            seo_score_data: None,
+            show_page_links_modal: false,
+            page_links_list: Vec::new(),
+            page_links_state: ratatui::widgets::ListState::default(),
+            screenshot_receiver: None,
             crawl_progress: 0.0,
             queued_urls: 0,
             input: String::new(),

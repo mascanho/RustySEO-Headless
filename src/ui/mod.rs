@@ -107,9 +107,12 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         modals::dashboard_menu::render(f, app);
     }
 
-    // SHOW THE OPTIONS MODAL
-    if app.options_modal {
-        modals::options::render(f, app);
+    if app.show_seo_score_modal {
+        modals::seo_score::render(f, app);
+    }
+
+    if app.show_page_links_modal {
+        modals::page_links::render(f, app);
     }
 
     // Render Input Modal when in input mode

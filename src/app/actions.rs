@@ -7,6 +7,7 @@ impl App {
     pub fn on_tick(&mut self) {
         // 0. Check for robots analysis results
         self.check_robots_results();
+        self.check_screenshot_results();
 
         // 1. Collect results from background crawler thread
         let mut results = Vec::new();

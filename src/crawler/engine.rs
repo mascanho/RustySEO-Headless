@@ -19,6 +19,7 @@ use crate::settings::utils::create::add_recent_entry;
 pub struct CrawlEngine {
     client: Client,
     visited: Arc<Mutex<HashSet<String>>>,
+    finished_urls: Arc<Mutex<HashSet<String>>>,
     success_count: Arc<AtomicUsize>,
     max_pages: usize,
     user_agents: Vec<String>,
@@ -72,6 +73,7 @@ impl CrawlEngine {
                 .build()
                 .unwrap(),
             visited: Arc::new(Mutex::new(HashSet::new())),
+            finished_urls: Arc::new(Mutex::new(HashSet::new())),
             success_count: Arc::new(AtomicUsize::new(0)),
             max_pages: 500, // Safety limit
             user_agents: user_agents_vec,
@@ -325,6 +327,29 @@ impl CrawlEngine {
             if let Some(res) = join_set.join_next().await {
                 match res {
                     Ok(Ok(mut data)) => {
+                        // Redirects mean the URL we queued (data.requested_url) and the
+                        // URL we actually landed on (data.url) can differ. `visited` only
+                        // ever recorded the pre-redirect form, so a page discovered and
+                        // linked to by its final URL elsewhere would look "unseen" and get
+                        // queued + fetched again, producing a duplicate row for the same
+                        // page. Guard against that here: dedupe on the final URL, and mark
+                        // it visited so later link discovery won't re-queue it either.
+                        let is_duplicate_result = {
+                            let mut finished = self.finished_urls.lock().await;
+                            !finished.insert(data.url.clone())
+                        };
+                        if is_duplicate_result {
+                            tracing::debug!(
+                                "[DEDUP] Dropping duplicate result for {} (requested as {})",
+                                data.url,
+                                data.requested_url
+                            );
+                            continue;
+                        }
+                        if data.url != data.requested_url {
+                            self.visited.lock().await.insert(data.url.clone());
+                        }
+
                         // Extract new links BEFORE sending result to ensure consistency
                         let current_url = data.url.clone();
                         let current_success = self.success_count.load(Ordering::SeqCst);

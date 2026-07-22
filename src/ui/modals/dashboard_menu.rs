@@ -9,6 +9,19 @@ use ratatui::{
 use crate::models::App;
 use crate::ui::centered_rect;
 
+/// Labels shown in the Actions Menu, in selection order. `App::next_dashboard_menu_item` /
+/// `previous_dashboard_menu_item` wrap on this list's length, and
+/// `App::execute_dashboard_menu_action` matches on the same indices - keep all three in sync.
+pub const MENU_ITEMS: [&str; 7] = [
+    " Copy URL",
+    " Open URL in Browser",
+    " Open in Google",
+    " View SEO Score",
+    " Extract Links",
+    " Screenshot",
+    " Export Data",
+];
+
 pub fn render(f: &mut Frame, app: &mut App) {
     let area = f.area();
 
@@ -41,15 +54,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         .split(inner_area);
 
     // Menu items
-    let items = vec![
-        ListItem::new(" Copy URL"),
-        ListItem::new(" Open URL in Browser"),
-        ListItem::new(" Open in Google"),
-        ListItem::new(" View SEO Score"),
-        ListItem::new(" Extract Links"),
-        ListItem::new(" Screenshot"),
-        ListItem::new(" Export Data"),
-    ];
+    let items: Vec<ListItem> = MENU_ITEMS.iter().map(|label| ListItem::new(*label)).collect();
 
     let mut menu_state = ListState::default();
     menu_state.select(Some(app.dashboard_menu_selection));
@@ -83,69 +88,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
     f.render_widget(footer_text, chunks[1]);
 }
 
-pub fn handle_action(app: &mut App, action_index: usize) {
-    let selected_idx = match app.table_state.selected() {
-        Some(idx) => idx,
-        None => return,
-    };
-
-    // Use filtered_table_data as it matches the visual selection
-    if selected_idx >= app.filtered_table_data.len() {
-        return;
-    }
-
-    let row_data = &app.filtered_table_data[selected_idx];
-    let url = row_data[1].clone(); // URL is at index 1
-
-    match action_index {
-        0 => {
-            // Copy URL
-            copy_to_clipboard(url);
-        }
-        1 => {
-            // Open URL in Browser
-            open_in_browser(&url);
-            app.logs_data
-                .insert(0, format!("Opening URL in browser: {}", url));
-        }
-        2 => {
-            // Open in Google
-            let google_url = format!("https://www.google.com/search?q={}", url);
-            open_in_browser(&google_url);
-            app.logs_data
-                .insert(0, format!("Opening URL in Google: {}", url));
-        }
-        3 => {
-            // View SEO Score
-            app.logs_data.insert(0, format!("SEO Score for: {}", url));
-        }
-        4 => {
-            // Extract Links
-            app.logs_data
-                .insert(0, format!("Extracting links from: {}", url));
-        }
-        6 => {
-            // Screenshot
-            app.logs_data
-                .insert(0, format!("Taking screenshot of: {}", url));
-        }
-        7 => {
-            // Export Data
-            app.logs_data
-                .insert(0, format!("Exporting data for: {}", url));
-        }
-        _ => {}
-    }
-
-    // Keep only last 100 logs
-    if app.logs_data.len() > 100 {
-        app.logs_data.pop();
-    }
-
-    app.show_dashboard_menu = false;
-}
-
-fn copy_to_clipboard(text: String) {
+pub fn copy_to_clipboard(text: String) {
     std::thread::spawn(move || {
         #[cfg(target_os = "macos")]
         {
@@ -264,7 +207,7 @@ fn copy_to_clipboard(text: String) {
     });
 }
 
-fn open_in_browser(url: &str) {
+pub fn open_in_browser(url: &str) {
     // Platform-specific browser opening
     #[cfg(target_os = "macos")]
     {

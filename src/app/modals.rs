@@ -1,10 +1,6 @@
 use crate::models::App;
 
 impl App {
-    pub fn toggle_options_modal(&mut self) {
-        self.options_modal = !self.options_modal;
-    }
-
     pub fn toggle_help(&mut self) {
         self.show_help = !self.show_help;
     }
@@ -157,7 +153,7 @@ impl App {
                     .unwrap_or(raw_string)
                     .trim();
 
-                crate::ui::modals::options::open_in_browser(url);
+                crate::ui::modals::dashboard_menu::open_in_browser(url);
                 self.log(format!("Opened URL in browser: {}", url));
             }
         }
@@ -178,7 +174,7 @@ impl App {
                     .unwrap_or(raw_string)
                     .trim();
                     
-                crate::ui::modals::options::copy_to_clipboard(url.to_string());
+                crate::ui::modals::dashboard_menu::copy_to_clipboard(url.to_string());
                 self.log(format!("Copied URL to clipboard: {}", url));
             }
         }
@@ -214,12 +210,14 @@ impl App {
 
     // Dashboard Menu methods
     pub fn next_dashboard_menu_item(&mut self) {
-        self.dashboard_menu_selection = (self.dashboard_menu_selection + 1) % 4;
+        let count = crate::ui::modals::dashboard_menu::MENU_ITEMS.len();
+        self.dashboard_menu_selection = (self.dashboard_menu_selection + 1) % count;
     }
 
     pub fn previous_dashboard_menu_item(&mut self) {
+        let count = crate::ui::modals::dashboard_menu::MENU_ITEMS.len();
         self.dashboard_menu_selection = if self.dashboard_menu_selection == 0 {
-            3
+            count - 1
         } else {
             self.dashboard_menu_selection - 1
         };
@@ -229,56 +227,173 @@ impl App {
         let action = self.dashboard_menu_selection;
         self.show_dashboard_menu = false;
 
-        // Get the selected row URL
-        let url = if let Some(selected) = self.table_state.selected() {
+        // Get the selected row (index must line up with MENU_ITEMS in dashboard_menu.rs)
+        let row = if let Some(selected) = self.table_state.selected() {
             let full_idx = self.current_page * self.page_size + selected;
-            if let Some(row) = self.full_filtered_table_data.get(full_idx) {
-                row[1].clone()
-            } else {
-                return;
+            match self.full_filtered_table_data.get(full_idx) {
+                Some(row) => row.clone(),
+                None => return,
             }
         } else {
             return;
         };
+        let url = row[1].clone();
 
         match action {
             0 => {
                 // Copy URL
-                crate::ui::modals::options::copy_to_clipboard(url.clone());
+                crate::ui::modals::dashboard_menu::copy_to_clipboard(url.clone());
                 self.log(format!("Copied URL to clipboard: {}", url));
             }
             1 => {
                 // Open URL in Browser
-                crate::ui::modals::options::open_in_browser(&url);
+                crate::ui::modals::dashboard_menu::open_in_browser(&url);
                 self.log(format!("Opened URL in browser: {}", url));
             }
             2 => {
                 // Open in Google
                 let google_url = format!("https://www.google.com/search?q={}", url);
-                crate::ui::modals::options::open_in_browser(&google_url);
+                crate::ui::modals::dashboard_menu::open_in_browser(&google_url);
                 self.log(format!("Opening URL in Google: {}", url));
             }
             3 => {
-                // Check Keywords
-                self.log(format!("Keywords check for: {}", url));
+                // View SEO Score
+                let link_score = self.link_scores.get(&url).copied();
+                self.seo_score_data = Some(crate::app::menu_actions::calculate(&url, &row, link_score));
+                self.show_seo_score_modal = true;
             }
             4 => {
-                // View SEO Score
-                self.log(format!("SEO Score for: {}", url));
+                // Extract Links
+                self.open_page_links_for_url(&url);
             }
             5 => {
-                // Extract Links
-                self.log(format!("Extracting links from: {}", url));
+                // Screenshot
+                self.spawn_screenshot(url);
             }
             6 => {
-                // Screenshot
-                self.log(format!("Taking screenshot of: {}", url));
-            }
-            7 => {
                 // Export Data
-                self.log(format!("Exporting data for: {}", url));
+                self.export_overview_csv();
             }
             _ => {}
+        }
+    }
+
+    pub fn close_seo_score_modal(&mut self) {
+        self.show_seo_score_modal = false;
+        self.seo_score_data = None;
+    }
+
+    /// Populate `page_links_list` with every link found on `url` (internal + external)
+    /// and open the "Extract Links" modal.
+    fn open_page_links_for_url(&mut self, url: &str) {
+        let mut links: Vec<crate::models::PageLinkEntry> = self
+            .internal_table_data
+            .iter()
+            .filter(|l| l.source == url)
+            .map(|l| crate::models::PageLinkEntry {
+                destination: l.destination.clone(),
+                anchor: l.anchor.clone(),
+                rel: l.rel.clone(),
+                is_internal: true,
+            })
+            .chain(self.external_table_data.iter().filter(|l| l.source == url).map(|l| {
+                crate::models::PageLinkEntry {
+                    destination: l.destination.clone(),
+                    anchor: l.anchor.clone(),
+                    rel: l.rel.clone(),
+                    is_internal: false,
+                }
+            }))
+            .collect();
+        links.sort_by(|a, b| b.is_internal.cmp(&a.is_internal));
+
+        self.page_links_state
+            .select(if links.is_empty() { None } else { Some(0) });
+        self.page_links_list = links;
+        self.show_page_links_modal = true;
+    }
+
+    pub fn close_page_links_modal(&mut self) {
+        self.show_page_links_modal = false;
+        self.page_links_list.clear();
+        self.page_links_state.select(None);
+    }
+
+    pub fn next_page_link(&mut self) {
+        let len = self.page_links_list.len();
+        if len == 0 {
+            return;
+        }
+        let i = match self.page_links_state.selected() {
+            Some(i) if i + 1 < len => i + 1,
+            _ => 0,
+        };
+        self.page_links_state.select(Some(i));
+    }
+
+    pub fn previous_page_link(&mut self) {
+        let len = self.page_links_list.len();
+        if len == 0 {
+            return;
+        }
+        let i = match self.page_links_state.selected() {
+            Some(0) | None => len - 1,
+            Some(i) => i - 1,
+        };
+        self.page_links_state.select(Some(i));
+    }
+
+    pub fn open_selected_page_link(&mut self) {
+        if let Some(i) = self.page_links_state.selected() {
+            if let Some(link) = self.page_links_list.get(i) {
+                let destination = link.destination.clone();
+                crate::ui::modals::dashboard_menu::open_in_browser(&destination);
+                self.log(format!("Opened URL in browser: {}", destination));
+            }
+        }
+    }
+
+    /// Kick off a background screenshot capture for `url`. Result is picked up by
+    /// `check_screenshot_results` (polled from `on_tick`) and written to the log.
+    fn spawn_screenshot(&mut self, url: String) {
+        self.log(format!("Capturing screenshot of: {}", url));
+
+        let (tx, rx) = tokio::sync::mpsc::channel(1);
+        self.screenshot_receiver = Some(rx);
+
+        tokio::spawn(async move {
+            let result = tokio::task::spawn_blocking(move || crate::app::menu_actions::capture_screenshot(&url))
+                .await
+                .unwrap_or_else(|e| Err(e.to_string()));
+            let _ = tx.send(result).await;
+        });
+    }
+
+    /// Poll for a completed screenshot capture and log the outcome. Called every tick.
+    pub fn check_screenshot_results(&mut self) {
+        if let Some(ref mut rx) = self.screenshot_receiver {
+            match rx.try_recv() {
+                Ok(Ok(path)) => {
+                    self.log(format!("Screenshot saved: {}", path));
+                    self.screenshot_receiver = None;
+                }
+                Ok(Err(e)) => {
+                    self.log(format!("Screenshot failed: {}", e));
+                    self.screenshot_receiver = None;
+                }
+                Err(tokio::sync::mpsc::error::TryRecvError::Empty) => {}
+                Err(tokio::sync::mpsc::error::TryRecvError::Disconnected) => {
+                    self.screenshot_receiver = None;
+                }
+            }
+        }
+    }
+
+    /// Export the full Overview table to a timestamped CSV file.
+    fn export_overview_csv(&mut self) {
+        match crate::app::menu_actions::write_overview_csv(&self.table_data) {
+            Ok(path) => self.log(format!("Exported {} rows to: {}", self.table_data.len(), path)),
+            Err(e) => self.log(format!("Export failed: {}", e)),
         }
     }
 }

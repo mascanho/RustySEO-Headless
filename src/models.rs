@@ -196,6 +196,32 @@ pub struct ExternalLink {
     pub rel: String,
 }
 
+/// A single on-page SEO factor as shown in the "View SEO Score" action.
+#[derive(Debug, Clone)]
+pub struct SeoScoreFactor {
+    pub label: String,
+    pub passed: bool,
+    pub detail: String,
+}
+
+/// Composite on-page SEO score for a single crawled page, shown by the
+/// Actions Menu "View SEO Score" action.
+#[derive(Debug, Clone)]
+pub struct SeoScoreBreakdown {
+    pub url: String,
+    pub score: u32,
+    pub factors: Vec<SeoScoreFactor>,
+}
+
+/// A link found on a specific page, shown by the Actions Menu "Extract Links" action.
+#[derive(Debug, Clone)]
+pub struct PageLinkEntry {
+    pub destination: String,
+    pub anchor: String,
+    pub rel: String,
+    pub is_internal: bool,
+}
+
 #[derive(Debug, Clone)]
 pub struct CssUrl {
     pub id: usize,
@@ -297,7 +323,6 @@ pub struct PageSummary {
 }
 
 pub struct App {
-    pub options_modal: bool,
     pub sidebar_visible: bool,
     pub task_panel_visible: bool,
     pub current_state: AppState,
@@ -328,6 +353,15 @@ pub struct App {
     pub show_details: bool,
     pub show_dashboard_menu: bool,
     pub dashboard_menu_selection: usize,
+    // SEO Score Modal State (Actions Menu -> View SEO Score)
+    pub show_seo_score_modal: bool,
+    pub seo_score_data: Option<SeoScoreBreakdown>,
+    // Page Links Modal State (Actions Menu -> Extract Links)
+    pub show_page_links_modal: bool,
+    pub page_links_list: Vec<PageLinkEntry>,
+    pub page_links_state: ratatui::widgets::ListState,
+    // Screenshot capture (Actions Menu -> Screenshot), resolved in on_tick
+    pub screenshot_receiver: Option<tokio::sync::mpsc::Receiver<Result<String, String>>>,
     pub crawl_progress: f64,
     pub queued_urls: usize,
     pub input: String,

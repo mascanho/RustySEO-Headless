@@ -29,7 +29,10 @@
       "Bash(cargo test *)",
       "Bash(cargo tree *)",
       "Read(//home/mascanho/.cargo/registry/src/**)",
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Bash(xargs ls)",
+      "Bash(grep -n \"MODAL PRIORITY\\\\|if app\\\\.\\\\w* {$\\\\|} else if app\\\\.\" src/main.rs)",
+      "Bash(cargo clippy *)"
     ]
   }
 }
