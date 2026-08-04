@@ -104,6 +104,42 @@ impl App {
         }
     }
 
+    /// Kicks off status checks for every unique external destination URL found
+    /// during the crawl. Opt-in via settings.crawler.check_external_links -
+    /// most crawls don't need off-site links verified, and it adds one request
+    /// per unique external URL.
+    pub fn start_external_link_check(&mut self) {
+        use std::collections::HashSet;
+
+        let unique_urls: Vec<String> = self
+            .external_table_data
+            .iter()
+            .map(|link| link.destination.clone())
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect();
+
+        if unique_urls.is_empty() {
+            return;
+        }
+
+        let user_agent = self
+            .settings
+            .as_ref()
+            .map(|s| s.crawler.user_agent.clone())
+            .unwrap_or_else(|| "RustySEO/0.1.0".to_string());
+
+        self.log(format!(
+            "SYSTEM - Checking {} external link(s)...",
+            unique_urls.len()
+        ));
+
+        self.external_status_receiver = Some(crate::crawler::external_check::spawn_external_link_check(
+            unique_urls,
+            user_agent,
+        ));
+    }
+
     pub fn check_settings_mtime(&mut self) -> bool {
         let path = AppSettings::path();
         if let Ok(metadata) = std::fs::metadata(path) {

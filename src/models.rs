@@ -40,6 +40,8 @@ pub struct CrawlerConfig {
     pub extractor_type: String,
     #[serde(default)]
     pub batch_size: usize,
+    #[serde(default)]
+    pub check_external_links: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -112,6 +114,7 @@ impl Default for AppSettings {
                 extractor_type: "".to_string(),
                 extractor_text: "".to_string(),
                 batch_size: 50,
+                check_external_links: false,
             },
             ui: UiConfig {
                 theme: "Oceanic".to_string(),
@@ -193,6 +196,32 @@ pub struct ExternalLink {
     pub rel: String,
 }
 
+/// A single on-page SEO factor as shown in the "View SEO Score" action.
+#[derive(Debug, Clone)]
+pub struct SeoScoreFactor {
+    pub label: String,
+    pub passed: bool,
+    pub detail: String,
+}
+
+/// Composite on-page SEO score for a single crawled page, shown by the
+/// Actions Menu "View SEO Score" action.
+#[derive(Debug, Clone)]
+pub struct SeoScoreBreakdown {
+    pub url: String,
+    pub score: u32,
+    pub factors: Vec<SeoScoreFactor>,
+}
+
+/// A link found on a specific page, shown by the Actions Menu "Extract Links" action.
+#[derive(Debug, Clone)]
+pub struct PageLinkEntry {
+    pub destination: String,
+    pub anchor: String,
+    pub rel: String,
+    pub is_internal: bool,
+}
+
 #[derive(Debug, Clone)]
 pub struct CssUrl {
     pub id: usize,
@@ -265,6 +294,7 @@ pub struct PageSummary {
     pub url: String,
     pub title: String,
     pub title_len: usize,
+    pub h1: String,
     pub description: String,
     pub description_len: usize,
     pub status: String,
@@ -291,10 +321,19 @@ pub struct PageSummary {
     pub cwv_performance_desktop: Option<f64>,
     pub cwv_performance_mobile: Option<f64>,
     pub has_generic_anchors: bool,
+    /// True if an `X-Robots-Tag` response header contains `noindex` - a page can be
+    /// blocked from indexing this way even when its meta robots tag looks fine.
+    pub has_noindex_header: bool,
+    /// Normalized href of the page's `rel="canonical"` tag, if present and it
+    /// points somewhere other than the page's own URL.
+    pub canonical_target: Option<String>,
+    /// Number of `rel="canonical"` tags found (should be 0 or 1; >1 is a bug).
+    pub canonical_count: usize,
+    /// True if an HTTPS page loads an image, stylesheet, or script over plain HTTP.
+    pub has_mixed_content: bool,
 }
 
 pub struct App {
-    pub options_modal: bool,
     pub sidebar_visible: bool,
     pub task_panel_visible: bool,
     pub current_state: AppState,
@@ -325,6 +364,21 @@ pub struct App {
     pub show_details: bool,
     pub show_dashboard_menu: bool,
     pub dashboard_menu_selection: usize,
+    // SEO Score Modal State (Actions Menu -> View SEO Score)
+    pub show_seo_score_modal: bool,
+    pub seo_score_data: Option<SeoScoreBreakdown>,
+    // Page Links Modal State (Actions Menu -> Extract Links)
+    pub show_page_links_modal: bool,
+    pub page_links_list: Vec<PageLinkEntry>,
+    pub page_links_state: ratatui::widgets::ListState,
+    // Screenshot capture (Actions Menu -> Screenshot), resolved in on_tick
+    pub screenshot_receiver: Option<tokio::sync::mpsc::Receiver<Result<String, String>>>,
+    // "Complete" modal shown once a background/long-running Actions Menu task
+    // (Screenshot, Export Data) finishes.
+    pub show_action_result_modal: bool,
+    pub action_result_title: String,
+    pub action_result_message: String,
+    pub action_result_success: bool,
     pub crawl_progress: f64,
     pub queued_urls: usize,
     pub input: String,
@@ -394,6 +448,7 @@ pub struct App {
     pub internal_search_query: String,
     pub show_internal_search: bool,
     pub url_to_status: HashMap<String, String>,
+    pub external_status_receiver: Option<tokio::sync::mpsc::Receiver<(String, String)>>,
     // Javascript URLs Tab State
     pub js_urls_table_data: Vec<JsUrl>,
     pub js_urls_table_state: ratatui::widgets::TableState,

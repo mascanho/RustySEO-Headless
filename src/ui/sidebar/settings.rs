@@ -47,7 +47,7 @@ pub fn render(
         let sections = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(10), // Engine
+                Constraint::Length(11), // Engine
                 Constraint::Length(5),  // Viewport
                 Constraint::Length(5),  // System
                 Constraint::Min(0),     // Internal
@@ -151,6 +151,22 @@ pub fn render(
                 } else {
                     Color::Red
                 })),
+            ]),
+            // EXTERNAL LINK CHECK
+            Row::new(vec![
+                Cell::from("  External Link Check"),
+                Cell::from(if settings.crawler.check_external_links {
+                    "ENABLED "
+                } else {
+                    "DISABLED "
+                })
+                .style(Style::default().fg(
+                    if settings.crawler.check_external_links {
+                        Color::Green
+                    } else {
+                        Color::Red
+                    },
+                )),
             ]),
         ];
         let engine_table = Table::new(

@@ -7,6 +7,7 @@ impl App {
     pub fn on_tick(&mut self) {
         // 0. Check for robots analysis results
         self.check_robots_results();
+        self.check_screenshot_results();
 
         // 1. Collect results from background crawler thread
         let mut results = Vec::new();
@@ -52,12 +53,49 @@ impl App {
                     let _ = crate::db::save_page_data_with_conn(conn, &page_data);
                 }
 
+                // A page can be blocked from indexing via the X-Robots-Tag response
+                // header even when its meta robots tag looks fine, so check both.
+                let has_noindex_header = page_data.headers.iter().any(|h| {
+                    let lower = h.to_lowercase();
+                    lower.starts_with("x-robots-tag") && lower.contains("noindex")
+                });
+
+                let canonical_tags: Vec<&(String, String, Option<String>)> = page_data
+                    .canonicals
+                    .iter()
+                    .filter(|(rel, _, _)| rel.eq_ignore_ascii_case("canonical"))
+                    .collect();
+                let canonical_count = canonical_tags.len();
+                let canonical_target = canonical_tags.first().and_then(|(_, href, _)| {
+                    let normalized = crate::crawler::url_normalizer::normalize_url(href)
+                        .unwrap_or_else(|| href.clone());
+                    if normalized == page_data.url {
+                        None
+                    } else {
+                        Some(normalized)
+                    }
+                });
+
+                // Browsers block/warn on HTTPS pages loading resources over plain HTTP -
+                // check the three visible-resource kinds (anchor hyperlinks to other
+                // sites don't count; only embedded resources trigger the browser warning).
+                let has_mixed_content = page_data.url.starts_with("https://")
+                    && (page_data.images.iter().any(|i| i.src.starts_with("http://"))
+                        || page_data
+                            .css
+                            .as_ref()
+                            .is_some_and(|c| c.css_urls.iter().any(|u| u.starts_with("http://")))
+                        || page_data.javascript.as_ref().is_some_and(|j| {
+                            j.js_urls.iter().any(|u| u.starts_with("http://"))
+                        }));
+
                 // Create PageSummary for memory efficiency
                 let summary = crate::models::PageSummary {
                     id: current_id,
                     url: page_data.url.clone(),
                     title: page_data.title.clone(),
                     title_len: page_data.title_len,
+                    h1: page_data.h1.clone(),
                     description: page_data.description.clone(),
                     description_len: page_data.description_len,
                     status: page_data.status.clone(),
@@ -115,6 +153,10 @@ impl App {
                         .anchor_links
                         .iter()
                         .any(|a| a.text.is_empty() || a.text.to_lowercase().contains("here")),
+                    has_noindex_header,
+                    canonical_target,
+                    canonical_count,
+                    has_mixed_content,
                 };
                 self.page_summaries.push(summary);
 
@@ -225,33 +267,23 @@ impl App {
                         }
                     }
 
-                    // Collect Files
-                    let path_part = normalized_to
-                        .split('?')
-                        .next()
-                        .unwrap_or("")
-                        .split('#')
-                        .next()
-                        .unwrap_or("");
-                    if let Some(ext) = path_part.split('.').last() {
-                        let ext_lower = ext.to_lowercase();
-                        if !ext_lower.is_empty()
-                            && ![
-                                "html", "htm", "php", "css", "js", "aspx", "asp", "jsp", "png",
-                                "jpg", "jpeg", "gif", "svg", "webp", "ico",
-                            ]
-                            .contains(&ext_lower.as_str())
-                        {
-                            if self.seen_files.insert(normalized_to.clone()) {
-                                let file_entry = crate::models::FileEntry {
-                                    id: self.files_table_data.len() + 1,
-                                    url: normalized_to,
-                                    filetype: ext_lower.to_uppercase(),
-                                };
-                                self.files_table_data.push(file_entry.clone());
-                                if self.files_search_query.is_empty() {
-                                    self.files_full_filtered_table_data.push(file_entry);
-                                }
+                    // Collect Files - only flag URLs whose path basename ends in a
+                    // recognized downloadable file extension (see
+                    // url_normalizer::extract_file_extension). This avoids the domain's
+                    // TLD or unrelated dotted path segments (e.g. "/v1.2/blog") being
+                    // mistaken for a file extension.
+                    if let Some(ext) =
+                        crate::crawler::url_normalizer::extract_file_extension(&normalized_to)
+                    {
+                        if self.seen_files.insert(normalized_to.clone()) {
+                            let file_entry = crate::models::FileEntry {
+                                id: self.files_table_data.len() + 1,
+                                url: normalized_to,
+                                filetype: ext.to_uppercase(),
+                            };
+                            self.files_table_data.push(file_entry.clone());
+                            if self.files_search_query.is_empty() {
+                                self.files_full_filtered_table_data.push(file_entry);
                             }
                         }
                     }
@@ -431,6 +463,36 @@ impl App {
             self.log("SYSTEM - Running Crawl Analysis (Link Score)...");
             self.compute_link_scores();
             self.log("SYSTEM - Link Score analysis complete.");
+
+            let check_external_links = self
+                .settings
+                .as_ref()
+                .map(|s| s.crawler.check_external_links)
+                .unwrap_or(false);
+            if check_external_links {
+                self.start_external_link_check();
+            }
+        }
+
+        // Drain any external link status check results as they stream in.
+        if let Some(ref mut rx) = self.external_status_receiver {
+            let mut finished = false;
+            loop {
+                match rx.try_recv() {
+                    Ok((url, status)) => {
+                        self.url_to_status.insert(url, status);
+                    }
+                    Err(mpsc::error::TryRecvError::Empty) => break,
+                    Err(mpsc::error::TryRecvError::Disconnected) => {
+                        finished = true;
+                        break;
+                    }
+                }
+            }
+            if finished {
+                self.external_status_receiver = None;
+                self.log("SYSTEM - External link check complete.");
+            }
         }
 
         // Search Debouncing (unchanged)
