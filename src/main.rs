@@ -1,7 +1,8 @@
 use clap::Parser;
 use crossterm::{
     event::{
-        self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers, MouseEventKind,
+        self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind, KeyModifiers,
+        MouseEventKind,
     },
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -105,6 +106,12 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
         if event::poll(tick_rate)? {
             match event::read()? {
                 Event::Key(key) => {
+                    // Windows reports Press, Repeat, and Release events for every
+                    // keystroke; Unix terminals only report Press. Without this guard,
+                    // each character (and paste) gets processed 2-3x on Windows.
+                    if key.kind != KeyEventKind::Press {
+                        continue;
+                    }
                     if app.show_search {
                         match key.code {
                             KeyCode::Enter | KeyCode::Esc => {
