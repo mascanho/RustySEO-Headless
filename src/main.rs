@@ -805,6 +805,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                         match key.code {
                             KeyCode::Char('q') => return Ok(()),
                             KeyCode::Char('?') => app.toggle_help(),
+                            KeyCode::Char('D') => app.export_current_tab(),
                             KeyCode::Esc => app.reset(),
                             KeyCode::Char('i') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                                 app.input_mode = true

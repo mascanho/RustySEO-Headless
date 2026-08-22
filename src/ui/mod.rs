@@ -318,6 +318,10 @@ fn render_help_modal(f: &mut Frame) {
             Span::raw("Search Dashboard/Logs"),
         ]),
         Line::from(vec![
+            Span::styled(" Sh+D    ", Style::default().fg(key_color)),
+            Span::raw("Export Current Tab (xlsx)"),
+        ]),
+        Line::from(vec![
             Span::styled(" [ / ]   ", Style::default().fg(key_color)),
             Span::raw("Previous/Next Page"),
         ]),

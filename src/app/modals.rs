@@ -416,6 +416,55 @@ impl App {
         }
     }
 
+    /// Export the currently active main tab's table (Overview, External, Internal,
+    /// Redirects, Images, CSS, Javascript, CWV, Content, Files, Custom Extractor) to
+    /// a single-sheet workbook mirroring that tab's exact columns (Shift+D).
+    ///
+    /// Opens a native Save-As dialog when a GUI is available, otherwise writes
+    /// straight to the same auto-named exports folder used by "Export Data".
+    ///
+    /// This must run synchronously on the actual OS main thread, not via
+    /// `spawn_blocking`/`tokio::spawn`: on macOS, without a running `NSApplication`
+    /// event loop (which a TUI binary never starts), rfd can only show a dialog
+    /// from the main thread and panics ("NonWindowed environment") if called from
+    /// any other thread, including Tokio's blocking pool. Blocking the render loop
+    /// here is fine - it's a modal dialog, and other background tasks (crawling,
+    /// screenshots) run on separate worker threads regardless.
+    pub fn export_current_tab(&mut self) {
+        let pending = match crate::app::export::prepare_current_tab_export(self) {
+            Ok(pending) => pending,
+            Err(e) => {
+                self.log(format!("Export failed: {}", e));
+                self.show_action_result(false, "Export Failed", e);
+                return;
+            }
+        };
+
+        match crate::app::export::save_pending_export(pending) {
+            Ok(summary) => {
+                let message = format!(
+                    "Exported {} rows ({})\n{}",
+                    summary.total_rows, summary.format, summary.path
+                );
+                self.log(format!(
+                    "Exported {} rows ({}) to: {}",
+                    summary.total_rows, summary.format, summary.path
+                ));
+                self.show_action_result(true, "Export Complete", message);
+            }
+            Err(e) => {
+                // Dismissing the Save-As dialog is a deliberate user action, not a
+                // failure - just note it in the logs, no error popup.
+                if e == "Export cancelled" {
+                    self.log("Export cancelled".to_string());
+                } else {
+                    self.log(format!("Export failed: {}", e));
+                    self.show_action_result(false, "Export Failed", e);
+                }
+            }
+        }
+    }
+
     fn show_action_result(&mut self, success: bool, title: &str, message: String) {
         self.action_result_success = success;
         self.action_result_title = title.to_string();
