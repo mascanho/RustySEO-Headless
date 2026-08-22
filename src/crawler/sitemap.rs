@@ -78,8 +78,7 @@ async fn fetch_sitemap_recursive(
                 continue;
             }
             tracing::info!("[SITEMAP INDEX] Child sitemap: {}", child_url);
-            let child_urls =
-                Box::pin(fetch_sitemap_recursive(&child_url, client, visited)).await;
+            let child_urls = Box::pin(fetch_sitemap_recursive(&child_url, client, visited)).await;
             all_urls.extend(child_urls);
         }
         all_urls

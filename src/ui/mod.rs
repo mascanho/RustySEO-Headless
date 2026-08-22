@@ -1,6 +1,6 @@
 use ratatui::{
     Frame,
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Borders, Clear, Paragraph, Tabs},
@@ -125,7 +125,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         AppState::CustomExtractor => tabs::custom_extractor::render(f, app, content_area),
         AppState::Images => tabs::images::render(f, app, content_area),
         AppState::Redirects => tabs::redirects::render(f, app, content_area),
-        
+
         AppState::Content => tabs::content::render(f, app, content_area),
         AppState::Files => tabs::files::render(f, app, content_area),
     }
@@ -225,365 +225,274 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
 fn render_help_modal(f: &mut Frame) {
     let area = f.area();
-    let help_area = centered_rect(80, 85, area);
+    let help_area = centered_rect(94, 92, area);
     let accent_color = Color::Rgb(80, 140, 255);
     let header_color = Color::Yellow;
     let key_color = Color::Cyan;
+    let mod_color = Color::Rgb(255, 170, 0); // Shift / Ctrl combos
+    let dim_color = Color::DarkGray;
+    let bg_color = Color::Rgb(10, 10, 20);
+
+    fn kv(key: &str, desc: &str, color: Color) -> Line<'static> {
+        let width = 13usize;
+        let pad = width.saturating_sub(key.chars().count());
+        let mut field = String::from(" ");
+        field.push_str(key);
+        field.extend(std::iter::repeat(' ').take(pad));
+        Line::from(vec![
+            Span::styled(field, Style::default().fg(color).bold()),
+            Span::raw(desc.to_string()),
+        ])
+    }
+
+    fn hdr(text: &str, bg: Color, fg: Color) -> Line<'static> {
+        Line::from(vec![Span::styled(
+            format!(" {} ", text),
+            Style::default().fg(fg).bg(bg).bold(),
+        )])
+    }
+
+    fn col_title(text: &str, color: Color) -> Line<'static> {
+        Line::from(vec![Span::styled(
+            text.to_string(),
+            Style::default()
+                .fg(color)
+                .bold()
+                .add_modifier(Modifier::UNDERLINED),
+        )])
+    }
 
     let block = Block::default()
         .title(Span::styled(
-            " RustySEO [CLI] - Shortcut ",
+            " ⌨  RustySEO CLI — Keyboard Shortcuts ",
             Style::default()
                 .fg(header_color)
                 .add_modifier(Modifier::BOLD),
         ))
+        .title_alignment(Alignment::Center)
         .borders(Borders::ALL)
         .border_style(
             Style::default()
                 .fg(accent_color)
                 .add_modifier(Modifier::BOLD),
         )
-        .bg(Color::Rgb(10, 10, 20));
+        .bg(bg_color);
 
     f.render_widget(Clear, help_area);
     f.render_widget(block.clone(), help_area);
 
     let inner_area = block.inner(help_area);
 
-    // Split into 3 columns
+    let rows = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(1), // tagline
+            Constraint::Length(1), // spacer
+            Constraint::Min(0),    // columns
+            Constraint::Length(1), // spacer
+            Constraint::Length(1), // footer
+        ])
+        .split(inner_area);
+
+    f.render_widget(
+        Paragraph::new(Line::from(vec![Span::styled(
+            "Everything below is keyboard-first — clicking tabs, rows and the sidebar works too",
+            Style::default().fg(dim_color).italic(),
+        )]))
+        .alignment(Alignment::Center),
+        rows[0],
+    );
+
     let cols = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Percentage(33),
-            Constraint::Percentage(33),
-            Constraint::Percentage(34),
+            Constraint::Percentage(25),
+            Constraint::Percentage(25),
+            Constraint::Percentage(25),
+            Constraint::Percentage(25),
         ])
         .margin(1)
-        .split(inner_area);
+        .split(rows[2]);
 
-    // COLUMN 1: GLOBAL NAVIGATION
-    let nav_text = vec![
-        Line::from(vec![Span::styled(
-            "── GLOBAL CONTROLS ──",
-            Style::default().fg(header_color).bold(),
-        )]),
-        Line::from(vec![
-            Span::styled(" q       ", Style::default().fg(Color::Red)),
-            Span::raw("Quit Application"),
-        ]),
-        Line::from(vec![
-            Span::styled(" ?       ", Style::default().fg(key_color)),
-            Span::raw("Toggle Help"),
-        ]),
-        Line::from(vec![
-            Span::styled(" Esc     ", Style::default().fg(key_color)),
-            Span::raw("Reset / Close Modals"),
-        ]),
-        Line::from(vec![
-            Span::styled(" A       ", Style::default().fg(key_color)),
-            Span::raw("AI Copilot Panel"),
-        ]),
+    // COLUMN 1 — NAVIGATION
+    let col1 = vec![
+        col_title("🧭 NAVIGATION", accent_color),
         Line::from(""),
-        Line::from(vec![Span::styled(
-            "── MAIN TABS ──",
-            Style::default().fg(header_color).bold(),
-        )]),
-        Line::from(vec![
-            Span::styled(" Tab     ", Style::default().fg(key_color)),
-            Span::raw("Next Main Tab"),
-        ]),
-        Line::from(vec![
-            Span::styled(" Sh+Tab  ", Style::default().fg(key_color)),
-            Span::raw("Previous Main Tab"),
-        ]),
-        Line::from(vec![
-            Span::styled(" 1-9,0   ", Style::default().fg(key_color)),
-            Span::raw("Direct Tab Access"),
-        ]),
+        hdr("GLOBAL", header_color, bg_color),
+        kv("q", "Quit application", Color::Red),
+        kv("?", "Toggle this help", key_color),
+        kv("Esc", "Reset / close panel", key_color),
+        kv("Ctrl+i", "Open URL input", key_color),
+        kv("Shift+D", "Export tab (.xlsx)", mod_color),
+        kv("Shift+A", "Toggle AI Copilot", mod_color),
+        kv("Shift+L", "Toggle System Logs", mod_color),
         Line::from(""),
-        Line::from(vec![Span::styled(
-            "── SYSTEM TOOLS ──",
-            Style::default().fg(header_color).bold(),
-        )]),
-        Line::from(vec![
-            Span::styled(" Ctrl+i  ", Style::default().fg(key_color)),
-            Span::raw("Open URL Input"),
-        ]),
-        Line::from(vec![
-            Span::styled(" L       ", Style::default().fg(key_color)),
-            Span::raw("Toggle System Logs"),
-        ]),
-        Line::from(vec![
-            Span::styled(" Ctrl+f  ", Style::default().fg(Color::Rgb(255, 170, 0))),
-            Span::raw("Search Dashboard/Logs"),
-        ]),
-        Line::from(vec![
-            Span::styled(" Sh+D    ", Style::default().fg(key_color)),
-            Span::raw("Export Current Tab (xlsx)"),
-        ]),
-        Line::from(vec![
-            Span::styled(" [ / ]   ", Style::default().fg(key_color)),
-            Span::raw("Previous/Next Page"),
-        ]),
+        hdr("MAIN TABS", header_color, bg_color),
+        kv("Tab", "Next main tab", key_color),
+        kv("Backspace", "Previous main tab", key_color),
+        kv("1..9, 0", "Overview → Files", key_color),
+        kv("e", "Custom Extractor", key_color),
         Line::from(""),
-        Line::from(vec![Span::styled(
-            "── LOGS CONSOLE ──",
-            Style::default().fg(header_color).bold(),
-        )]),
-        Line::from(vec![
-            Span::styled(" q/Esc/L ", Style::default().fg(key_color)),
-            Span::raw("Close Logs"),
-        ]),
-        Line::from(vec![
-            Span::styled(" k/↑ j/↓ ", Style::default().fg(key_color)),
-            Span::raw("Navigate Logs"),
-        ]),
-        Line::from(vec![
-            Span::styled(" t/G     ", Style::default().fg(key_color)),
-            Span::raw("Top/Bottom Log"),
-        ]),
-        Line::from(vec![
-            Span::styled(" [ / ]   ", Style::default().fg(key_color)),
-            Span::raw("Resize Console"),
-        ]),
+        hdr("TABLE NAVIGATION", header_color, bg_color),
+        kv("k/↑  j/↓", "Move row", key_color),
+        kv("G", "Jump to bottom", key_color),
+        kv("[ / ]", "Prev / next page", key_color),
+        kv("Enter", "Open details / assets", key_color),
+        kv("m", "Actions menu", key_color),
+        Line::from(""),
+        hdr("SEARCH & FILTER", header_color, bg_color),
+        kv("Ctrl+f", "Search active tab", mod_color),
+        kv("Enter/Esc", "Apply & close search", key_color),
+        Line::from(""),
+        hdr("MOUSE", header_color, bg_color),
+        kv("Click", "Switch tabs", key_color),
+        kv("Scroll", "Navigate rows/details", key_color),
     ];
 
-    // COLUMN 2: DASHBOARD & MODALS
-    let dash_text = vec![
-        Line::from(vec![Span::styled(
-            "── DASHBOARD TABLE ──",
-            Style::default().fg(header_color).bold(),
-        )]),
-        Line::from(vec![
-            Span::styled(" k / ↑   ", Style::default().fg(key_color)),
-            Span::raw("Previous Row"),
-        ]),
-        Line::from(vec![
-            Span::styled(" j / ↓   ", Style::default().fg(key_color)),
-            Span::raw("Next Row"),
-        ]),
-        Line::from(vec![
-            Span::styled(" t / G   ", Style::default().fg(key_color)),
-            Span::raw("Top / Bottom"),
-        ]),
-        Line::from(vec![
-            Span::styled(" Enter   ", Style::default().fg(key_color)),
-            Span::raw("View Page Details"),
-        ]),
-        Line::from(vec![
-            Span::styled(" m       ", Style::default().fg(key_color)),
-            Span::raw("Actions Context Menu"),
-        ]),
+    // COLUMN 2 — SIDEBAR
+    let col2 = vec![
+        col_title("🗂  SIDEBAR", accent_color),
         Line::from(""),
-        Line::from(vec![Span::styled(
-            "── DETAILS MODAL ──",
-            Style::default().fg(header_color).bold(),
-        )]),
-        Line::from(vec![
-            Span::styled(" q/Esc   ", Style::default().fg(key_color)),
-            Span::raw("Close Details"),
-        ]),
-        Line::from(vec![
-            Span::styled(" h/← Tab ", Style::default().fg(key_color)),
-            Span::raw("Previous Tab"),
-        ]),
-        Line::from(vec![
-            Span::styled(" l/→ Sh+Tab", Style::default().fg(key_color)),
-            Span::raw("Next Tab"),
-        ]),
-        Line::from(vec![
-            Span::styled(" k/j     ", Style::default().fg(key_color)),
-            Span::raw("Navigate Tables"),
-        ]),
-        Line::from(vec![
-            Span::styled(" ↑/↓     ", Style::default().fg(key_color)),
-            Span::raw("Scroll Dashboard Table"),
-        ]),
-        Line::from(vec![
-            Span::styled(" Sh+↑/↓  ", Style::default().fg(key_color)),
-            Span::raw("Navigate Tab Content"),
-        ]),
+        hdr("QUICK JUMPS", header_color, bg_color),
+        kv("g", "General", key_color),
+        kv("i", "Issues", key_color),
+        kv("b / f", "Bookmarks", key_color),
+        kv("t / a", "Tree View", key_color),
+        kv("s / +", "Settings", key_color),
         Line::from(""),
-        Line::from(vec![Span::styled(
-            "── SEARCH MODE ──",
-            Style::default().fg(header_color).bold(),
-        )]),
-        Line::from(vec![
-            Span::styled(" Enter   ", Style::default().fg(key_color)),
-            Span::raw("Apply Filter"),
-        ]),
-        Line::from(vec![
-            Span::styled(" Esc     ", Style::default().fg(key_color)),
-            Span::raw("Clear / Close Search"),
-        ]),
+        hdr("SIDEBAR CONTROLS", header_color, bg_color),
+        kv("Esc/h/←", "Close sidebar", key_color),
+        kv("k/↑  j/↓", "Prev / next tab", key_color),
+        kv("Tab/Sh+Tab", "Cycle tabs (+Robots/Sitemaps)", mod_color),
         Line::from(""),
-        Line::from(vec![Span::styled(
-            "── AI CHAT MODAL ──",
-            Style::default().fg(header_color).bold(),
-        )]),
-        Line::from(vec![
-            Span::styled(" q/Esc   ", Style::default().fg(key_color)),
-            Span::raw("Close AI Chat"),
-        ]),
-        Line::from(vec![
-            Span::styled(" Enter   ", Style::default().fg(key_color)),
-            Span::raw("Send Message"),
-        ]),
-        Line::from(vec![
-            Span::styled(" Backsp  ", Style::default().fg(key_color)),
-            Span::raw("Delete Character"),
-        ]),
+        hdr("ISSUES TAB", header_color, bg_color),
+        kv("k/↑  j/↓", "Navigate issues", key_color),
+        kv("Enter", "Open issue URLs", key_color),
+        kv("Shift+E", "Edit settings file", mod_color),
         Line::from(""),
-        Line::from(vec![Span::styled(
-            "── DASHBOARD MENU ──",
-            Style::default().fg(header_color).bold(),
-        )]),
-        Line::from(vec![
-            Span::styled(" q/Esc   ", Style::default().fg(key_color)),
-            Span::raw("Close Menu"),
-        ]),
-        Line::from(vec![
-            Span::styled(" k/↑ j/↓ ", Style::default().fg(key_color)),
-            Span::raw("Navigate Items"),
-        ]),
-        Line::from(vec![
-            Span::styled(" Enter   ", Style::default().fg(key_color)),
-            Span::raw("Execute Action"),
-        ]),
+        hdr("BOOKMARKS TAB", header_color, bg_color),
+        kv("←/→", "Bookmarks/Recent", key_color),
+        kv("↑/↓", "Navigate list", key_color),
+        kv("(type)", "Add bookmark URL", key_color),
+        kv("Enter", "Crawl / add", key_color),
+        kv("Shift+D", "Delete bookmark", mod_color),
+        kv("Esc", "Clear / close", key_color),
+        Line::from(""),
+        hdr("TREE VIEW TAB", header_color, bg_color),
+        kv("↑/↓", "Navigate tree", key_color),
+        kv("Enter/Space", "Expand / collapse", key_color),
+        kv("Shift+E", "Expand all", mod_color),
+        kv("Shift+C", "Collapse all", mod_color),
+        Line::from(""),
+        hdr("ROBOTS & SITEMAPS", header_color, bg_color),
+        kv("k/↑  j/↓", "Scroll content", key_color),
+        kv("Esc/h/←", "Close sidebar", key_color),
     ];
 
-    // COLUMN 3: SIDEBAR & OTHER
-    let sidebar_text = vec![
-        Line::from(vec![Span::styled(
-            "── SIDEBAR JUMPS ──",
-            Style::default().fg(header_color).bold(),
-        )]),
-        Line::from(vec![
-            Span::styled(" g       ", Style::default().fg(key_color)),
-            Span::raw("Settings Tab"),
-        ]),
-        Line::from(vec![
-            Span::styled(" s       ", Style::default().fg(key_color)),
-            Span::raw("Filters Tab"),
-        ]),
-        Line::from(vec![
-            Span::styled(" f       ", Style::default().fg(key_color)),
-            Span::raw("Stats Tab"),
-        ]),
-        Line::from(vec![
-            Span::styled(" a       ", Style::default().fg(key_color)),
-            Span::raw("Actions Tab"),
-        ]),
-        Line::from(vec![
-            Span::styled(" b / +   ", Style::default().fg(key_color)),
-            Span::raw("Bookmarks Tab"),
-        ]),
+    // COLUMN 3 — MODALS I
+    let col3 = vec![
+        col_title("🪟 MODALS · I", accent_color),
         Line::from(""),
-        Line::from(vec![Span::styled(
-            "── SIDEBAR CONTROLS ──",
-            Style::default().fg(header_color).bold(),
-        )]),
-        Line::from(vec![
-            Span::styled(" Esc/←/h", Style::default().fg(key_color)),
-            Span::raw("Close Sidebar"),
-        ]),
-        Line::from(vec![
-            Span::styled(" k/↑ j/↓ ", Style::default().fg(key_color)),
-            Span::raw("Navigate Tabs"),
-        ]),
-        Line::from(vec![
-            Span::styled(" Tab/Sh+Tab", Style::default().fg(key_color)),
-            Span::raw("Cycle Tabs"),
-        ]),
+        hdr("URL INPUT", header_color, bg_color),
+        kv("(type)", "Enter a URL", key_color),
+        kv("Enter", "Start crawl", key_color),
+        kv("←/→", "Move cursor", key_color),
+        kv("Esc", "Cancel", key_color),
         Line::from(""),
-        Line::from(vec![Span::styled(
-            "── BOOKMARK ACTIONS ──",
-            Style::default().fg(header_color).bold(),
-        )]),
-        Line::from(vec![
-            Span::styled(" ←/→     ", Style::default().fg(key_color)),
-            Span::raw("Navigate Tabs"),
-        ]),
-        Line::from(vec![
-            Span::styled(" ↑/↓     ", Style::default().fg(key_color)),
-            Span::raw("Navigate Items"),
-        ]),
-        Line::from(vec![
-            Span::styled(" Enter   ", Style::default().fg(key_color)),
-            Span::raw("Add/Crawl Selection"),
-        ]),
-        Line::from(vec![
-            Span::styled(" Esc     ", Style::default().fg(key_color)),
-            Span::raw("Clear/Close"),
-        ]),
-        Line::from(vec![
-            Span::styled(" D       ", Style::default().fg(key_color)),
-            Span::raw("Delete Bookmark"),
-        ]),
-        Line::from(vec![
-            Span::styled(" Backsp  ", Style::default().fg(key_color)),
-            Span::raw("Delete Character"),
-        ]),
+        hdr("PAGE DETAILS", header_color, bg_color),
+        kv("q/Esc", "Close", key_color),
+        kv("←/h  →/Tab", "Prev / next tab", key_color),
+        kv("Shift+Tab", "Previous tab", mod_color),
+        kv("k/↑  j/↓", "Scroll / rows", key_color),
+        kv("Shift+↑/↓", "Navigate tab content", mod_color),
+        kv("Scroll", "Mouse wheel supported", key_color),
         Line::from(""),
+        hdr("ACTIONS MENU (m)", header_color, bg_color),
+        kv("k/↑  j/↓", "Navigate actions", key_color),
+        kv("Enter", "Run action", key_color),
+        kv("q/Esc", "Close", key_color),
         Line::from(vec![Span::styled(
-            "── SETTINGS ACTIONS ──",
-            Style::default().fg(header_color).bold(),
+            "   Copy · Browser · Google",
+            Style::default().fg(dim_color),
         )]),
-        Line::from(vec![
-            Span::styled(" E       ", Style::default().fg(key_color)),
-            Span::raw("Edit Settings File"),
-        ]),
+        Line::from(vec![Span::styled(
+            "   SEO Score · Extract Links",
+            Style::default().fg(dim_color),
+        )]),
+        Line::from(vec![Span::styled(
+            "   Screenshot · Export Data",
+            Style::default().fg(dim_color),
+        )]),
         Line::from(""),
-        Line::from(vec![Span::styled(
-            "── INPUT MODE ──",
-            Style::default().fg(header_color).bold(),
-        )]),
-        Line::from(vec![
-            Span::styled(" Enter   ", Style::default().fg(key_color)),
-            Span::raw("Submit URL"),
-        ]),
-        Line::from(vec![
-            Span::styled(" Esc     ", Style::default().fg(key_color)),
-            Span::raw("Cancel Input"),
-        ]),
-        Line::from(vec![
-            Span::styled(" ←/→     ", Style::default().fg(key_color)),
-            Span::raw("Scroll Text"),
-        ]),
-        Line::from(vec![
-            Span::styled(" Backsp  ", Style::default().fg(key_color)),
-            Span::raw("Delete Character"),
-        ]),
+        hdr("TASK RESULT", header_color, bg_color),
+        kv("Enter/q/Esc", "Dismiss", key_color),
+    ];
+
+    // COLUMN 4 — MODALS II
+    let col4 = vec![
+        col_title("🪟 MODALS · II", accent_color),
         Line::from(""),
-        Line::from(vec![Span::styled(
-            "── DASHBOARD MENU ──",
-            Style::default().fg(header_color).bold(),
-        )]),
-        Line::from(vec![
-            Span::styled(" q/Esc   ", Style::default().fg(key_color)),
-            Span::raw("Close Menu"),
-        ]),
-        Line::from(vec![
-            Span::styled(" k/↑ j/↓ ", Style::default().fg(key_color)),
-            Span::raw("Navigate Items"),
-        ]),
-        Line::from(vec![
-            Span::styled(" Enter   ", Style::default().fg(key_color)),
-            Span::raw("Execute Action"),
-        ]),
+        hdr("SEO SCORE", header_color, bg_color),
+        kv("q/Esc", "Close", key_color),
+        Line::from(""),
+        hdr("EXTRACT LINKS", header_color, bg_color),
+        kv("k/↑  j/↓", "Navigate links", key_color),
+        kv("Enter", "Open in browser", key_color),
+        kv("q/Esc", "Close", key_color),
+        Line::from(""),
+        hdr("JS / CSS PAGES", header_color, bg_color),
+        kv("k/↑  j/↓", "Pages using asset", key_color),
+        kv("q/Esc", "Close", key_color),
+        Line::from(""),
+        hdr("ISSUE URLS", header_color, bg_color),
+        kv("k/↑  j/↓", "Navigate URLs", key_color),
+        kv("Enter", "Open in browser", key_color),
+        kv("c", "Copy URL", key_color),
+        kv("q/Esc", "Close", key_color),
+        Line::from(""),
+        hdr("SYSTEM LOGS", header_color, bg_color),
+        kv("k/j  ↑/↓", "Navigate logs", key_color),
+        kv("t / G", "Top / bottom", key_color),
+        kv("[ / ]", "Resize console", key_color),
+        kv("Ctrl+s", "Search logs", mod_color),
+        kv("q/Esc/Sh+L", "Close", key_color),
+        Line::from(""),
+        hdr("AI COPILOT", header_color, bg_color),
+        kv("(type)", "Compose message", key_color),
+        kv("Enter", "Send", key_color),
+        kv("↑/↓", "Scroll 1 line", key_color),
+        kv("PgUp/PgDn", "Scroll 5 lines", key_color),
+        kv("q/Esc", "Close", key_color),
     ];
 
     f.render_widget(
-        Paragraph::new(nav_text).style(Style::default().fg(Color::Gray)),
+        Paragraph::new(col1).style(Style::default().fg(Color::Gray)),
         cols[0],
     );
     f.render_widget(
-        Paragraph::new(dash_text).style(Style::default().fg(Color::Gray)),
+        Paragraph::new(col2).style(Style::default().fg(Color::Gray)),
         cols[1],
     );
     f.render_widget(
-        Paragraph::new(sidebar_text).style(Style::default().fg(Color::Gray)),
+        Paragraph::new(col3).style(Style::default().fg(Color::Gray)),
         cols[2],
+    );
+    f.render_widget(
+        Paragraph::new(col4).style(Style::default().fg(Color::Gray)),
+        cols[3],
+    );
+
+    f.render_widget(
+        Paragraph::new(Line::from(vec![
+            Span::styled(" q ", Style::default().fg(bg_color).bg(Color::Red).bold()),
+            Span::raw(" / "),
+            Span::styled(" Esc ", Style::default().fg(bg_color).bg(key_color).bold()),
+            Span::raw(" / "),
+            Span::styled(" ? ", Style::default().fg(bg_color).bg(key_color).bold()),
+            Span::raw("  to close this cheat-sheet"),
+        ]))
+        .alignment(Alignment::Center),
+        rows[4],
     );
 }
 

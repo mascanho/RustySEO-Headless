@@ -5,7 +5,7 @@ use std::collections::VecDeque;
 #[derive(Debug, Clone)]
 pub struct CrawlQueue {
     queue: VecDeque<(String, Option<String>)>, // (url, referer)
-    max_size: Option<usize>, // Maximum queue size to prevent unbounded growth
+    max_size: Option<usize>,                   // Maximum queue size to prevent unbounded growth
 }
 
 impl CrawlQueue {
@@ -76,7 +76,8 @@ impl CrawlQueue {
 
     /// Get remaining capacity
     pub fn remaining_capacity(&self) -> Option<usize> {
-        self.max_size.map(|max| max.saturating_sub(self.queue.len()))
+        self.max_size
+            .map(|max| max.saturating_sub(self.queue.len()))
     }
 
     /// Clear the queue

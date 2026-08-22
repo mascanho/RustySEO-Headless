@@ -1,10 +1,10 @@
 use crate::{models::App, ui::centered_rect};
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph},
-    Frame,
 };
 
 pub fn render(f: &mut Frame, app: &mut App) {

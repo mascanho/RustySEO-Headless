@@ -147,7 +147,11 @@ pub fn save_pending_export(pending: PendingTabExport) -> Result<ExportSummary, S
             .set_title("Save Export")
             .set_file_name(&default_name)
             .add_filter(
-                if pending.is_xlsx() { "Excel Workbook" } else { "CSV" },
+                if pending.is_xlsx() {
+                    "Excel Workbook"
+                } else {
+                    "CSV"
+                },
                 &[if pending.is_xlsx() { "xlsx" } else { "csv" }],
             );
         if let Ok(dir) = exports_dir() {
@@ -202,7 +206,12 @@ fn write_csv_file(sheet: &ExportSheet, path: &std::path::Path) -> Result<(), Str
     );
     csv.push('\n');
     for row in &sheet.rows {
-        csv.push_str(&row.iter().map(|f| csv_escape(f)).collect::<Vec<_>>().join(","));
+        csv.push_str(
+            &row.iter()
+                .map(|f| csv_escape(f))
+                .collect::<Vec<_>>()
+                .join(","),
+        );
         csv.push('\n');
     }
     file.write_all(csv.as_bytes()).map_err(|e| e.to_string())?;
@@ -217,7 +226,10 @@ fn exports_dir() -> Result<std::path::PathBuf, String> {
     Ok(dir)
 }
 
-fn write_xlsx(sheets: &[ExportSheet], path: &std::path::Path) -> Result<(), rust_xlsxwriter::XlsxError> {
+fn write_xlsx(
+    sheets: &[ExportSheet],
+    path: &std::path::Path,
+) -> Result<(), rust_xlsxwriter::XlsxError> {
     let mut workbook = Workbook::new();
     let header_format = Format::new().set_bold();
 
@@ -241,13 +253,26 @@ fn write_csv_zip(sheets: &[ExportSheet], path: &std::path::Path) -> Result<(), S
 
     for sheet in sheets {
         let filename = format!("{}.csv", sheet.name.to_lowercase().replace(' ', "_"));
-        zip.start_file(filename, options).map_err(|e| e.to_string())?;
+        zip.start_file(filename, options)
+            .map_err(|e| e.to_string())?;
 
         let mut csv = String::new();
-        csv.push_str(&sheet.header.iter().map(|h| csv_escape(h)).collect::<Vec<_>>().join(","));
+        csv.push_str(
+            &sheet
+                .header
+                .iter()
+                .map(|h| csv_escape(h))
+                .collect::<Vec<_>>()
+                .join(","),
+        );
         csv.push('\n');
         for row in &sheet.rows {
-            csv.push_str(&row.iter().map(|f| csv_escape(f)).collect::<Vec<_>>().join(","));
+            csv.push_str(
+                &row.iter()
+                    .map(|f| csv_escape(f))
+                    .collect::<Vec<_>>()
+                    .join(","),
+            );
             csv.push('\n');
         }
         zip.write_all(csv.as_bytes()).map_err(|e| e.to_string())?;
@@ -268,8 +293,16 @@ fn csv_escape(field: &str) -> String {
 fn build_sheets(app: &App) -> Vec<ExportSheet> {
     vec![
         build_overview_sheet(app),
-        build_link_sheet(TAB_NAMES[1], &app.external_full_filtered_table_data, &app.url_to_status),
-        build_link_sheet(TAB_NAMES[2], &app.internal_full_filtered_table_data, &app.url_to_status),
+        build_link_sheet(
+            TAB_NAMES[1],
+            &app.external_full_filtered_table_data,
+            &app.url_to_status,
+        ),
+        build_link_sheet(
+            TAB_NAMES[2],
+            &app.internal_full_filtered_table_data,
+            &app.url_to_status,
+        ),
         build_redirects_sheet(app),
         build_images_sheet(app),
         build_css_sheet(app),
@@ -362,11 +395,18 @@ fn build_overview_sheet(app: &App) -> ExportSheet {
         })
         .collect();
 
-    ExportSheet { name: TAB_NAMES[0], header, rows }
+    ExportSheet {
+        name: TAB_NAMES[0],
+        header,
+        rows,
+    }
 }
 
 fn lookup_status(url: &str, url_to_status: &HashMap<String, String>) -> String {
-    url_to_status.get(url).cloned().unwrap_or_else(|| "Pending".to_string())
+    url_to_status
+        .get(url)
+        .cloned()
+        .unwrap_or_else(|| "Pending".to_string())
 }
 
 fn build_link_sheet(
@@ -374,7 +414,14 @@ fn build_link_sheet(
     data: &[impl LinkEntry],
     url_to_status: &HashMap<String, String>,
 ) -> ExportSheet {
-    let header = vec!["#", "Source URL", "Destination URL", "Anchor Text", "Rel", "Status"];
+    let header = vec![
+        "#",
+        "Source URL",
+        "Destination URL",
+        "Anchor Text",
+        "Rel",
+        "Status",
+    ];
     let rows = data
         .iter()
         .map(|link| {
@@ -400,19 +447,39 @@ trait LinkEntry {
 }
 
 impl LinkEntry for crate::models::InternalLink {
-    fn id(&self) -> usize { self.id }
-    fn source(&self) -> &str { &self.source }
-    fn destination(&self) -> &str { &self.destination }
-    fn anchor(&self) -> &str { &self.anchor }
-    fn rel(&self) -> &str { &self.rel }
+    fn id(&self) -> usize {
+        self.id
+    }
+    fn source(&self) -> &str {
+        &self.source
+    }
+    fn destination(&self) -> &str {
+        &self.destination
+    }
+    fn anchor(&self) -> &str {
+        &self.anchor
+    }
+    fn rel(&self) -> &str {
+        &self.rel
+    }
 }
 
 impl LinkEntry for crate::models::ExternalLink {
-    fn id(&self) -> usize { self.id }
-    fn source(&self) -> &str { &self.source }
-    fn destination(&self) -> &str { &self.destination }
-    fn anchor(&self) -> &str { &self.anchor }
-    fn rel(&self) -> &str { &self.rel }
+    fn id(&self) -> usize {
+        self.id
+    }
+    fn source(&self) -> &str {
+        &self.source
+    }
+    fn destination(&self) -> &str {
+        &self.destination
+    }
+    fn anchor(&self) -> &str {
+        &self.anchor
+    }
+    fn rel(&self) -> &str {
+        &self.rel
+    }
 }
 
 fn build_redirects_sheet(app: &App) -> ExportSheet {
@@ -435,7 +502,11 @@ fn build_redirects_sheet(app: &App) -> ExportSheet {
             ]
         })
         .collect();
-    ExportSheet { name: TAB_NAMES[3], header, rows }
+    ExportSheet {
+        name: TAB_NAMES[3],
+        header,
+        rows,
+    }
 }
 
 fn build_images_sheet(app: &App) -> ExportSheet {
@@ -454,7 +525,11 @@ fn build_images_sheet(app: &App) -> ExportSheet {
             ]
         })
         .collect();
-    ExportSheet { name: TAB_NAMES[4], header, rows }
+    ExportSheet {
+        name: TAB_NAMES[4],
+        header,
+        rows,
+    }
 }
 
 fn build_css_sheet(app: &App) -> ExportSheet {
@@ -462,9 +537,19 @@ fn build_css_sheet(app: &App) -> ExportSheet {
     let rows = app
         .css_urls_full_filtered_table_data
         .iter()
-        .map(|css| vec![css.id.to_string(), css.url.clone(), css.page_count.to_string()])
+        .map(|css| {
+            vec![
+                css.id.to_string(),
+                css.url.clone(),
+                css.page_count.to_string(),
+            ]
+        })
         .collect();
-    ExportSheet { name: TAB_NAMES[5], header, rows }
+    ExportSheet {
+        name: TAB_NAMES[5],
+        header,
+        rows,
+    }
 }
 
 fn build_js_sheet(app: &App) -> ExportSheet {
@@ -483,7 +568,11 @@ fn build_js_sheet(app: &App) -> ExportSheet {
             ]
         })
         .collect();
-    ExportSheet { name: TAB_NAMES[6], header, rows }
+    ExportSheet {
+        name: TAB_NAMES[6],
+        header,
+        rows,
+    }
 }
 
 fn build_cwv_sheet(app: &App) -> ExportSheet {
@@ -503,7 +592,11 @@ fn build_cwv_sheet(app: &App) -> ExportSheet {
             row
         })
         .collect();
-    ExportSheet { name: TAB_NAMES[7], header, rows }
+    ExportSheet {
+        name: TAB_NAMES[7],
+        header,
+        rows,
+    }
 }
 
 fn build_content_sheet(app: &App) -> ExportSheet {
@@ -535,7 +628,11 @@ fn build_content_sheet(app: &App) -> ExportSheet {
             row
         })
         .collect();
-    ExportSheet { name: TAB_NAMES[8], header, rows }
+    ExportSheet {
+        name: TAB_NAMES[8],
+        header,
+        rows,
+    }
 }
 
 fn build_files_sheet(app: &App) -> ExportSheet {
@@ -545,7 +642,11 @@ fn build_files_sheet(app: &App) -> ExportSheet {
         .iter()
         .map(|f| vec![f.id.to_string(), f.url.clone(), f.filetype.clone()])
         .collect();
-    ExportSheet { name: TAB_NAMES[9], header, rows }
+    ExportSheet {
+        name: TAB_NAMES[9],
+        header,
+        rows,
+    }
 }
 
 fn build_extractor_sheet(app: &App) -> ExportSheet {
@@ -553,9 +654,20 @@ fn build_extractor_sheet(app: &App) -> ExportSheet {
     let rows = app
         .extractor_full_filtered_table_data
         .iter()
-        .map(|e| vec![e.id.to_string(), e.url.clone(), e.element.clone(), e.snippet.clone()])
+        .map(|e| {
+            vec![
+                e.id.to_string(),
+                e.url.clone(),
+                e.element.clone(),
+                e.snippet.clone(),
+            ]
+        })
         .collect();
-    ExportSheet { name: TAB_NAMES[10], header, rows }
+    ExportSheet {
+        name: TAB_NAMES[10],
+        header,
+        rows,
+    }
 }
 
 #[cfg(test)]
@@ -585,7 +697,8 @@ mod tests {
         app.table_data = vec![sample_overview_row()];
         app.full_filtered_table_data = app.table_data.clone();
         app.content_full_filtered_table_data = app.table_data.clone();
-        app.link_scores.insert("https://example.com/".to_string(), 72);
+        app.link_scores
+            .insert("https://example.com/".to_string(), 72);
         app.url_to_status
             .insert("https://example.com/".to_string(), "200 OK".to_string());
 
@@ -654,7 +767,12 @@ mod tests {
         let sheets = build_sheets(&app);
         assert_eq!(sheets.len(), 11);
         for sheet in &sheets {
-            assert_eq!(sheet.rows.len(), 1, "sheet {} should have exactly 1 row", sheet.name);
+            assert_eq!(
+                sheet.rows.len(),
+                1,
+                "sheet {} should have exactly 1 row",
+                sheet.name
+            );
         }
         assert_eq!(sheets[0].rows[0][1], "https://example.com/");
         assert_eq!(sheets[0].rows[0][14], "72"); // Link Score
@@ -707,7 +825,10 @@ mod tests {
             (0..MAX_XLSX_ROWS + 1).map(|_| template.clone()).collect();
 
         let summary = export_all_tabs(&app).expect("export should succeed");
-        assert_eq!(summary.format, "zip of CSVs (largest sheet exceeded 200k rows)");
+        assert_eq!(
+            summary.format,
+            "zip of CSVs (largest sheet exceeded 200k rows)"
+        );
         assert!(summary.path.ends_with(".zip"));
 
         let bytes = std::fs::read(&summary.path).unwrap();

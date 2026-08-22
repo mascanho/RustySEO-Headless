@@ -75,7 +75,8 @@ impl App {
                     // For robots, show the cached results directly
                     self.issue_urls_list = self.get_urls_for_issue(&issue_title);
                     if self.issue_urls_list.is_empty() {
-                        self.issue_urls_list = vec!["No disallowed URLs found in robots.txt".to_string()];
+                        self.issue_urls_list =
+                            vec!["No disallowed URLs found in robots.txt".to_string()];
                     }
                     self.issue_urls_state.select(Some(0));
                     self.show_issue_urls_modal = true;
@@ -139,7 +140,7 @@ impl App {
         if let Some(selected) = self.issue_urls_state.selected() {
             if selected < self.issue_urls_list.len() {
                 let raw_string = &self.issue_urls_list[selected];
-                
+
                 // Extract just the URL part from various formats:
                 // "URL" - plain URL
                 // "URL (extra info)" - URL with info in parentheses
@@ -163,7 +164,7 @@ impl App {
         if let Some(selected) = self.issue_urls_state.selected() {
             if selected < self.issue_urls_list.len() {
                 let raw_string = &self.issue_urls_list[selected];
-                
+
                 // Extract just the URL part (same logic as open_selected_issue_url)
                 let url = raw_string
                     .split(" (")
@@ -173,7 +174,7 @@ impl App {
                     .next()
                     .unwrap_or(raw_string)
                     .trim();
-                    
+
                 crate::ui::modals::dashboard_menu::copy_to_clipboard(url.to_string());
                 self.log(format!("Copied URL to clipboard: {}", url));
             }
@@ -259,7 +260,8 @@ impl App {
             3 => {
                 // View SEO Score
                 let link_score = self.link_scores.get(&url).copied();
-                self.seo_score_data = Some(crate::app::menu_actions::calculate(&url, &row, link_score));
+                self.seo_score_data =
+                    Some(crate::app::menu_actions::calculate(&url, &row, link_score));
                 self.show_seo_score_modal = true;
             }
             4 => {
@@ -296,14 +298,17 @@ impl App {
                 rel: l.rel.clone(),
                 is_internal: true,
             })
-            .chain(self.external_table_data.iter().filter(|l| l.source == url).map(|l| {
-                crate::models::PageLinkEntry {
-                    destination: l.destination.clone(),
-                    anchor: l.anchor.clone(),
-                    rel: l.rel.clone(),
-                    is_internal: false,
-                }
-            }))
+            .chain(
+                self.external_table_data
+                    .iter()
+                    .filter(|l| l.source == url)
+                    .map(|l| crate::models::PageLinkEntry {
+                        destination: l.destination.clone(),
+                        anchor: l.anchor.clone(),
+                        rel: l.rel.clone(),
+                        is_internal: false,
+                    }),
+            )
             .collect();
         links.sort_by(|a, b| b.is_internal.cmp(&a.is_internal));
 
@@ -362,9 +367,11 @@ impl App {
         self.screenshot_receiver = Some(rx);
 
         tokio::spawn(async move {
-            let result = tokio::task::spawn_blocking(move || crate::app::menu_actions::capture_screenshot(&url))
-                .await
-                .unwrap_or_else(|e| Err(e.to_string()));
+            let result = tokio::task::spawn_blocking(move || {
+                crate::app::menu_actions::capture_screenshot(&url)
+            })
+            .await
+            .unwrap_or_else(|e| Err(e.to_string()));
             let _ = tx.send(result).await;
         });
     }

@@ -248,8 +248,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 }
             }
 
-            let content = if j == 2 || j == 4 || j == 6 || j == 8 || j == 10 || j == 11 || j == 14
-            {
+            let content = if j == 2 || j == 4 || j == 6 || j == 8 || j == 10 || j == 11 || j == 14 {
                 let w = match j {
                     4 | 6 => 5,
                     8 | 10 => 7,

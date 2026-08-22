@@ -16,7 +16,11 @@ pub fn render(f: &mut Frame, app: &mut App) {
     } else {
         Color::Red
     };
-    let icon = if app.action_result_success { "✓" } else { "✗" };
+    let icon = if app.action_result_success {
+        "✓"
+    } else {
+        "✗"
+    };
 
     let block = Block::default()
         .title(Span::styled(

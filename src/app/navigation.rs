@@ -660,7 +660,9 @@ impl App {
 
     pub fn move_detail_row_up(&mut self) {
         let selected = self.detail_table_state.selected().unwrap_or(0);
-        if selected == 0 { return; }
+        if selected == 0 {
+            return;
+        }
 
         if let Some(page_data) = &mut self.selected_page_details {
             match self.detail_tab {
@@ -688,7 +690,9 @@ impl App {
     pub fn move_detail_row_down(&mut self) {
         let selected = self.detail_table_state.selected().unwrap_or(0);
         let len = self.get_current_detail_len();
-        if len == 0 || selected >= len - 1 { return; }
+        if len == 0 || selected >= len - 1 {
+            return;
+        }
 
         if let Some(page_data) = &mut self.selected_page_details {
             match self.detail_tab {

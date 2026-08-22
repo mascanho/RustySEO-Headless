@@ -1,9 +1,9 @@
 use ratatui::{
+    Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::Span,
     widgets::{Block, Borders, Clear, Tabs},
-    Frame,
 };
 
 use crate::models::App;

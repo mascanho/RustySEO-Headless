@@ -1,6 +1,6 @@
 use reqwest::Client;
 use std::sync::Arc;
-use tokio::sync::{mpsc, Semaphore};
+use tokio::sync::{Semaphore, mpsc};
 use tokio::time::Duration;
 
 const MAX_CONCURRENT_CHECKS: usize = 20;
@@ -10,7 +10,10 @@ const CHECK_TIMEOUT_SECS: u64 = 10;
 /// and streams back (url, status) pairs as they complete. Opt-in via
 /// `settings.crawler.check_external_links`, since most crawls don't need every
 /// off-site destination verified and it can add many extra requests.
-pub fn spawn_external_link_check(urls: Vec<String>, user_agent: String) -> mpsc::Receiver<(String, String)> {
+pub fn spawn_external_link_check(
+    urls: Vec<String>,
+    user_agent: String,
+) -> mpsc::Receiver<(String, String)> {
     let (tx, rx) = mpsc::channel(256);
 
     tokio::spawn(async move {

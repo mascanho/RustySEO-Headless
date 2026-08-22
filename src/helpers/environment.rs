@@ -15,7 +15,13 @@ pub fn gui_available() -> bool {
 
 /// Pure decision logic, kept separate from env lookups so it can be unit tested
 /// without mutating process-global environment variables.
-fn gui_available_from(is_windows: bool, is_macos: bool, is_ssh: bool, has_x11: bool, has_wayland: bool) -> bool {
+fn gui_available_from(
+    is_windows: bool,
+    is_macos: bool,
+    is_ssh: bool,
+    has_x11: bool,
+    has_wayland: bool,
+) -> bool {
     if is_windows {
         // Headless Windows Server Core exists but is rare enough not to special-case.
         return true;

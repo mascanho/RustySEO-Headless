@@ -79,15 +79,18 @@ impl App {
                 // Browsers block/warn on HTTPS pages loading resources over plain HTTP -
                 // check the three visible-resource kinds (anchor hyperlinks to other
                 // sites don't count; only embedded resources trigger the browser warning).
-                let has_mixed_content = page_data.url.starts_with("https://")
-                    && (page_data.images.iter().any(|i| i.src.starts_with("http://"))
-                        || page_data
-                            .css
-                            .as_ref()
-                            .is_some_and(|c| c.css_urls.iter().any(|u| u.starts_with("http://")))
-                        || page_data.javascript.as_ref().is_some_and(|j| {
-                            j.js_urls.iter().any(|u| u.starts_with("http://"))
-                        }));
+                let has_mixed_content =
+                    page_data.url.starts_with("https://")
+                        && (page_data
+                            .images
+                            .iter()
+                            .any(|i| i.src.starts_with("http://"))
+                            || page_data.css.as_ref().is_some_and(|c| {
+                                c.css_urls.iter().any(|u| u.starts_with("http://"))
+                            })
+                            || page_data.javascript.as_ref().is_some_and(|j| {
+                                j.js_urls.iter().any(|u| u.starts_with("http://"))
+                            }));
 
                 // Create PageSummary for memory efficiency
                 let summary = crate::models::PageSummary {
@@ -400,7 +403,8 @@ impl App {
                     }
                     for hop in &page_data.redirect_chain {
                         if hop.url != page_data.url {
-                            self.redirect_map.insert(hop.url.clone(), page_data.url.clone());
+                            self.redirect_map
+                                .insert(hop.url.clone(), page_data.url.clone());
                         }
                     }
                 }
@@ -412,9 +416,8 @@ impl App {
                     .iter()
                     .find(|(_, href, _)| !href.trim().is_empty())
                 {
-                    let normalized_canonical =
-                        crate::crawler::url_normalizer::normalize_url(href)
-                            .unwrap_or_else(|| href.clone());
+                    let normalized_canonical = crate::crawler::url_normalizer::normalize_url(href)
+                        .unwrap_or_else(|| href.clone());
                     if normalized_canonical != page_data.url {
                         self.canonical_map
                             .insert(page_data.url.clone(), normalized_canonical);

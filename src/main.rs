@@ -5,11 +5,11 @@ use crossterm::{
         MouseEventKind,
     },
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use ratatui::{
-    backend::{Backend, CrosstermBackend},
     Terminal,
+    backend::{Backend, CrosstermBackend},
 };
 use std::{error::Error, io};
 
@@ -50,9 +50,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     if !cli.url.is_empty() {
         // Handle the actions here
-        let crawler = CrawlEngine::new()
-            .await
-            .with_db_persistence(None);
+        let crawler = CrawlEngine::new().await.with_db_persistence(None);
         crawler.crawl(&cli.url, true).await;
         return Ok(());
     } else {

@@ -62,7 +62,7 @@ async fn fetch_standard(
     let mut redirect_chain = Vec::new();
     let mut hops = 0;
     let max_hops = 10;
-    
+
     // Retry configuration
     let max_retries = 4;
     let mut retry_count = 0;
@@ -96,14 +96,15 @@ async fn fetch_standard(
                     if let Some(location) = res.headers().get("location") {
                         if let Ok(location_str) = location.to_str() {
                             // Resolve redirect URL against the CURRENT URL, not the base_url
-                            let current_url_parsed = Url::parse(&current_url)
-                                .map_err(|e| format!("Failed to parse current URL {}: {}", current_url, e))?;
-                            
+                            let current_url_parsed = Url::parse(&current_url).map_err(|e| {
+                                format!("Failed to parse current URL {}: {}", current_url, e)
+                            })?;
+
                             let next_url = match Url::parse(location_str) {
                                 Ok(u) => u.to_string(),
                                 Err(_) => match current_url_parsed.join(location_str) {
                                     Ok(u) => u.to_string(),
-                                    Err(_) => current_url.clone(), 
+                                    Err(_) => current_url.clone(),
                                 },
                             };
 
@@ -115,12 +116,12 @@ async fn fetch_standard(
                             current_url = next_url;
                             hops += 1;
                             retry_count = 0;
-                            backoff = Duration::from_secs(2); 
+                            backoff = Duration::from_secs(2);
                             continue;
                         }
                     }
                 }
-                
+
                 // Handle Rate Limiting (429) and Server Errors (5xx)
                 if status.as_u16() == 429 || status.is_server_error() {
                     // ... (keep existing retry logic)
@@ -135,10 +136,14 @@ async fn fetch_standard(
                             backoff
                         );
                         sleep(backoff).await;
-                        backoff *= 2; 
+                        backoff *= 2;
                         continue;
                     } else {
-                        tracing::error!("[FAIL] {} - Max retries exceeded for status {}", url, status);
+                        tracing::error!(
+                            "[FAIL] {} - Max retries exceeded for status {}",
+                            url,
+                            status
+                        );
                         return Err(format!("Max retries exceeded for status {}", status));
                     }
                 }
@@ -146,7 +151,7 @@ async fn fetch_standard(
                 break res;
             }
             Err(e) => {
-               // ... (keep existing retry logic)
+                // ... (keep existing retry logic)
                 if retry_count < max_retries {
                     retry_count += 1;
                     tracing::warn!(
@@ -161,7 +166,7 @@ async fn fetch_standard(
                     backoff *= 2;
                     continue;
                 } else {
-                     return Err(format!("Request failed after retries: {}", e));
+                    return Err(format!("Request failed after retries: {}", e));
                 }
             }
         }
@@ -201,8 +206,8 @@ async fn fetch_standard(
     // on a site that trailing-slash- or https-redirects every internal link).
     page_data.url = crate::crawler::url_normalizer::normalize_url(&current_url)
         .unwrap_or_else(|| current_url.clone());
-    page_data.requested_url = crate::crawler::url_normalizer::normalize_url(url)
-        .unwrap_or_else(|| url.to_string());
+    page_data.requested_url =
+        crate::crawler::url_normalizer::normalize_url(url).unwrap_or_else(|| url.to_string());
     page_data.status = status;
     page_data.headers = headers_list;
     page_data.redirect_chain = redirect_chain;
@@ -210,7 +215,7 @@ async fn fetch_standard(
     if let Some(ct) = content_type_header {
         page_data.content_type = ct;
     }
-    
+
     // Parse the final URL to use as base for resolving relative links
     let final_url = Url::parse(&current_url)
         .map_err(|e| format!("Failed to parse final URL {}: {}", current_url, e))?;
@@ -242,23 +247,28 @@ async fn fetch_standard(
             // Resolve against final_url (the page we are on)
             if let Ok(mut abs_url) = final_url.join(&link.href) {
                 // Check domain against base_url (crawl scope) using loose comparison
-                if crate::crawler::url_normalizer::is_same_domain(abs_url.domain(), base_url.domain()) {
+                if crate::crawler::url_normalizer::is_same_domain(
+                    abs_url.domain(),
+                    base_url.domain(),
+                ) {
                     // Start by clearing fragment
                     abs_url.set_fragment(None);
-                    
+
                     // Normalize the URL string using the centralized normalizer
-                    if let Some(normalized_url) = crate::crawler::url_normalizer::normalize_url(abs_url.as_str()) {
-                         // Check if we should crawl this URL type
-                         if crate::crawler::url_normalizer::should_crawl_url(&normalized_url) {
-                             // Deduplicate within this page
-                             if seen_urls.insert(normalized_url.clone()) {
-                                 return Some(crate::crawler::helpers::html_parser::AnchorLink {
-                                     href: normalized_url,
-                                     text: link.text,
-                                     rel: link.rel,
-                                 });
-                             }
-                         }
+                    if let Some(normalized_url) =
+                        crate::crawler::url_normalizer::normalize_url(abs_url.as_str())
+                    {
+                        // Check if we should crawl this URL type
+                        if crate::crawler::url_normalizer::should_crawl_url(&normalized_url) {
+                            // Deduplicate within this page
+                            if seen_urls.insert(normalized_url.clone()) {
+                                return Some(crate::crawler::helpers::html_parser::AnchorLink {
+                                    href: normalized_url,
+                                    text: link.text,
+                                    rel: link.rel,
+                                });
+                            }
+                        }
                     }
                 }
             }
@@ -304,8 +314,8 @@ async fn fetch_js(url: &str, base_url: &Url, browser: Arc<Browser>) -> Result<Pa
     page_data.headers = vec!["Requested-Mode: JavaScript".to_string()];
 
     // Parse the current page URL to use as base for resolving relative links
-    let current_page_url = Url::parse(url)
-        .map_err(|e| format!("Failed to parse current URL {}: {}", url, e))?;
+    let current_page_url =
+        Url::parse(url).map_err(|e| format!("Failed to parse current URL {}: {}", url, e))?;
 
     // Store all original links as outlinks before filtering
     page_data.outlinks = page_data
@@ -331,12 +341,17 @@ async fn fetch_js(url: &str, base_url: &Url, browser: Arc<Browser>) -> Result<Pa
         .into_iter()
         .filter_map(|link| {
             if let Ok(mut abs_url) = current_page_url.join(&link.href) {
-                if crate::crawler::url_normalizer::is_same_domain(abs_url.domain(), base_url.domain()) {
-                   abs_url.set_fragment(None);
-                   
-                   // Normalize using centralized logic
-                   if let Some(normalized_url) = crate::crawler::url_normalizer::normalize_url(abs_url.as_str()) {
-                       if crate::crawler::url_normalizer::should_crawl_url(&normalized_url) {
+                if crate::crawler::url_normalizer::is_same_domain(
+                    abs_url.domain(),
+                    base_url.domain(),
+                ) {
+                    abs_url.set_fragment(None);
+
+                    // Normalize using centralized logic
+                    if let Some(normalized_url) =
+                        crate::crawler::url_normalizer::normalize_url(abs_url.as_str())
+                    {
+                        if crate::crawler::url_normalizer::should_crawl_url(&normalized_url) {
                             if seen_urls.insert(normalized_url.clone()) {
                                 return Some(crate::crawler::helpers::html_parser::AnchorLink {
                                     href: normalized_url,
@@ -344,8 +359,8 @@ async fn fetch_js(url: &str, base_url: &Url, browser: Arc<Browser>) -> Result<Pa
                                     rel: link.rel,
                                 });
                             }
-                       }
-                   }
+                        }
+                    }
                 }
             }
             None

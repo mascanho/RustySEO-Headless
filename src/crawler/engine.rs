@@ -1,9 +1,9 @@
 use headless_chrome::{Browser, LaunchOptions};
 use reqwest::Client;
 use std::collections::HashSet;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
-use tokio::sync::{mpsc, Mutex, Semaphore};
+use std::sync::atomic::{AtomicUsize, Ordering};
+use tokio::sync::{Mutex, Semaphore, mpsc};
 use tokio::time::Duration;
 use url::Url;
 
@@ -274,7 +274,10 @@ impl CrawlEngine {
                                             visited.insert(normalized_url);
                                             added += 1;
                                         } else {
-                                            tracing::warn!("[QUEUE] Queue at capacity, skipping sitemap URL: {}", url);
+                                            tracing::warn!(
+                                                "[QUEUE] Queue at capacity, skipping sitemap URL: {}",
+                                                url
+                                            );
                                             break;
                                         }
                                     }
@@ -410,7 +413,10 @@ impl CrawlEngine {
                                     added_count,
                                     new_links.len(),
                                     queue.len(),
-                                    queue.remaining_capacity().map(|r| r + queue.len()).unwrap_or(queue.len())
+                                    queue
+                                        .remaining_capacity()
+                                        .map(|r| r + queue.len())
+                                        .unwrap_or(queue.len())
                                 );
                             }
 

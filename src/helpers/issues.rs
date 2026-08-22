@@ -193,8 +193,10 @@ impl IssueAnalyzer {
         internal_links: &[InternalLink],
         start_url: &str,
     ) -> (usize, Vec<String>) {
-        let linked_targets: HashSet<&str> =
-            internal_links.iter().map(|l| l.destination.as_str()).collect();
+        let linked_targets: HashSet<&str> = internal_links
+            .iter()
+            .map(|l| l.destination.as_str())
+            .collect();
 
         let mut orphans = Vec::new();
         for page in page_data {
@@ -241,7 +243,10 @@ impl IssueAnalyzer {
             if let Some(status) = url_to_status.get(&link.destination)
                 && (status.starts_with('4') || status.starts_with('5'))
             {
-                broken.push(format!("{} -> {} ({})", link.source, link.destination, status));
+                broken.push(format!(
+                    "{} -> {} ({})",
+                    link.source, link.destination, status
+                ));
             }
         }
 
@@ -250,7 +255,9 @@ impl IssueAnalyzer {
 
     /// Internal links marked `rel="nofollow"` - usually unintentional on same-site
     /// links, and it wastes crawl budget/link equity that could flow internally.
-    pub fn analyse_internal_nofollow_links(internal_links: &[InternalLink]) -> (usize, Vec<String>) {
+    pub fn analyse_internal_nofollow_links(
+        internal_links: &[InternalLink],
+    ) -> (usize, Vec<String>) {
         let mut flagged = Vec::new();
         for link in internal_links {
             if link.rel.to_lowercase().contains("nofollow") {
@@ -284,7 +291,10 @@ impl IssueAnalyzer {
         let mut broken = Vec::new();
         for entry in redirects {
             if !(200..300).contains(&entry.status_code) {
-                broken.push(format!("{} (final status: {})", entry.initial_url, entry.status_code));
+                broken.push(format!(
+                    "{} (final status: {})",
+                    entry.initial_url, entry.status_code
+                ));
             }
         }
         (broken.len(), broken)
@@ -391,7 +401,10 @@ impl IssueAnalyzer {
         let mut urls = Vec::new();
         for page in page_data {
             if page.canonical_count > 1 {
-                urls.push(format!("{} ({} canonical tags)", page.url, page.canonical_count));
+                urls.push(format!(
+                    "{} ({} canonical tags)",
+                    page.url, page.canonical_count
+                ));
             }
         }
         (urls.len(), urls)
@@ -800,7 +813,7 @@ impl IssueAnalyzer {
             // This should be handled by the app layer with proper async context
             return vec!["Loading robots.txt analysis...".to_string()];
         }
-        
+
         let handlers = Self::get_handlers();
         if let Some(handler) = handlers.iter().find(|h| h.name == issue_type) {
             (handler.process)(page_data).1
@@ -821,7 +834,7 @@ impl IssueAnalyzer {
                 // Skip this - robots count will be handled separately
                 continue;
             }
-            
+
             let (count, _) = (handler.process)(page_data);
             let percentage = if total_pages > 0 {
                 (count * 100) / total_pages
@@ -925,55 +938,69 @@ impl IssueAnalyzer {
     /// Perform actual robots.txt analysis on-demand (async)
     pub async fn analyze_robots_on_demand(page_data: &[PageSummary]) -> Vec<String> {
         let mut blocked_urls = Vec::new();
-        
+
         if page_data.is_empty() {
             return blocked_urls;
         }
-        
+
         // Get the base domain from the first page to construct robots.txt URL
         if let Some(first_page) = page_data.first() {
-            let base_url = first_page.url.split('/').take(3).collect::<Vec<_>>().join("/");
+            let base_url = first_page
+                .url
+                .split('/')
+                .take(3)
+                .collect::<Vec<_>>()
+                .join("/");
             let robots_url = format!("{}/robots.txt", base_url);
-            
+
             // Check cache first (cache for 30 minutes for on-demand requests)
             let current_time = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap_or_default()
                 .as_secs();
-            
+
             {
                 let cache = ROBOTS_CACHE.lock().unwrap_or_else(|e| e.into_inner());
                 if let Some(cached) = cache.get(&robots_url) {
-                    if current_time - cached.timestamp < 1800 { // 30 minutes cache
+                    if current_time - cached.timestamp < 1800 {
+                        // 30 minutes cache
                         return cached.urls.clone();
                     }
                 }
             }
-            
+
             // Perform async network request with timeout
             match tokio::time::timeout(
                 std::time::Duration::from_secs(10),
-                robots::extract_robots_blocked_urls(&robots_url)
-            ).await {
+                robots::extract_robots_blocked_urls(&robots_url),
+            )
+            .await
+            {
                 Ok(Ok(urls)) => {
-                    let filtered_urls: Vec<String> = urls.into_iter()
-                        .filter(|url| !url.trim().is_empty() && url.trim() != "/" && url.trim() != "")
+                    let filtered_urls: Vec<String> = urls
+                        .into_iter()
+                        .filter(|url| {
+                            !url.trim().is_empty() && url.trim() != "/" && url.trim() != ""
+                        })
                         .collect();
-                    
+
                     // Cache the result
                     {
                         let mut cache = ROBOTS_CACHE.lock().unwrap_or_else(|e| e.into_inner());
-                        cache.insert(robots_url.clone(), CachedRobotsResult {
-                            urls: filtered_urls.clone(),
-                            timestamp: current_time,
-                        });
+                        cache.insert(
+                            robots_url.clone(),
+                            CachedRobotsResult {
+                                urls: filtered_urls.clone(),
+                                timestamp: current_time,
+                            },
+                        );
                     }
-                    
+
                     blocked_urls.extend(filtered_urls);
-                },
+                }
                 Ok(Err(_)) => {
                     // Network error, return empty
-                },
+                }
                 Err(_) => {
                     // Timeout, return empty
                 }

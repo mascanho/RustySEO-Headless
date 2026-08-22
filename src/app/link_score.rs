@@ -127,7 +127,8 @@ impl App {
 
         // Iteratively flow Link Score across the eligible subgraph.
         let initial = 1.0 / n as f64;
-        let mut scores: HashMap<String, f64> = eligible.iter().map(|u| (u.clone(), initial)).collect();
+        let mut scores: HashMap<String, f64> =
+            eligible.iter().map(|u| (u.clone(), initial)).collect();
 
         for _ in 0..ITERATIONS {
             let mut next_scores = HashMap::with_capacity(n);
@@ -165,7 +166,11 @@ impl App {
         let final_scores: HashMap<String, u32> = log_scores
             .into_iter()
             .map(|(url, l)| {
-                let normalised = if range > 0.0 { (l - min_log) / range } else { 1.0 };
+                let normalised = if range > 0.0 {
+                    (l - min_log) / range
+                } else {
+                    1.0
+                };
                 let value = 1 + (normalised * 99.0).round() as u32;
                 (url, value.min(100))
             })
@@ -266,8 +271,10 @@ mod tests {
             link("elsewhere_source", "dup", ""),
         ];
         app.page_summaries.push(page("elsewhere_source", "200"));
-        app.redirect_map.insert("old".to_string(), "new".to_string());
-        app.canonical_map.insert("dup".to_string(), "new".to_string());
+        app.redirect_map
+            .insert("old".to_string(), "new".to_string());
+        app.canonical_map
+            .insert("dup".to_string(), "new".to_string());
 
         app.compute_link_scores();
 

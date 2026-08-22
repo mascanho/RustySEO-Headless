@@ -9,14 +9,14 @@ pub async fn extract_robots_blocked_urls(url: &str) -> Result<Vec<String>, Box<d
 
     for line in robots_txt.lines() {
         let trimmed_line = line.trim();
-        
+
         // Handle different formats of Disallow directives
         if trimmed_line.to_lowercase().starts_with("disallow:") {
             // Extract the path after "Disallow:"
             let parts: Vec<&str> = trimmed_line.splitn(2, ':').collect();
             if parts.len() == 2 {
                 let path = parts[1].trim();
-                
+
                 // Only add meaningful disallow paths
                 if !path.is_empty() && path != "/" {
                     // Prepend the domain if path is relative
