@@ -195,9 +195,13 @@ pub fn ui(f: &mut Frame, app: &mut App) {
     }
 
     if app.show_logs {
-        let area = f.area();
-        let height = app.logs_height;
-        let logs_area = Rect::new(0, area.height.saturating_sub(height), area.width, height);
+        let height = app.logs_height.min(content_area.height);
+        let logs_area = Rect::new(
+            content_area.x,
+            content_area.y + content_area.height.saturating_sub(height),
+            content_area.width,
+            height,
+        );
         f.render_widget(Clear, logs_area);
         tabs::logs::render(f, app, logs_area);
     }
