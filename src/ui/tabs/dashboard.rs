@@ -24,6 +24,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     let header_titles = [
         "ID",
         "URL",
+        "Status",
         "Title",
         "Len",
         "Desc",
@@ -32,7 +33,6 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         "Len",
         "H2",
         "Len",
-        "Status",
         "Size",
         "Lang",
         "Indexable",
@@ -76,6 +76,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             vec![
                 (full_idx + 1).to_string(),
                 data[1].clone(),
+                data[10].clone(),
                 data[2].clone(),
                 data[3].clone(),
                 data[6].clone(),
@@ -84,7 +85,6 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 data[5].clone(),
                 data[8].clone(),
                 data[9].clone(),
-                data[10].clone(),
                 data[17].clone(),
                 data[12].clone(),
                 data[13].clone(),
@@ -94,6 +94,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             vec![
                 (full_idx + 1).to_string(),
                 data.get(1).cloned().unwrap_or_default(),
+                data.get(10).cloned().unwrap_or_default(),
                 data.get(2).cloned().unwrap_or_default(),
                 data.get(3).cloned().unwrap_or_default(),
                 data.get(6).cloned().unwrap_or_default(),
@@ -102,7 +103,6 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 data.get(5).cloned().unwrap_or_default(),
                 data.get(8).cloned().unwrap_or_default(),
                 data.get(9).cloned().unwrap_or_default(),
-                data.get(10).cloned().unwrap_or_default(),
                 data.get(17).cloned().unwrap_or_default(),
                 data.get(12).cloned().unwrap_or_default(),
                 data.get(13).cloned().unwrap_or_default(),
@@ -111,7 +111,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         };
 
         let cells = displayed_data.iter().enumerate().map(|(j, c)| {
-            let mut content = if j == 1 || j == 2 || j == 4 || j == 6 || j == 8 {
+            let mut content = if j == 1 || j == 3 || j == 5 || j == 7 || j == 9 {
                 // URL, Title, H1, Desc, H2
                 let content = c.as_str();
                 let char_count = content.chars().count();
@@ -133,7 +133,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
             let mut cell_style = Style::default();
 
-            if j == 10 {
+            if j == 2 {
                 // Status column
                 match content.as_str() {
                     c if c.contains("200") => {
@@ -196,7 +196,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 content = format!("{} KB", size);
             }
 
-            if j == 3 {
+            if j == 4 {
                 if let Ok(len) = c.parse::<usize>() {
                     if len > 60 && !is_selected {
                         cell_style = cell_style.fg(Color::Red);
@@ -206,7 +206,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 }
             }
 
-            if j == 5 {
+            if j == 6 {
                 if let Ok(len) = c.parse::<usize>() {
                     if len > 160 && !is_selected {
                         cell_style = cell_style.fg(Color::Red);
@@ -248,12 +248,12 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 }
             }
 
-            let content = if j == 3 || j == 5 || j == 7 || j == 9 || j == 10 || j == 11 || j == 14
+            let content = if j == 2 || j == 4 || j == 6 || j == 8 || j == 10 || j == 11 || j == 14
             {
                 let w = match j {
-                    3 | 5 => 5,
-                    7 | 9 => 7,
-                    10 | 11 => 8,
+                    4 | 6 => 5,
+                    8 | 10 => 7,
+                    2 | 11 => 8,
                     14 => 11,
                     _ => unreachable!(),
                 };
@@ -285,16 +285,16 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 
     let widths = [
         Constraint::Length(max_id_width), // ID
-        Constraint::Min(55),              // URL
-        Constraint::Length(20),           // Title
-        Constraint::Length(5),            // Title Len
-        Constraint::Length(20),           // Desc
-        Constraint::Length(5),            // Desc Len
-        Constraint::Length(20),           // H1
-        Constraint::Length(7),            // H1 Len
-        Constraint::Length(15),           // H2
-        Constraint::Length(7),            // H2 Len
+        Constraint::Max(60),              // URL
         Constraint::Length(8),            // Status
+        Constraint::Min(20),              // Title
+        Constraint::Length(5),            // Title Len
+        Constraint::Min(20),              // Desc
+        Constraint::Length(5),            // Desc Len
+        Constraint::Min(20),              // H1
+        Constraint::Length(7),            // H1 Len
+        Constraint::Min(15),              // H2
+        Constraint::Length(7),            // H2 Len
         Constraint::Length(8),            // Page Size
         Constraint::Length(6),            // Lang
         Constraint::Length(13),           // Indexable
