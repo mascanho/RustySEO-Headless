@@ -57,7 +57,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         "Files",
         "Custom Extractor",
     ];
-    let tabs = Tabs::new(titles)
+    let tabs = Tabs::new(titles.clone())
         .block(
             Block::default()
                 .borders(Borders::ALL)
@@ -74,6 +74,43 @@ pub fn ui(f: &mut Frame, app: &mut App) {
                 .add_modifier(Modifier::REVERSED),
         )
         .divider(Span::styled(" | ", Style::default().fg(border_color)));
+
+    // Compute clickable areas for each tab label, mirroring the Tabs widget layout:
+    // 1 col padding on each side of a title + " | " (3 cols) divider between tabs,
+    // all inside the bordered block. Truncated titles shrink to the visible width.
+    app.tab_hitboxes.clear();
+    {
+        let inner_x = tab_area.x + 1;
+        let end_x = tab_area.x + tab_area.width.saturating_sub(1);
+        let mut cursor = inner_x;
+        for title in &titles {
+            if cursor >= end_x {
+                break;
+            }
+            cursor += 1; // left padding
+            if cursor >= end_x {
+                break;
+            }
+            let title_width = title.len().min((end_x - cursor) as usize) as u16;
+            let start = cursor;
+            cursor += title_width;
+            let hitbox_width = if cursor < end_x {
+                cursor += 1; // right padding
+                title_width + 2
+            } else {
+                title_width
+            };
+            if hitbox_width > 0 {
+                app.tab_hitboxes.push(Rect {
+                    x: start,
+                    y: tab_area.y,
+                    width: hitbox_width,
+                    height: tab_area.height,
+                });
+            }
+            cursor += 3; // " | " divider
+        }
+    }
 
     f.render_widget(tabs, tab_area);
 

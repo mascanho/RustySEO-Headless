@@ -1093,19 +1093,20 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             }
                         }
 
-                        // 2. Check main navigation tabs
+                        // 2. Check main navigation tabs (hitboxes computed during render)
                         if let Some(tab_rect) = app.tab_rect {
-                            if mx >= tab_rect.x
-                                && mx < tab_rect.x + tab_rect.width
-                                && my >= tab_rect.y
+                            if my >= tab_rect.y
                                 && my < tab_rect.y + tab_rect.height
+                                && mx >= tab_rect.x
+                                && mx < tab_rect.x + tab_rect.width
                             {
-                                let num_tabs = 11;
-                                let tab_width = tab_rect.width / num_tabs as u16;
-                                if tab_width > 0 {
-                                    let tab_index = ((mx - tab_rect.x) / tab_width)
-                                        .min(num_tabs as u16 - 1)
-                                        as usize;
+                                let clicked = app.tab_hitboxes.iter().position(|r| {
+                                    mx >= r.x
+                                        && mx < r.x + r.width
+                                        && my >= r.y
+                                        && my < r.y + r.height
+                                });
+                                if let Some(tab_index) = clicked {
                                     app.current_state = match tab_index {
                                         0 => AppState::Dashboard,
                                         1 => AppState::External,
