@@ -1,9 +1,9 @@
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style, Stylize},
     text::Span,
     widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph},
-    Frame,
 };
 
 use crate::models::App;
@@ -54,7 +54,10 @@ pub fn render(f: &mut Frame, app: &mut App) {
         .split(inner_area);
 
     // Menu items
-    let items: Vec<ListItem> = MENU_ITEMS.iter().map(|label| ListItem::new(*label)).collect();
+    let items: Vec<ListItem> = MENU_ITEMS
+        .iter()
+        .map(|label| ListItem::new(*label))
+        .collect();
 
     let mut menu_state = ListState::default();
     menu_state.select(Some(app.dashboard_menu_selection));

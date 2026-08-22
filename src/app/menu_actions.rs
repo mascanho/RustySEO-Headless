@@ -3,7 +3,7 @@
 //! multi-tab "Export Data" action.
 
 use crate::models::{SeoScoreBreakdown, SeoScoreFactor};
-use headless_chrome::{protocol::cdp::Page::CaptureScreenshotFormatOption, Browser, LaunchOptions};
+use headless_chrome::{Browser, LaunchOptions, protocol::cdp::Page::CaptureScreenshotFormatOption};
 
 // Indices into a `table_data` row, matching the order pushed in `App::on_tick`
 // (src/app/actions.rs). Rows are always built with this exact shape.
@@ -68,7 +68,11 @@ pub fn calculate(url: &str, row: &[String], link_score: Option<u32>) -> SeoScore
     } else if (50..=160).contains(&description_len) {
         (15, true, format!("{} chars", description_len))
     } else {
-        (7, false, format!("{} chars (ideal 50-160)", description_len))
+        (
+            7,
+            false,
+            format!("{} chars (ideal 50-160)", description_len),
+        )
     };
     score += desc_pts;
     factors.push(SeoScoreFactor {

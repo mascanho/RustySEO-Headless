@@ -75,7 +75,8 @@ impl App {
                     // For robots, show the cached results directly
                     self.issue_urls_list = self.get_urls_for_issue(&issue_title);
                     if self.issue_urls_list.is_empty() {
-                        self.issue_urls_list = vec!["No disallowed URLs found in robots.txt".to_string()];
+                        self.issue_urls_list =
+                            vec!["No disallowed URLs found in robots.txt".to_string()];
                     }
                     self.issue_urls_state.select(Some(0));
                     self.show_issue_urls_modal = true;
@@ -139,7 +140,7 @@ impl App {
         if let Some(selected) = self.issue_urls_state.selected() {
             if selected < self.issue_urls_list.len() {
                 let raw_string = &self.issue_urls_list[selected];
-                
+
                 // Extract just the URL part from various formats:
                 // "URL" - plain URL
                 // "URL (extra info)" - URL with info in parentheses
@@ -163,7 +164,7 @@ impl App {
         if let Some(selected) = self.issue_urls_state.selected() {
             if selected < self.issue_urls_list.len() {
                 let raw_string = &self.issue_urls_list[selected];
-                
+
                 // Extract just the URL part (same logic as open_selected_issue_url)
                 let url = raw_string
                     .split(" (")
@@ -173,7 +174,7 @@ impl App {
                     .next()
                     .unwrap_or(raw_string)
                     .trim();
-                    
+
                 crate::ui::modals::dashboard_menu::copy_to_clipboard(url.to_string());
                 self.log(format!("Copied URL to clipboard: {}", url));
             }
@@ -259,7 +260,8 @@ impl App {
             3 => {
                 // View SEO Score
                 let link_score = self.link_scores.get(&url).copied();
-                self.seo_score_data = Some(crate::app::menu_actions::calculate(&url, &row, link_score));
+                self.seo_score_data =
+                    Some(crate::app::menu_actions::calculate(&url, &row, link_score));
                 self.show_seo_score_modal = true;
             }
             4 => {
@@ -296,14 +298,17 @@ impl App {
                 rel: l.rel.clone(),
                 is_internal: true,
             })
-            .chain(self.external_table_data.iter().filter(|l| l.source == url).map(|l| {
-                crate::models::PageLinkEntry {
-                    destination: l.destination.clone(),
-                    anchor: l.anchor.clone(),
-                    rel: l.rel.clone(),
-                    is_internal: false,
-                }
-            }))
+            .chain(
+                self.external_table_data
+                    .iter()
+                    .filter(|l| l.source == url)
+                    .map(|l| crate::models::PageLinkEntry {
+                        destination: l.destination.clone(),
+                        anchor: l.anchor.clone(),
+                        rel: l.rel.clone(),
+                        is_internal: false,
+                    }),
+            )
             .collect();
         links.sort_by(|a, b| b.is_internal.cmp(&a.is_internal));
 
@@ -362,9 +367,11 @@ impl App {
         self.screenshot_receiver = Some(rx);
 
         tokio::spawn(async move {
-            let result = tokio::task::spawn_blocking(move || crate::app::menu_actions::capture_screenshot(&url))
-                .await
-                .unwrap_or_else(|e| Err(e.to_string()));
+            let result = tokio::task::spawn_blocking(move || {
+                crate::app::menu_actions::capture_screenshot(&url)
+            })
+            .await
+            .unwrap_or_else(|e| Err(e.to_string()));
             let _ = tx.send(result).await;
         });
     }
@@ -412,6 +419,55 @@ impl App {
             Err(e) => {
                 self.log(format!("Export failed: {}", e));
                 self.show_action_result(false, "Export Failed", e);
+            }
+        }
+    }
+
+    /// Export the currently active main tab's table (Overview, External, Internal,
+    /// Redirects, Images, CSS, Javascript, CWV, Content, Files, Custom Extractor) to
+    /// a single-sheet workbook mirroring that tab's exact columns (Shift+D).
+    ///
+    /// Opens a native Save-As dialog when a GUI is available, otherwise writes
+    /// straight to the same auto-named exports folder used by "Export Data".
+    ///
+    /// This must run synchronously on the actual OS main thread, not via
+    /// `spawn_blocking`/`tokio::spawn`: on macOS, without a running `NSApplication`
+    /// event loop (which a TUI binary never starts), rfd can only show a dialog
+    /// from the main thread and panics ("NonWindowed environment") if called from
+    /// any other thread, including Tokio's blocking pool. Blocking the render loop
+    /// here is fine - it's a modal dialog, and other background tasks (crawling,
+    /// screenshots) run on separate worker threads regardless.
+    pub fn export_current_tab(&mut self) {
+        let pending = match crate::app::export::prepare_current_tab_export(self) {
+            Ok(pending) => pending,
+            Err(e) => {
+                self.log(format!("Export failed: {}", e));
+                self.show_action_result(false, "Export Failed", e);
+                return;
+            }
+        };
+
+        match crate::app::export::save_pending_export(pending) {
+            Ok(summary) => {
+                let message = format!(
+                    "Exported {} rows ({})\n{}",
+                    summary.total_rows, summary.format, summary.path
+                );
+                self.log(format!(
+                    "Exported {} rows ({}) to: {}",
+                    summary.total_rows, summary.format, summary.path
+                ));
+                self.show_action_result(true, "Export Complete", message);
+            }
+            Err(e) => {
+                // Dismissing the Save-As dialog is a deliberate user action, not a
+                // failure - just note it in the logs, no error popup.
+                if e == "Export cancelled" {
+                    self.log("Export cancelled".to_string());
+                } else {
+                    self.log(format!("Export failed: {}", e));
+                    self.show_action_result(false, "Export Failed", e);
+                }
             }
         }
     }

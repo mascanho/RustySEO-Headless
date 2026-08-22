@@ -139,13 +139,21 @@ pub fn get_page_count() -> usize {
 }
 
 pub fn get_pages_for_js(conn: &Connection, js_url: &str) -> Vec<String> {
-    let mut stmt = conn.prepare("SELECT url FROM pages WHERE data LIKE ?").unwrap();
-    let rows = stmt.query_map([format!("%{}%", js_url)], |row| row.get(0)).unwrap();
+    let mut stmt = conn
+        .prepare("SELECT url FROM pages WHERE data LIKE ?")
+        .unwrap();
+    let rows = stmt
+        .query_map([format!("%{}%", js_url)], |row| row.get(0))
+        .unwrap();
     rows.filter_map(|r| r.ok()).collect()
 }
 
 pub fn get_pages_for_css(conn: &Connection, css_url: &str) -> Vec<String> {
-    let mut stmt = conn.prepare("SELECT url FROM pages WHERE data LIKE ?").unwrap();
-    let rows = stmt.query_map([format!("%{}%", css_url)], |row| row.get(0)).unwrap();
+    let mut stmt = conn
+        .prepare("SELECT url FROM pages WHERE data LIKE ?")
+        .unwrap();
+    let rows = stmt
+        .query_map([format!("%{}%", css_url)], |row| row.get(0))
+        .unwrap();
     rows.filter_map(|r| r.ok()).collect()
 }

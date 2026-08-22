@@ -55,9 +55,15 @@ pub fn render(f: &mut Frame, app: &mut App) {
                     link.anchor.clone()
                 };
                 ListItem::new(Line::from(vec![
-                    Span::styled(format!(" [{}] ", tag), Style::default().fg(tag_color).bold()),
+                    Span::styled(
+                        format!(" [{}] ", tag),
+                        Style::default().fg(tag_color).bold(),
+                    ),
                     Span::styled(link.destination.clone(), Style::default().fg(Color::White)),
-                    Span::styled(format!("  \"{}\"", anchor), Style::default().fg(Color::DarkGray)),
+                    Span::styled(
+                        format!("  \"{}\"", anchor),
+                        Style::default().fg(Color::DarkGray),
+                    ),
                 ]))
             })
             .collect();

@@ -92,17 +92,18 @@ pub fn render(
             Cell::from(idx_str).style(row_style),
             Cell::from(link_display).style(row_style),
             Cell::from(link.text.clone()).style(row_style),
-            Cell::from(format!(" {} ", status)).style(row_style.fg(status_color).add_modifier(Modifier::BOLD)),
+            Cell::from(format!(" {} ", status))
+                .style(row_style.fg(status_color).add_modifier(Modifier::BOLD)),
         ];
 
         Row::new(cells).height(1)
     });
 
     let widths = [
-        Constraint::Length(4),  // #
-        Constraint::Min(50),    // Link
-        Constraint::Min(30),    // Anchor Text
-        Constraint::Length(8),  // Status
+        Constraint::Length(4), // #
+        Constraint::Min(50),   // Link
+        Constraint::Min(30),   // Anchor Text
+        Constraint::Length(8), // Status
     ];
 
     let scroll_indicator = if horizontal_scroll > 0 {

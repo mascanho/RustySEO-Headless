@@ -1,10 +1,10 @@
 use crate::models::App;
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Gauge, Paragraph, Row, Sparkline, Table, Wrap},
-    Frame,
 };
 use tui_piechart::{PieChart, PieSlice};
 
@@ -98,7 +98,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect, content_block: Block, ac
             .fg(Color::Cyan)
             .add_modifier(Modifier::BOLD),
     ));
-// ... (rest of render is same)
+    // ... (rest of render is same)
     let inner_area = block.inner(area);
     f.render_widget(block, area);
 
@@ -228,7 +228,10 @@ fn collect_metrics(app: &App) -> SeoMetrics {
     if m.total_pages > 0 {
         let error_rate = (m.status_4xx + m.status_5xx) as f64 / m.total_pages as f64;
         let warning_rate = (m.status_3xx) as f64 / m.total_pages as f64;
-        let missing_meta_rate = (m.total_pages.saturating_sub(m.pages_with_title) + m.total_pages.saturating_sub(m.pages_with_desc) + m.missing_h1) as f64 / (3.0 * m.total_pages as f64);
+        let missing_meta_rate = (m.total_pages.saturating_sub(m.pages_with_title)
+            + m.total_pages.saturating_sub(m.pages_with_desc)
+            + m.missing_h1) as f64
+            / (3.0 * m.total_pages as f64);
 
         let mut score = 100.0;
         score -= error_rate * 40.0;

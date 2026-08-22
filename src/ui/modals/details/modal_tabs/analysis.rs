@@ -11,9 +11,7 @@ pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
 
     let chunks = Layout::default()
         .direction(ratatui::layout::Direction::Vertical)
-        .constraints([
-            Constraint::Length(10),
-        ])
+        .constraints([Constraint::Length(10)])
         .split(area.inner(Margin::new(1, 1)));
 
     let analysis = vec![

@@ -373,8 +373,8 @@ pub fn extract_page_elements(document: &Html) -> PageData {
 
     // Construct and return the comprehensive page data structure
     PageData {
-        id: 0,               // Will be set by calling code
-        url: "".to_string(), // Will be set by calling code
+        id: 0,                         // Will be set by calling code
+        url: "".to_string(),           // Will be set by calling code
         requested_url: "".to_string(), // Will be set by calling code
         title: title.clone(),
         title_len: title.len(),

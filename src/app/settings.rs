@@ -134,10 +134,9 @@ impl App {
             unique_urls.len()
         ));
 
-        self.external_status_receiver = Some(crate::crawler::external_check::spawn_external_link_check(
-            unique_urls,
-            user_agent,
-        ));
+        self.external_status_receiver = Some(
+            crate::crawler::external_check::spawn_external_link_check(unique_urls, user_agent),
+        );
     }
 
     pub fn check_settings_mtime(&mut self) -> bool {

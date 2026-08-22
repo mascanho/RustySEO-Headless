@@ -71,18 +71,13 @@ pub fn should_crawl_url(url: &str) -> bool {
 /// never assumed to be a file.
 const FILE_EXTENSIONS: &[&str] = &[
     // Documents
-    "pdf", "doc", "docx", "odt", "rtf", "txt", "csv", "tsv", "xls", "xlsx", "ods", "ppt",
-    "pptx", "odp", "epub", "pages", "key", "numbers",
-    // Archives
-    "zip", "rar", "7z", "tar", "gz", "bz2", "xz", "iso",
-    // Media
+    "pdf", "doc", "docx", "odt", "rtf", "txt", "csv", "tsv", "xls", "xlsx", "ods", "ppt", "pptx",
+    "odp", "epub", "pages", "key", "numbers", // Archives
+    "zip", "rar", "7z", "tar", "gz", "bz2", "xz", "iso", // Media
     "mp3", "mp4", "wav", "avi", "mov", "wmv", "flv", "mkv", "ogg", "ogv", "webm", "m4a", "m4v",
-    "flac", "aac",
-    // Executables / installers
-    "exe", "dmg", "apk", "msi", "deb", "rpm", "bin", "appimage",
-    // Data
-    "json", "xml", "sql", "db", "sqlite", "yaml", "yml", "log",
-    // Fonts
+    "flac", "aac", // Executables / installers
+    "exe", "dmg", "apk", "msi", "deb", "rpm", "bin", "appimage", // Data
+    "json", "xml", "sql", "db", "sqlite", "yaml", "yml", "log", // Fonts
     "woff", "woff2", "ttf", "otf", "eot",
 ];
 
@@ -116,7 +111,7 @@ pub fn is_same_domain(domain: Option<&str>, base: Option<&str>) -> bool {
             let d_clean = d.trim_start_matches("www.");
             let b_clean = b.trim_start_matches("www.");
             d_clean == b_clean
-        },
+        }
         _ => false,
     }
 }
@@ -180,11 +175,11 @@ mod tests {
     #[test]
     fn test_extract_file_extension_ignores_dots_that_are_not_file_extensions() {
         // Versioned route - "2" is not a known file extension.
-        assert_eq!(extract_file_extension("https://example.com/v1.2/blog"), None);
-        // Unknown/unrecognized extension.
         assert_eq!(
-            extract_file_extension("https://example.com/page.xyz"),
+            extract_file_extension("https://example.com/v1.2/blog"),
             None
         );
+        // Unknown/unrecognized extension.
+        assert_eq!(extract_file_extension("https://example.com/page.xyz"), None);
     }
 }

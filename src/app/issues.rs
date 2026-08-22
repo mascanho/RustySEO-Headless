@@ -1,5 +1,5 @@
-use crate::models::App;
 use crate::helpers::issues::IssueAnalyzer;
+use crate::models::App;
 
 impl App {
     /// Populate issues_table_data with real crawled data analysis
@@ -149,10 +149,10 @@ impl App {
         if self.robots_urls_loading {
             return; // Already loading
         }
-        
+
         self.robots_urls_loading = true;
         let urls = IssueAnalyzer::analyze_robots_on_demand(&self.page_summaries).await;
-        
+
         self.robots_disallowed_urls = urls;
         self.robots_urls_loading = false;
         self.issue_urls_state.select(Some(0));

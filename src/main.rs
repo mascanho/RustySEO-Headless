@@ -5,11 +5,11 @@ use crossterm::{
         MouseEventKind,
     },
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use ratatui::{
-    backend::{Backend, CrosstermBackend},
     Terminal,
+    backend::{Backend, CrosstermBackend},
 };
 use std::{error::Error, io};
 
@@ -50,9 +50,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     if !cli.url.is_empty() {
         // Handle the actions here
-        let crawler = CrawlEngine::new()
-            .await
-            .with_db_persistence(None);
+        let crawler = CrawlEngine::new().await.with_db_persistence(None);
         crawler.crawl(&cli.url, true).await;
         return Ok(());
     } else {
@@ -473,13 +471,8 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                     {
                                         let len = app.get_current_detail_len();
                                         app.previous_detail_row(len);
-                                    } else if [1, 2, 6, 7].contains(&app.detail_tab) {
-                                        if app.detail_scroll > 0 {
-                                            app.detail_scroll = app.detail_scroll.saturating_sub(1);
-                                        }
-                                    } else {
-                                        app.previous_row();
-                                        app.refresh_details_for_current_selection();
+                                    } else if app.detail_scroll > 0 {
+                                        app.detail_scroll = app.detail_scroll.saturating_sub(1);
                                     }
                                 }
                                 KeyCode::Char('j') => {
@@ -490,11 +483,8 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                     {
                                         let len = app.get_current_detail_len();
                                         app.next_detail_row(len);
-                                    } else if [1, 2, 6, 7].contains(&app.detail_tab) {
-                                        app.detail_scroll += 1;
                                     } else {
-                                        app.next_row();
-                                        app.refresh_details_for_current_selection();
+                                        app.detail_scroll += 1;
                                     }
                                 }
                                 KeyCode::Up => {
@@ -513,9 +503,15 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                                     app.detail_scroll.saturating_sub(1);
                                             }
                                         }
-                                    } else if app.current_state == AppState::Dashboard {
-                                        app.previous_row();
-                                        app.refresh_details_for_current_selection();
+                                    } else if app.detail_tab == 3
+                                        || app.detail_tab == 4
+                                        || app.detail_tab == 5
+                                        || app.detail_tab == 8
+                                    {
+                                        let len = app.get_current_detail_len();
+                                        app.previous_detail_row(len);
+                                    } else if app.detail_scroll > 0 {
+                                        app.detail_scroll = app.detail_scroll.saturating_sub(1);
                                     }
                                 }
                                 KeyCode::Down => {
@@ -531,9 +527,15 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                         } else if [0, 1, 2, 6, 7].contains(&app.detail_tab) {
                                             app.detail_scroll += 1;
                                         }
-                                    } else if app.current_state == AppState::Dashboard {
-                                        app.next_row();
-                                        app.refresh_details_for_current_selection();
+                                    } else if app.detail_tab == 3
+                                        || app.detail_tab == 4
+                                        || app.detail_tab == 5
+                                        || app.detail_tab == 8
+                                    {
+                                        let len = app.get_current_detail_len();
+                                        app.next_detail_row(len);
+                                    } else {
+                                        app.detail_scroll += 1;
                                     }
                                 }
                                 _ => {}
@@ -801,6 +803,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                         match key.code {
                             KeyCode::Char('q') => return Ok(()),
                             KeyCode::Char('?') => app.toggle_help(),
+                            KeyCode::Char('D') => app.export_current_tab(),
                             KeyCode::Esc => app.reset(),
                             KeyCode::Char('i') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                                 app.input_mode = true
@@ -1093,19 +1096,20 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             }
                         }
 
-                        // 2. Check main navigation tabs
+                        // 2. Check main navigation tabs (hitboxes computed during render)
                         if let Some(tab_rect) = app.tab_rect {
-                            if mx >= tab_rect.x
-                                && mx < tab_rect.x + tab_rect.width
-                                && my >= tab_rect.y
+                            if my >= tab_rect.y
                                 && my < tab_rect.y + tab_rect.height
+                                && mx >= tab_rect.x
+                                && mx < tab_rect.x + tab_rect.width
                             {
-                                let num_tabs = 11;
-                                let tab_width = tab_rect.width / num_tabs as u16;
-                                if tab_width > 0 {
-                                    let tab_index = ((mx - tab_rect.x) / tab_width)
-                                        .min(num_tabs as u16 - 1)
-                                        as usize;
+                                let clicked = app.tab_hitboxes.iter().position(|r| {
+                                    mx >= r.x
+                                        && mx < r.x + r.width
+                                        && my >= r.y
+                                        && my < r.y + r.height
+                                });
+                                if let Some(tab_index) = clicked {
                                     app.current_state = match tab_index {
                                         0 => AppState::Dashboard,
                                         1 => AppState::External,
@@ -1150,6 +1154,38 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                         mouse.kind,
                         MouseEventKind::ScrollUp | MouseEventKind::ScrollDown
                     ) {
+                        // While the Details modal is open, wheel scrolling stays scoped to it
+                        if app.show_details {
+                            match mouse.kind {
+                                MouseEventKind::ScrollUp => {
+                                    if app.detail_tab == 3
+                                        || app.detail_tab == 4
+                                        || app.detail_tab == 5
+                                        || app.detail_tab == 8
+                                    {
+                                        let len = app.get_current_detail_len();
+                                        app.previous_detail_row(len);
+                                    } else if app.detail_scroll > 0 {
+                                        app.detail_scroll = app.detail_scroll.saturating_sub(1);
+                                    }
+                                }
+                                MouseEventKind::ScrollDown => {
+                                    if app.detail_tab == 3
+                                        || app.detail_tab == 4
+                                        || app.detail_tab == 5
+                                        || app.detail_tab == 8
+                                    {
+                                        let len = app.get_current_detail_len();
+                                        app.next_detail_row(len);
+                                    } else {
+                                        app.detail_scroll += 1;
+                                    }
+                                }
+                                _ => {}
+                            }
+                            continue;
+                        }
+
                         // Handle mouse wheel scrolling on tables
                         if app.current_state == AppState::Dashboard
                             || app.current_state == AppState::CoreWebVitals
