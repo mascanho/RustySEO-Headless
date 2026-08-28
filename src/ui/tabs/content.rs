@@ -17,7 +17,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     // Split off an N-Grams detail panel for the currently selected page.
     let panels = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(70), Constraint::Percentage(30)])
+        .constraints([Constraint::Percentage(75), Constraint::Percentage(25)])
         .split(area);
     let area = panels[0];
     let ngrams_area = panels[1];
@@ -239,7 +239,13 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         f.render_widget(search_paragraph, search_area);
     }
 
-    render_ngrams_panel(f, app, ngrams_area, accent_color, border_color);
+    let side_panels = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Percentage(60), Constraint::Percentage(40)])
+        .split(ngrams_area);
+
+    render_ngrams_panel(f, app, side_panels[0], accent_color, border_color);
+    render_duplicate_content_panel(f, app, side_panels[1], accent_color, border_color);
 }
 
 /// Right-hand panel showing 1/2/3/4-word phrase frequencies for whichever page
@@ -326,6 +332,87 @@ fn render_ngrams_panel(
     )
     .column_spacing(1)
     .style(Style::default().bg(Color::Rgb(15, 15, 25)));
+
+    f.render_widget(table, area);
+}
+
+/// Bottom-right panel: other crawled pages whose content is near-identical to
+/// the currently selected page, per the SimHash fingerprint computed for
+/// every page at crawl time (see `crawler::helpers::simhash`). A distance of
+/// 0 means byte-identical body text; anything at or under the near-duplicate
+/// threshold still reads as "basically the same content" (e.g. a templated
+/// page with only a price or name swapped).
+fn render_duplicate_content_panel(
+    f: &mut Frame,
+    app: &App,
+    area: Rect,
+    accent_color: Color,
+    border_color: Color,
+) {
+    let selected_id = app
+        .content_table_state
+        .selected()
+        .and_then(|i| app.content_filtered_table_data.get(i))
+        .and_then(|row| row.first())
+        .and_then(|id_str| id_str.parse::<usize>().ok());
+
+    let header = Row::new(["Similar Page", "Match"].iter().map(|h| {
+        Cell::from(format!(" {} ", h)).style(
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(accent_color)
+                .bg(Color::Rgb(30, 30, 45)),
+        )
+    }))
+    .height(1);
+
+    let mut rows: Vec<Row> = Vec::new();
+    if let Some(id) = selected_id {
+        for pair in &app.duplicate_pairs {
+            let other_id = if pair.id_a == id {
+                Some(pair.id_b)
+            } else if pair.id_b == id {
+                Some(pair.id_a)
+            } else {
+                None
+            };
+            let Some(other_id) = other_id else { continue };
+            let Some(other) = app.page_summaries.get(other_id.saturating_sub(1)) else {
+                continue;
+            };
+
+            let label = if pair.distance == 0 {
+                "Exact".to_string()
+            } else {
+                let similarity = 100.0 * (64 - pair.distance) as f64 / 64.0;
+                format!("{:.0}% similar", similarity)
+            };
+            rows.push(Row::new(vec![
+                Cell::from(other.url.clone()),
+                Cell::from(label),
+            ]));
+        }
+    }
+
+    let title = if rows.is_empty() {
+        " Duplicate Content (none found for this page) "
+    } else {
+        " Duplicate Content "
+    };
+
+    let table = Table::new(rows, [Constraint::Min(20), Constraint::Length(14)])
+        .header(header)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(Span::styled(
+                    title,
+                    Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+                ))
+                .border_style(Style::default().fg(border_color)),
+        )
+        .column_spacing(1)
+        .style(Style::default().bg(Color::Rgb(15, 15, 25)));
 
     f.render_widget(table, area);
 }

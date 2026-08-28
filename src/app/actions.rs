@@ -8,6 +8,7 @@ impl App {
         // 0. Check for robots analysis results
         self.check_robots_results();
         self.check_screenshot_results();
+        self.check_data_insights_results();
 
         // 1. Collect results from background crawler thread
         let mut results = Vec::new();
@@ -161,7 +162,9 @@ impl App {
                     canonical_count,
                     has_mixed_content,
                     ngrams: page_data.ngrams.clone(),
+                    content_fingerprint: page_data.content_fingerprint,
                 };
+                self.detect_duplicate_content(&summary);
                 self.page_summaries.push(summary);
 
                 let mut row = vec![

@@ -22,6 +22,7 @@ pub enum AppState {
     Content,
     Files,
     CustomExtractor,
+    DataInsights,
 }
 
 impl Default for App {
@@ -258,6 +259,25 @@ impl Default for App {
             redirect_map: HashMap::new(),
             canonical_map: HashMap::new(),
             link_scores: HashMap::new(),
+            duplicate_pairs: Vec::new(),
+
+            data_insights_tab: 0,
+            gsc_state: Default::default(),
+            ga4_state: Default::default(),
+            clarity_state: Default::default(),
+            bing_state: Default::default(),
+            pagespeed_insights_state: Default::default(),
+            gbp_state: Default::default(),
+            ahrefs_state: Default::default(),
+            gsc_receiver: None,
+            ga4_receiver: None,
+            clarity_receiver: None,
+            bing_receiver: None,
+            pagespeed_insights_receiver: None,
+            gbp_receiver: None,
+            ahrefs_receiver: None,
+            google_oauth_receiver: None,
+            google_oauth_in_progress: false,
         }
     }
 }

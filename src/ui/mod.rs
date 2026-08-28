@@ -56,6 +56,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         "Content",
         "Files",
         "Custom Extractor",
+        "Connectors",
     ];
     let tabs = Tabs::new(titles.clone())
         .block(
@@ -128,6 +129,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
         AppState::Content => tabs::content::render(f, app, content_area),
         AppState::Files => tabs::files::render(f, app, content_area),
+        AppState::DataInsights => tabs::data_insights::render(f, app, content_area),
     }
 
     // Render Footer

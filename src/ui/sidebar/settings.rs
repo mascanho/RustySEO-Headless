@@ -1,10 +1,10 @@
 use crate::models::App;
 use ratatui::{
-    Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Paragraph, Row, Table},
+    Frame,
 };
 
 pub fn render(
@@ -69,7 +69,7 @@ pub fn render(
                 Cell::from(if settings.crawler.stay_on_domain {
                     "PROTECTED "
                 } else {
-                    " OPEN "
+                    "OPEN "
                 })
                 .style(Style::default().fg(if settings.crawler.stay_on_domain {
                     Color::Green
@@ -280,33 +280,28 @@ pub fn render(
                 Cell::from(""),
             ]),
             Row::new(vec![
-                Cell::from("  ├─ Project"),
-                Cell::from(
-                    if settings.connectors.search_console.project_name.is_empty() {
-                        "NOT SET".to_string()
-                    } else {
-                        settings
-                            .connectors
-                            .search_console
-                            .project_name
-                            .clone()
-                            .to_string()
-                    },
-                )
+                Cell::from("  ├─ Site"),
+                Cell::from(if settings.connectors.search_console.site_url.is_empty() {
+                    "NOT SET".to_string()
+                } else {
+                    settings.connectors.search_console.site_url.clone()
+                })
                 .style(Style::default().fg(Color::Blue)),
             ]),
             Row::new(vec![
                 Cell::from("  └─ Status"),
-                Cell::from(if settings.connectors.search_console.token.is_empty() {
-                    "UNLINKED"
-                } else {
-                    "CONNECTED"
-                })
-                .style(Style::default().fg(
-                    if settings.connectors.search_console.token.is_empty() {
-                        Color::Red
+                Cell::from(
+                    if settings.connectors.search_console.tokens.is_connected() {
+                        "CONNECTED"
                     } else {
+                        "UNLINKED"
+                    },
+                )
+                .style(Style::default().fg(
+                    if settings.connectors.search_console.tokens.is_connected() {
                         Color::Green
+                    } else {
+                        Color::Red
                     },
                 )),
             ]),

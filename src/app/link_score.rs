@@ -222,6 +222,7 @@ mod tests {
             canonical_count: 0,
             has_mixed_content: false,
             ngrams: Default::default(),
+            content_fingerprint: 0,
         }
     }
 

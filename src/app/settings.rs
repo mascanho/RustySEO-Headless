@@ -45,6 +45,7 @@ impl App {
         self.redirect_map.clear();
         self.canonical_map.clear();
         self.link_scores.clear();
+        self.duplicate_pairs.clear();
         self.current_page = 0;
         self.internal_current_page = 0;
         self.external_current_page = 0;

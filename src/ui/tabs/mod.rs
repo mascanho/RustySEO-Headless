@@ -3,6 +3,7 @@ pub mod css;
 pub mod custom_extractor;
 pub mod cwv;
 pub mod dashboard;
+pub mod data_insights;
 pub mod external;
 pub mod files;
 pub mod images;

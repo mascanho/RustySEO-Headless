@@ -147,13 +147,15 @@ impl App {
             AppState::CoreWebVitals => AppState::Content,
             AppState::Content => AppState::Files,
             AppState::Files => AppState::CustomExtractor,
-            AppState::CustomExtractor => AppState::Dashboard,
+            AppState::CustomExtractor => AppState::DataInsights,
+            AppState::DataInsights => AppState::Dashboard,
         }
     }
 
     pub fn previous_state(&mut self) {
         self.current_state = match self.current_state {
-            AppState::Dashboard => AppState::CustomExtractor,
+            AppState::Dashboard => AppState::DataInsights,
+            AppState::DataInsights => AppState::CustomExtractor,
             AppState::External => AppState::Dashboard,
             AppState::Internal => AppState::External,
             AppState::Redirects => AppState::Internal,
@@ -180,7 +182,20 @@ impl App {
             AppState::Content => 8,
             AppState::Files => 9,
             AppState::CustomExtractor => 10,
+            AppState::DataInsights => 11,
         }
+    }
+
+    pub fn next_data_insights_tab(&mut self) {
+        self.data_insights_tab = (self.data_insights_tab + 1) % 7;
+    }
+
+    pub fn previous_data_insights_tab(&mut self) {
+        self.data_insights_tab = if self.data_insights_tab == 0 {
+            6
+        } else {
+            self.data_insights_tab - 1
+        };
     }
 
     pub fn next_detail_tab(&mut self) {

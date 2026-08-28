@@ -376,7 +376,7 @@ async fn fetch_js(url: &str, base_url: &Url, browser: Arc<Browser>) -> Result<Pa
     Ok(page_data)
 }
 
-async fn fetch_pagespeed_data(
+pub(crate) async fn fetch_pagespeed_data(
     client: &Client,
     url: &str,
     strategy: &str,

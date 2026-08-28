@@ -5,5 +5,6 @@ pub mod image_utils;
 pub mod keywords;
 pub mod ngrams;
 pub mod robots;
+pub mod simhash;
 pub mod user_agents;
 pub mod word_count;

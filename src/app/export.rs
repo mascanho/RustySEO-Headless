@@ -125,6 +125,9 @@ impl PendingTabExport {
 /// to call straight from the key handler before handing off to a background
 /// thread for the actual save.
 pub fn prepare_current_tab_export(app: &App) -> Result<PendingTabExport, String> {
+    if app.current_state == AppState::DataInsights {
+        return Err("Data & Insights isn't exportable - it's a live connector view, not a crawl table".to_string());
+    }
     let sheet = build_sheet_for_state(app, app.current_state);
     if sheet.rows.is_empty() {
         return Err("No data to export yet".to_string());
@@ -189,6 +192,9 @@ fn build_sheet_for_state(app: &App, state: AppState) -> ExportSheet {
         AppState::Content => build_content_sheet(app),
         AppState::Files => build_files_sheet(app),
         AppState::CustomExtractor => build_extractor_sheet(app),
+        AppState::DataInsights => {
+            unreachable!("DataInsights is rejected in prepare_current_tab_export")
+        }
     }
 }
 

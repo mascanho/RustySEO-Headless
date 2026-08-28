@@ -17,6 +17,7 @@ use std::{error::Error, io};
 pub mod ai;
 pub mod app;
 pub mod cli;
+pub mod connectors;
 pub mod crawler;
 pub mod db;
 pub mod helpers;
@@ -834,8 +835,20 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                 }
                             }
 
-                            // Tab/BackTab always cycle main states if no modal
-                            KeyCode::Tab => app.next_state(),
+                            // Tab/BackTab cycle main states, except on Data & Insights
+                            // where they cycle its own connector sub-tabs instead.
+                            KeyCode::Tab => {
+                                if app.current_state == AppState::DataInsights {
+                                    app.next_data_insights_tab();
+                                } else {
+                                    app.next_state();
+                                }
+                            }
+                            KeyCode::BackTab => {
+                                if app.current_state == AppState::DataInsights {
+                                    app.previous_data_insights_tab();
+                                }
+                            }
                             KeyCode::Backspace => app.previous_state(),
 
                             // Vim Navigation
@@ -882,6 +895,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                 }
                                 AppState::Files => app.previous_files_row(),
                                 AppState::Redirects => app.previous_redirects_row(),
+                                AppState::DataInsights => app.previous_data_insights_tab(),
                                 // AppState::Keywords => app.previous_keywords_row(),
                             },
                             KeyCode::Char('j') | KeyCode::Down => match app.current_state {
@@ -929,6 +943,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                 }
                                 AppState::Files => app.next_files_row(),
                                 AppState::Redirects => app.next_redirects_row(),
+                                AppState::DataInsights => app.next_data_insights_tab(),
                             },
 
                             // Advanced Vim jumps
@@ -982,7 +997,15 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                             app.show_css_pages_for_url(css_url.url.clone());
                                         }
                                     }
+                                } else if app.current_state == AppState::DataInsights {
+                                    app.trigger_data_insights_fetch();
                                 }
+                            }
+
+                            // Data & Insights: 'c' connects the active connector (GSC/GA4/GBP
+                            // via Google OAuth; others use a static API key so this is a no-op).
+                            KeyCode::Char('c') if app.current_state == AppState::DataInsights => {
+                                app.trigger_data_insights_connect();
                             }
 
                             KeyCode::Char('m') => {
@@ -1060,6 +1083,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             KeyCode::Char('9') => app.current_state = AppState::Content,
                             KeyCode::Char('0') => app.current_state = AppState::Files,
                             KeyCode::Char('e') => app.current_state = AppState::CustomExtractor,
+                            KeyCode::Char('d') => app.current_state = AppState::DataInsights,
                             _ => {}
                         }
                     }
@@ -1122,6 +1146,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                         8 => AppState::Content,
                                         9 => AppState::Files,
                                         10 => AppState::CustomExtractor,
+                                        11 => AppState::DataInsights,
                                         _ => app.current_state,
                                     };
                                 }

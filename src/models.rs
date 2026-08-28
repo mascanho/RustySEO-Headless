@@ -65,6 +65,16 @@ pub struct ConnectorsConfig {
     pub search_console: SearchConsoleConfig,
     pub gemini: GeminiConfig,
     pub openai: OpenAiConfig,
+    #[serde(default)]
+    pub ga4: Ga4Config,
+    #[serde(default)]
+    pub gbp: GbpConfig,
+    #[serde(default)]
+    pub clarity: ClarityConfig,
+    #[serde(default)]
+    pub bing: BingWebmasterConfig,
+    #[serde(default)]
+    pub ahrefs: AhrefsConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -73,11 +83,96 @@ pub struct PageSpeedConfig {
     pub status: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+/// OAuth2 access/refresh tokens for a connected Google product (Search
+/// Console, GA4, Business Profile). All three run the same "installed app"
+/// authorization-code flow via `crate::connectors::google_oauth`.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+pub struct GoogleOAuthTokens {
+    pub access_token: String,
+    pub refresh_token: String,
+    /// Unix timestamp (seconds) the access token expires at. 0 = never fetched.
+    pub expires_at: i64,
+}
+
+impl GoogleOAuthTokens {
+    pub fn is_connected(&self) -> bool {
+        !self.refresh_token.is_empty()
+    }
+}
+
+/// A user-registered Google Cloud OAuth "Desktop app" client. Google requires
+/// each developer to register their own client (Cloud Console > APIs &
+/// Credentials) - there is no shared client this CLI can embed - so these are
+/// pasted into `cli-settings.toml` by the user, same convention as the
+/// existing PageSpeed/Gemini API keys.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct SearchConsoleConfig {
-    pub token: String,
-    pub project_id: String,
-    pub project_name: String,
+    #[serde(default)]
+    pub client_id: String,
+    #[serde(default)]
+    pub client_secret: String,
+    /// The exact property as it appears in Search Console (e.g.
+    /// `sc-domain:example.com` or `https://example.com/`).
+    #[serde(default)]
+    pub site_url: String,
+    #[serde(default)]
+    pub tokens: GoogleOAuthTokens,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+pub struct Ga4Config {
+    #[serde(default)]
+    pub client_id: String,
+    #[serde(default)]
+    pub client_secret: String,
+    /// Numeric GA4 property ID (Admin > Property Settings), without the
+    /// "properties/" prefix.
+    #[serde(default)]
+    pub property_id: String,
+    #[serde(default)]
+    pub tokens: GoogleOAuthTokens,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+pub struct GbpConfig {
+    #[serde(default)]
+    pub client_id: String,
+    #[serde(default)]
+    pub client_secret: String,
+    /// Business Profile account resource id (Account Management API), e.g.
+    /// `106234...`, without the "accounts/" prefix.
+    #[serde(default)]
+    pub account_id: String,
+    #[serde(default)]
+    pub tokens: GoogleOAuthTokens,
+}
+
+/// Microsoft Clarity Data Export API token, generated per-project in the
+/// Clarity dashboard under Settings > Data Export.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+pub struct ClarityConfig {
+    #[serde(default)]
+    pub api_token: String,
+}
+
+/// Bing Webmaster Tools API key, from the Webmaster Tools UI under Settings >
+/// API Access.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+pub struct BingWebmasterConfig {
+    #[serde(default)]
+    pub api_key: String,
+    #[serde(default)]
+    pub site_url: String,
+}
+
+/// Ahrefs API v3 token (requires a paid Ahrefs plan with API access).
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+pub struct AhrefsConfig {
+    #[serde(default)]
+    pub api_token: String,
+    /// Domain or URL to report on, e.g. `example.com`.
+    #[serde(default)]
+    pub target: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -136,11 +231,7 @@ impl Default for AppSettings {
                     api_key: "".to_string(),
                     status: false,
                 },
-                search_console: SearchConsoleConfig {
-                    token: "".to_string(),
-                    project_id: "".to_string(),
-                    project_name: "".to_string(),
-                },
+                search_console: SearchConsoleConfig::default(),
                 gemini: GeminiConfig {
                     api_key: "".to_string(),
                     model: "gemini-pro".to_string(),
@@ -150,6 +241,11 @@ impl Default for AppSettings {
                     api_key: "".to_string(),
                     model: "gpt-4-turbo".to_string(),
                 },
+                ga4: Ga4Config::default(),
+                gbp: GbpConfig::default(),
+                clarity: ClarityConfig::default(),
+                bing: BingWebmasterConfig::default(),
+                ahrefs: AhrefsConfig::default(),
             },
         }
     }
@@ -169,6 +265,18 @@ impl AppSettings {
         } else {
             Self::default()
         }
+    }
+
+    /// Persists the full settings file, e.g. after a Data & Insights connector
+    /// finishes an OAuth exchange and needs to save its refresh token.
+    pub fn save(&self) -> std::io::Result<()> {
+        let path = Self::path();
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        let content = toml::to_string_pretty(self)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+        std::fs::write(path, content)
     }
 }
 
@@ -273,6 +381,96 @@ pub struct RedirectHop {
     pub status: u16,
 }
 
+/// Generic holder for a Data & Insights connector's last fetch: the data (if
+/// any), the last error (if any), and whether a fetch is currently running.
+/// Shared by all seven connector tabs so `App` doesn't need three near-
+/// identical fields repeated per connector.
+#[derive(Debug, Clone)]
+pub struct ConnectorState<T> {
+    pub data: Option<T>,
+    pub error: Option<String>,
+    pub loading: bool,
+}
+
+impl<T> Default for ConnectorState<T> {
+    fn default() -> Self {
+        Self {
+            data: None,
+            error: None,
+            loading: false,
+        }
+    }
+}
+
+/// One row of a Google Search Console Search Analytics response.
+#[derive(Debug, Clone)]
+pub struct GscRow {
+    /// Dimension values in the order requested (e.g. just `[query]`).
+    pub keys: Vec<String>,
+    pub clicks: f64,
+    pub impressions: f64,
+    pub ctr: f64,
+    pub position: f64,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct GscReport {
+    pub rows: Vec<GscRow>,
+}
+
+/// A GA4 Data API `runReport` response, kept in its native
+/// dimensions/metrics-header + row shape rather than modeled per-metric,
+/// since the requested dimensions/metrics (and therefore the shape) vary.
+#[derive(Debug, Clone, Default)]
+pub struct Ga4Report {
+    pub dimension_headers: Vec<String>,
+    pub metric_headers: Vec<String>,
+    pub rows: Vec<(Vec<String>, Vec<String>)>,
+}
+
+/// Microsoft Clarity's Data Export API returns a list of metric blocks whose
+/// inner shape differs per metric (Traffic vs EngagementTime vs ScrollDepth,
+/// etc.), so this keeps the raw JSON rather than modeling every variant.
+#[derive(Debug, Clone, Default)]
+pub struct ClarityInsights {
+    pub metrics: Vec<serde_json::Value>,
+}
+
+#[derive(Debug, Clone)]
+pub struct BingQueryRow {
+    pub query: String,
+    pub clicks: u64,
+    pub impressions: u64,
+    pub avg_click_position: f64,
+    pub avg_impression_position: f64,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct BingQueryStats {
+    pub rows: Vec<BingQueryRow>,
+}
+
+#[derive(Debug, Clone)]
+pub struct GbpLocation {
+    pub title: String,
+    pub address: String,
+    pub phone: String,
+    pub website: String,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct GbpLocations {
+    pub locations: Vec<GbpLocation>,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct AhrefsReport {
+    pub domain_rating: f64,
+    pub ahrefs_rank: u64,
+    pub backlinks: u64,
+    pub referring_domains: u64,
+}
+
 /// Word n-grams (contiguous phrases of 1-4 words) extracted from a page's
 /// visible body text. Each list is sorted by frequency descending and capped
 /// to the top 15 - the same bounded-output shape as the existing single-word
@@ -345,6 +543,19 @@ pub struct PageSummary {
     pub has_mixed_content: bool,
     /// Top 1/2/3/4-word phrase frequencies from the page's body text.
     pub ngrams: NgramData,
+    /// 64-bit SimHash of the page's body text - compare via
+    /// `crawler::helpers::simhash::hamming_distance` to find near-duplicates.
+    pub content_fingerprint: u64,
+}
+
+/// A pair of crawled pages (by `PageSummary::id`) whose content SimHash
+/// fingerprints are within `simhash::NEAR_DUPLICATE_THRESHOLD` bits of each
+/// other. `distance == 0` means byte-identical body text.
+#[derive(Debug, Clone)]
+pub struct DuplicatePair {
+    pub id_a: usize,
+    pub id_b: usize,
+    pub distance: u32,
 }
 
 pub struct App {
@@ -578,4 +789,46 @@ pub struct App {
     pub canonical_map: HashMap<String, String>,
     /// Final Link Score (1-100) per eligible URL, populated by Crawl Analysis.
     pub link_scores: HashMap<String, u32>,
+    /// Near/exact-duplicate content pairs, found incrementally as each page
+    /// is crawled (see `App::detect_duplicate_content` in `app::actions`).
+    pub duplicate_pairs: Vec<DuplicatePair>,
+
+    // ---- Data & Insights tab (GSC/GA4/Clarity/Bing/PageSpeed/GBP/Ahrefs) ----
+    /// Index of the selected connector sub-tab: 0=GSC 1=GA4 2=Clarity 3=Bing
+    /// 4=PageSpeed 5=GBP 6=Ahrefs.
+    pub data_insights_tab: usize,
+
+    pub gsc_state: ConnectorState<GscReport>,
+    pub ga4_state: ConnectorState<Ga4Report>,
+    pub clarity_state: ConnectorState<ClarityInsights>,
+    pub bing_state: ConnectorState<BingQueryStats>,
+    pub pagespeed_insights_state: ConnectorState<crate::crawler::helpers::html_parser::CwvData>,
+    pub gbp_state: ConnectorState<GbpLocations>,
+    pub ahrefs_state: ConnectorState<AhrefsReport>,
+
+    // GSC/GA4/GBP fetches also refresh the OAuth access token when it's
+    // stale, so their results carry the (possibly updated) tokens back for
+    // App to persist - the alternative, refreshing synchronously before
+    // spawning, would block the render loop on a network round trip.
+    pub gsc_receiver:
+        Option<tokio::sync::mpsc::Receiver<Result<(GscReport, GoogleOAuthTokens), String>>>,
+    pub ga4_receiver:
+        Option<tokio::sync::mpsc::Receiver<Result<(Ga4Report, GoogleOAuthTokens), String>>>,
+    pub clarity_receiver: Option<tokio::sync::mpsc::Receiver<Result<ClarityInsights, String>>>,
+    pub bing_receiver: Option<tokio::sync::mpsc::Receiver<Result<BingQueryStats, String>>>,
+    pub pagespeed_insights_receiver: Option<
+        tokio::sync::mpsc::Receiver<
+            Result<crate::crawler::helpers::html_parser::CwvData, String>,
+        >,
+    >,
+    pub gbp_receiver:
+        Option<tokio::sync::mpsc::Receiver<Result<(GbpLocations, GoogleOAuthTokens), String>>>,
+    pub ahrefs_receiver: Option<tokio::sync::mpsc::Receiver<Result<AhrefsReport, String>>>,
+
+    /// Shared by the three Google-OAuth connectors (GSC/GA4/GBP): which one
+    /// the in-flight loopback listener belongs to, so the result can be
+    /// written back into the right settings slot.
+    pub google_oauth_receiver:
+        Option<tokio::sync::mpsc::Receiver<(crate::connectors::google_oauth::GoogleService, Result<GoogleOAuthTokens, String>)>>,
+    pub google_oauth_in_progress: bool,
 }

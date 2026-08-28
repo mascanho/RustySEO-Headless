@@ -5,6 +5,7 @@ use crate::crawler::helpers::extractor::{ExtractionResult, extract_with_details}
 use crate::crawler::helpers::image_utils::ImageInfo;
 use crate::crawler::helpers::keywords::extract_keywords;
 use crate::crawler::helpers::ngrams::extract_ngrams;
+use crate::crawler::helpers::simhash::compute_fingerprint;
 use crate::crawler::helpers::word_count::get_words;
 use crate::models::AppSettings;
 
@@ -126,6 +127,10 @@ pub struct PageData {
     pub keywords: Vec<String>,
     #[serde(default)]
     pub ngrams: crate::models::NgramData,
+    /// 64-bit SimHash of the page's body text, used to flag near-duplicate
+    /// content across the crawl (see `crawler::helpers::simhash`).
+    #[serde(default)]
+    pub content_fingerprint: u64,
     pub extraction: Option<ExtractionResult>,
     pub redirect_chain: Vec<crate::models::RedirectHop>,
 }
@@ -407,6 +412,7 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         cwv_mobile: None,
         keywords: extract_keywords(document),
         ngrams: extract_ngrams(document),
+        content_fingerprint: compute_fingerprint(document),
         extraction,
         redirect_chain: vec![],
     }

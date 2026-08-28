@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 ratatui = "0.29"
 crossterm = "0.29"
-reqwest = { version = "0.13", features = ["blocking", "json"] }
+reqwest = { version = "0.13", features = ["blocking", "json", "query", "form"] }
 scraper = "0.25"
 tokio = { version = "1", features = ["full"] }
 url = "2.5"
