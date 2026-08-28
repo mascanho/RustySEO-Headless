@@ -4,10 +4,9 @@ use std::sync::LazyLock;
 
 static BODY_SELECTOR: LazyLock<Selector> = LazyLock::new(|| Selector::parse("body").unwrap());
 
-pub fn extract_keywords(html: &Html) -> Vec<String> {
-    // 1. Get text from semantically relevant elements while avoiding duplication
-    // We'll use a blacklist of tags to skip instead of a whitelist of tags to include
-    // to ensure we get all text nodes in the body that aren't code/metadata.
+/// Collects visible body text, skipping script/style/noscript/svg/canvas
+/// subtrees, for tokenization by keyword and n-gram extraction alike.
+pub(crate) fn extract_body_text(html: &Html) -> String {
     let mut body_text = String::new();
 
     if let Some(body) = html.select(&BODY_SELECTOR).next() {
@@ -39,6 +38,12 @@ pub fn extract_keywords(html: &Html) -> Vec<String> {
             }
         }
     }
+
+    body_text
+}
+
+pub fn extract_keywords(html: &Html) -> Vec<String> {
+    let body_text = extract_body_text(html);
 
     // 2. Tokenize and normalize
     let words = body_text

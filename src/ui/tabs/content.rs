@@ -1,6 +1,6 @@
 use ratatui::{
     Frame,
-    layout::{Alignment, Constraint, Rect},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table},
@@ -11,9 +11,20 @@ use crate::models::App;
 /// Renders the Content tab with independent filtering and scrolling from the Dashboard.
 /// This allows for content-specific views and future customizations.
 pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
-    app.table_rect = Some(area);
     let accent_color = Color::Rgb(80, 140, 255);
     let border_color = Color::Rgb(40, 45, 60);
+
+    // Split off an N-Grams detail panel for the currently selected page.
+    let panels = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(70), Constraint::Percentage(30)])
+        .split(area);
+    let area = panels[0];
+    let ngrams_area = panels[1];
+
+    // The content table (not the ngrams panel) is what mouse wheel scrolling
+    // and click handling target for this tab.
+    app.table_rect = Some(area);
 
     // Ensure we have filtered data if it was just initialized
     if app.content_filtered_table_data.is_empty()
@@ -227,4 +238,94 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         f.render_widget(Clear, search_area);
         f.render_widget(search_paragraph, search_area);
     }
+
+    render_ngrams_panel(f, app, ngrams_area, accent_color, border_color);
+}
+
+/// Right-hand panel showing 1/2/3/4-word phrase frequencies for whichever page
+/// row is currently selected in the Content Audit table. N-grams are extracted
+/// once per page at crawl time (bounded to the top 15 phrases per length, the
+/// same shape as the existing top-10 keyword extraction), so this panel is just
+/// a lookup - no work happens on render or on selection change.
+fn render_ngrams_panel(
+    f: &mut Frame,
+    app: &App,
+    area: Rect,
+    accent_color: Color,
+    border_color: Color,
+) {
+    let selected_summary = app
+        .content_table_state
+        .selected()
+        .and_then(|i| app.content_filtered_table_data.get(i))
+        .and_then(|row| row.first())
+        .and_then(|id_str| id_str.parse::<usize>().ok())
+        .and_then(|id| app.page_summaries.get(id.saturating_sub(1)));
+
+    let header = Row::new(["N", "Phrase", "Count"].iter().map(|h| {
+        Cell::from(format!(" {} ", h)).style(
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(accent_color)
+                .bg(Color::Rgb(30, 30, 45)),
+        )
+    }))
+    .height(1);
+
+    let mut rows: Vec<Row> = Vec::new();
+    if let Some(summary) = selected_summary {
+        let groups: [(&str, &Vec<(String, usize)>); 4] = [
+            ("1", &summary.ngrams.unigrams),
+            ("2", &summary.ngrams.bigrams),
+            ("3", &summary.ngrams.trigrams),
+            ("4", &summary.ngrams.quadgrams),
+        ];
+
+        for (i, (n, phrases)) in groups.iter().enumerate() {
+            let row_bg = if i % 2 == 0 {
+                Color::Rgb(20, 20, 30)
+            } else {
+                Color::Rgb(25, 25, 40)
+            };
+            for (phrase, count) in phrases.iter().take(6) {
+                rows.push(
+                    Row::new(vec![
+                        Cell::from(n.to_string()),
+                        Cell::from(phrase.clone()),
+                        Cell::from(count.to_string()),
+                    ])
+                    .style(Style::default().bg(row_bg)),
+                );
+            }
+        }
+    }
+
+    let title = if selected_summary.is_some() {
+        " N-Grams (selected page) "
+    } else {
+        " N-Grams (select a page) "
+    };
+
+    let table = Table::new(
+        rows,
+        [
+            Constraint::Length(3),
+            Constraint::Min(12),
+            Constraint::Length(7),
+        ],
+    )
+    .header(header)
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .title(Span::styled(
+                title,
+                Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+            ))
+            .border_style(Style::default().fg(border_color)),
+    )
+    .column_spacing(1)
+    .style(Style::default().bg(Color::Rgb(15, 15, 25)));
+
+    f.render_widget(table, area);
 }

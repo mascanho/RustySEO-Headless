@@ -160,6 +160,7 @@ impl App {
                     canonical_target,
                     canonical_count,
                     has_mixed_content,
+                    ngrams: page_data.ngrams.clone(),
                 };
                 self.page_summaries.push(summary);
 

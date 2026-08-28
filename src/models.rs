@@ -273,6 +273,18 @@ pub struct RedirectHop {
     pub status: u16,
 }
 
+/// Word n-grams (contiguous phrases of 1-4 words) extracted from a page's
+/// visible body text. Each list is sorted by frequency descending and capped
+/// to the top 15 - the same bounded-output shape as the existing single-word
+/// `PageData::keywords`, so per-page cost and memory stay in that same order.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+pub struct NgramData {
+    pub unigrams: Vec<(String, usize)>,
+    pub bigrams: Vec<(String, usize)>,
+    pub trigrams: Vec<(String, usize)>,
+    pub quadgrams: Vec<(String, usize)>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct RedirectEntry {
     pub id: usize,
@@ -331,6 +343,8 @@ pub struct PageSummary {
     pub canonical_count: usize,
     /// True if an HTTPS page loads an image, stylesheet, or script over plain HTTP.
     pub has_mixed_content: bool,
+    /// Top 1/2/3/4-word phrase frequencies from the page's body text.
+    pub ngrams: NgramData,
 }
 
 pub struct App {
