@@ -1,7 +1,6 @@
 use ratatui::{
     Frame,
     layout::{Margin, Rect},
-    style::{Color, Style},
     text::{Line, Span},
     widgets::{Block, Paragraph, Wrap},
 };
@@ -17,10 +16,7 @@ pub fn render(f: &mut Frame, headers: &[String], scroll: u16, area: Rect, block:
     };
 
     let p = Paragraph::new(content)
-        .block(block.title(Span::styled(
-            "HTTP Response Headers ",
-            Style::default().fg(Color::Yellow),
-        )))
+        .block(block)
         .wrap(Wrap { trim: true })
         .scroll((scroll as u16, 0));
 

@@ -513,6 +513,7 @@ impl App {
         if self.content_current_page + 1 < total_pages {
             self.content_current_page += 1;
             self.apply_content_pagination();
+            self.reset_content_side_panel_selection();
         }
     }
 
@@ -520,6 +521,7 @@ impl App {
         if self.content_current_page > 0 {
             self.content_current_page -= 1;
             self.apply_content_pagination();
+            self.reset_content_side_panel_selection();
         }
     }
 
@@ -662,6 +664,20 @@ impl App {
     pub fn get_current_detail_len(&self) -> usize {
         if let Some(page_data) = &self.selected_page_details {
             match self.detail_tab {
+                0 => {
+                    let selected = self.table_state.selected().unwrap_or(0);
+                    match self.filtered_table_data.get(selected) {
+                        Some(row_data) => {
+                            let external_count = self.count_external_outlinks(page_data);
+                            crate::ui::modals::details::modal_tabs::general::row_count(
+                                row_data,
+                                page_data,
+                                external_count,
+                            )
+                        }
+                        None => 0,
+                    }
+                }
                 3 => page_data.anchor_links.len(),
                 4 => page_data.outlinks.len(),
                 5 => page_data.images.len(),
@@ -671,6 +687,27 @@ impl App {
         } else {
             0
         }
+    }
+
+    /// Number of `page_data.outlinks` that leave the crawled domain - same
+    /// filter the Outlinks tab and the General tab's "External Links" row use.
+    fn count_external_outlinks(&self, page_data: &crate::crawler::PageData) -> usize {
+        let base_domain = url::Url::parse(&self.input_url)
+            .ok()
+            .and_then(|u| u.host_str().map(str::to_string));
+        page_data
+            .outlinks
+            .iter()
+            .filter(|link| {
+                let link_domain = url::Url::parse(&link.href)
+                    .ok()
+                    .and_then(|u| u.host_str().map(str::to_string));
+                !crate::crawler::url_normalizer::is_same_domain(
+                    link_domain.as_deref(),
+                    base_domain.as_deref(),
+                )
+            })
+            .count()
     }
 
     pub fn move_detail_row_up(&mut self) {

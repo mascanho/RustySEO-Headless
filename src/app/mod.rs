@@ -1,5 +1,6 @@
 pub mod actions;
 pub mod connectors;
+pub mod content_nav;
 pub mod duplicate_content;
 pub mod export;
 pub mod input;

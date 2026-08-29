@@ -12,20 +12,48 @@ use crate::ui::centered_rect;
 /// Labels shown in the Actions Menu, in selection order. `App::next_dashboard_menu_item` /
 /// `previous_dashboard_menu_item` wrap on this list's length, and
 /// `App::execute_dashboard_menu_action` matches on the same indices - keep all three in sync.
-pub const MENU_ITEMS: [&str; 7] = [
+pub const MENU_ITEMS: [&str; 18] = [
     " Copy URL",
+    " Copy Title",
+    " Copy Meta Description",
+    " Copy H1",
+    " Copy as Markdown Link",
     " Open URL in Browser",
+    " Open Domain robots.txt",
     " Open in Google",
+    " Open in Google Cache",
+    " Open in PageSpeed Insights",
+    " Open in Rich Results Test",
+    " View Page Details",
     " View SEO Score",
     " Extract Links",
     " Screenshot",
-    " Export Data",
+    " Bookmark URL",
+    " Export Current Tab (.xlsx)",
+    " Export All Tabs (.xlsx)",
 ];
+
+/// End index (exclusive) of each visual group within `MENU_ITEMS`, used only to color
+/// the list for readability - selection indices are unaffected.
+const GROUP_BOUNDARIES: [(usize, Color); 4] = [
+    (5, Color::Cyan),                  // Copy actions
+    (11, Color::Rgb(120, 170, 255)),   // Open / browser actions
+    (16, Color::Yellow),               // Page tools
+    (18, Color::Green),                // Export actions
+];
+
+fn group_color(index: usize) -> Color {
+    GROUP_BOUNDARIES
+        .iter()
+        .find(|(end, _)| index < *end)
+        .map(|(_, color)| *color)
+        .unwrap_or(Color::White)
+}
 
 pub fn render(f: &mut Frame, app: &mut App) {
     let area = f.area();
 
-    let menu_area = centered_rect(25, 35, area);
+    let menu_area = centered_rect(34, 78, area);
 
     let accent_color = Color::Rgb(80, 140, 255);
     let border_color = accent_color; // Blue border for actions menu
@@ -53,10 +81,13 @@ pub fn render(f: &mut Frame, app: &mut App) {
         ])
         .split(inner_area);
 
-    // Menu items
+    // Menu items, tinted by group so the longer list stays scannable
     let items: Vec<ListItem> = MENU_ITEMS
         .iter()
-        .map(|label| ListItem::new(*label))
+        .enumerate()
+        .map(|(i, label)| {
+            ListItem::new(Span::styled(*label, Style::default().fg(group_color(i))))
+        })
         .collect();
 
     let mut menu_state = ListState::default();

@@ -68,6 +68,8 @@ async fn fetch_standard(
     let mut retry_count = 0;
     let mut backoff = Duration::from_secs(2);
 
+    let fetch_start = std::time::Instant::now();
+
     let response = loop {
         let user_agent = pick_random_user_agent(user_agents);
         let mut request = client
@@ -193,13 +195,26 @@ async fn fetch_standard(
         .and_then(|v| v.to_str().ok())
         .map(|s| s.to_string());
 
+    let cookies: Vec<String> = response
+        .headers()
+        .get_all(reqwest::header::SET_COOKIE)
+        .iter()
+        .filter_map(|v| v.to_str().ok().map(|s| s.to_string()))
+        .collect();
+
     let html_content = response
         .text()
         .await
         .map_err(|e| format!("Failed to read body: {}", e))?;
+    let response_time_ms = fetch_start.elapsed().as_secs_f64() * 1000.0;
     let document = Html::parse_document(&html_content);
 
     let mut page_data = extract_page_elements(&document);
+    page_data.cookies = cookies;
+    page_data.response_time_ms = response_time_ms;
+    if !html_content.is_empty() {
+        page_data.text_ratio = (page_data.size as f64 / html_content.len() as f64) * 100.0;
+    }
     // Normalize the final (post-redirect) URL so it matches the form other pages'
     // anchor_links/outlinks use when referencing this page - otherwise redirected
     // pages never match url_to_status lookups (e.g. everything looks "unvisited"
@@ -289,6 +304,7 @@ async fn fetch_js(url: &str, base_url: &Url, browser: Arc<Browser>) -> Result<Pa
     tracing::debug!("[JS-FETCH] Navigating to {}", url);
 
     let url_str = url.to_string();
+    let fetch_start = std::time::Instant::now();
 
     let (html_content, status) = tokio::task::spawn_blocking(move || {
         let tab = browser
@@ -312,6 +328,12 @@ async fn fetch_js(url: &str, base_url: &Url, browser: Arc<Browser>) -> Result<Pa
     page_data.requested_url = url.to_string();
     page_data.status = status;
     page_data.headers = vec!["Requested-Mode: JavaScript".to_string()];
+    page_data.response_time_ms = fetch_start.elapsed().as_secs_f64() * 1000.0;
+    if !html_content.is_empty() {
+        page_data.text_ratio = (page_data.size as f64 / html_content.len() as f64) * 100.0;
+    }
+    // Note: cookies aren't captured for headless-browser fetches - they aren't
+    // exposed through the current headless_chrome tab API used here.
 
     // Parse the current page URL to use as base for resolving relative links
     let current_page_url =

@@ -195,6 +195,13 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                 ))
                 .title_bottom(
                     Line::from(Span::styled(
+                        " Ctrl+h/j/k/l: switch pane · c: copy · Enter: open ",
+                        Style::default().fg(Color::DarkGray).italic(),
+                    ))
+                    .alignment(Alignment::Left),
+                )
+                .title_bottom(
+                    Line::from(Span::styled(
                         format!(
                             " Page {} of {} {} ",
                             app.content_current_page + 1,
@@ -205,7 +212,11 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
                     ))
                     .alignment(Alignment::Right),
                 )
-                .border_style(Style::default().fg(border_color)),
+                .border_style(pane_border(
+                    app.content_focus == 0,
+                    accent_color,
+                    border_color,
+                )),
         )
         .column_spacing(1)
         .style(Style::default().bg(Color::Rgb(15, 15, 25)));
@@ -248,6 +259,12 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     render_duplicate_content_panel(f, app, side_panels[1], accent_color, border_color);
 }
 
+/// Border color for a Content-tab pane: bright accent when it has keyboard
+/// focus, dim otherwise - the same visual language as an active Neovim split.
+fn pane_border(focused: bool, accent_color: Color, border_color: Color) -> Style {
+    Style::default().fg(if focused { accent_color } else { border_color })
+}
+
 /// Right-hand panel showing 1/2/3/4-word phrase frequencies for whichever page
 /// row is currently selected in the Content Audit table. N-grams are extracted
 /// once per page at crawl time (bounded to the top 15 phrases per length, the
@@ -255,18 +272,13 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
 /// a lookup - no work happens on render or on selection change.
 fn render_ngrams_panel(
     f: &mut Frame,
-    app: &App,
+    app: &mut App,
     area: Rect,
     accent_color: Color,
     border_color: Color,
 ) {
-    let selected_summary = app
-        .content_table_state
-        .selected()
-        .and_then(|i| app.content_filtered_table_data.get(i))
-        .and_then(|row| row.first())
-        .and_then(|id_str| id_str.parse::<usize>().ok())
-        .and_then(|id| app.page_summaries.get(id.saturating_sub(1)));
+    let focused = app.content_focus == 1;
+    let ngrams_rows = app.content_ngrams_rows();
 
     let header = Row::new(["N", "Phrase", "Count"].iter().map(|h| {
         Cell::from(format!(" {} ", h)).style(
@@ -278,38 +290,40 @@ fn render_ngrams_panel(
     }))
     .height(1);
 
-    let mut rows: Vec<Row> = Vec::new();
-    if let Some(summary) = selected_summary {
-        let groups: [(&str, &Vec<(String, usize)>); 4] = [
-            ("1", &summary.ngrams.unigrams),
-            ("2", &summary.ngrams.bigrams),
-            ("3", &summary.ngrams.trigrams),
-            ("4", &summary.ngrams.quadgrams),
-        ];
-
-        for (i, (n, phrases)) in groups.iter().enumerate() {
-            let row_bg = if i % 2 == 0 {
-                Color::Rgb(20, 20, 30)
-            } else {
-                Color::Rgb(25, 25, 40)
-            };
-            for (phrase, count) in phrases.iter().take(6) {
-                rows.push(
-                    Row::new(vec![
-                        Cell::from(n.to_string()),
-                        Cell::from(phrase.clone()),
-                        Cell::from(count.to_string()),
-                    ])
-                    .style(Style::default().bg(row_bg)),
-                );
-            }
-        }
-    }
-
-    let title = if selected_summary.is_some() {
-        " N-Grams (selected page) "
+    let selected = if focused {
+        app.content_ngrams_state.selected()
     } else {
+        None
+    };
+
+    let rows: Vec<Row> = ngrams_rows
+        .iter()
+        .enumerate()
+        .map(|(i, (n, phrase, count))| {
+            let mut row_style = if i % 2 == 0 {
+                Style::default().bg(Color::Rgb(20, 20, 30))
+            } else {
+                Style::default().bg(Color::Rgb(25, 25, 40))
+            };
+            if selected == Some(i) {
+                row_style = row_style
+                    .fg(Color::White)
+                    .bg(accent_color)
+                    .add_modifier(Modifier::BOLD);
+            }
+            Row::new(vec![
+                Cell::from(n.clone()),
+                Cell::from(phrase.clone()),
+                Cell::from(count.to_string()),
+            ])
+            .style(row_style)
+        })
+        .collect();
+
+    let title = if ngrams_rows.is_empty() {
         " N-Grams (select a page) "
+    } else {
+        " N-Grams (selected page) "
     };
 
     let table = Table::new(
@@ -328,12 +342,12 @@ fn render_ngrams_panel(
                 title,
                 Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
             ))
-            .border_style(Style::default().fg(border_color)),
+            .border_style(pane_border(focused, accent_color, border_color)),
     )
     .column_spacing(1)
     .style(Style::default().bg(Color::Rgb(15, 15, 25)));
 
-    f.render_widget(table, area);
+    f.render_stateful_widget(table, area, &mut app.content_ngrams_state);
 }
 
 /// Bottom-right panel: other crawled pages whose content is near-identical to
@@ -344,17 +358,13 @@ fn render_ngrams_panel(
 /// page with only a price or name swapped).
 fn render_duplicate_content_panel(
     f: &mut Frame,
-    app: &App,
+    app: &mut App,
     area: Rect,
     accent_color: Color,
     border_color: Color,
 ) {
-    let selected_id = app
-        .content_table_state
-        .selected()
-        .and_then(|i| app.content_filtered_table_data.get(i))
-        .and_then(|row| row.first())
-        .and_then(|id_str| id_str.parse::<usize>().ok());
+    let focused = app.content_focus == 2;
+    let duplicate_rows = app.content_duplicate_rows();
 
     let header = Row::new(["Similar Page", "Match"].iter().map(|h| {
         Cell::from(format!(" {} ", h)).style(
@@ -366,41 +376,38 @@ fn render_duplicate_content_panel(
     }))
     .height(1);
 
-    let mut rows: Vec<Row> = Vec::new();
-    if let Some(id) = selected_id {
-        for pair in &app.duplicate_pairs {
-            let other_id = if pair.id_a == id {
-                Some(pair.id_b)
-            } else if pair.id_b == id {
-                Some(pair.id_a)
-            } else {
-                None
-            };
-            let Some(other_id) = other_id else { continue };
-            let Some(other) = app.page_summaries.get(other_id.saturating_sub(1)) else {
-                continue;
-            };
+    let selected = if focused {
+        app.content_duplicate_state.selected()
+    } else {
+        None
+    };
 
-            let label = if pair.distance == 0 {
-                "Exact".to_string()
+    let rows: Vec<Row> = duplicate_rows
+        .iter()
+        .enumerate()
+        .map(|(i, (url, label))| {
+            let mut row_style = if i % 2 == 0 {
+                Style::default().bg(Color::Rgb(20, 20, 30))
             } else {
-                let similarity = 100.0 * (64 - pair.distance) as f64 / 64.0;
-                format!("{:.0}% similar", similarity)
+                Style::default().bg(Color::Rgb(25, 25, 40))
             };
-            rows.push(Row::new(vec![
-                Cell::from(other.url.clone()),
-                Cell::from(label),
-            ]));
-        }
-    }
+            if selected == Some(i) {
+                row_style = row_style
+                    .fg(Color::White)
+                    .bg(accent_color)
+                    .add_modifier(Modifier::BOLD);
+            }
+            Row::new(vec![Cell::from(url.clone()), Cell::from(label.clone())]).style(row_style)
+        })
+        .collect();
 
-    let title = if rows.is_empty() {
+    let title = if duplicate_rows.is_empty() {
         " Duplicate Content (none found for this page) "
     } else {
         " Duplicate Content "
     };
 
-    let table = Table::new(rows, [Constraint::Min(20), Constraint::Length(14)])
+    let table = Table::new(rows, [Constraint::Min(20), Constraint::Length(8)])
         .header(header)
         .block(
             Block::default()
@@ -409,10 +416,10 @@ fn render_duplicate_content_panel(
                     title,
                     Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
                 ))
-                .border_style(Style::default().fg(border_color)),
+                .border_style(pane_border(focused, accent_color, border_color)),
         )
         .column_spacing(1)
         .style(Style::default().bg(Color::Rgb(15, 15, 25)));
 
-    f.render_widget(table, area);
+    f.render_stateful_widget(table, area, &mut app.content_duplicate_state);
 }

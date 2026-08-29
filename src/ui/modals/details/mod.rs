@@ -67,8 +67,9 @@ pub fn render_detail_body(f: &mut Frame, app: &mut App, tab: usize, area: Rect) 
         0 => modal_tabs::general::render(
             f,
             row_data,
-            &page_details.canonicals,
-            app.detail_scroll,
+            page_details,
+            external_outlinks.len(),
+            &mut app.detail_table_state,
             area,
             content_block,
         ),

@@ -700,6 +700,11 @@ pub struct App {
     pub content_horizontal_scroll: usize,
     pub content_search_query: String,
     pub show_content_search: bool,
+    // Content Tab: which pane has keyboard focus - 0 = main table,
+    // 1 = N-Grams panel, 2 = Duplicate Content panel.
+    pub content_focus: usize,
+    pub content_ngrams_state: ratatui::widgets::TableState,
+    pub content_duplicate_state: ratatui::widgets::TableState,
     // Javascript Pages Modal State
     pub show_js_pages_modal: bool,
     pub js_pages_list: Vec<String>,

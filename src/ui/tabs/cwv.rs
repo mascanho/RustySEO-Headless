@@ -151,32 +151,29 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         String::new()
     };
 
+    let footer_right = Line::from(vec![
+        Span::styled(
+            format!(" {} URLs ", app.full_filtered_table_data.len()),
+            Style::default().fg(accent_color).bold(),
+        ),
+        Span::styled(
+            format!(
+                " Page {} of {} {} ",
+                app.current_page + 1,
+                total_pages,
+                scroll_indicator
+            ),
+            Style::default().fg(Color::DarkGray).italic(),
+        ),
+    ])
+    .alignment(Alignment::Right);
+
     let table = Table::new(rows, widths)
         .header(header)
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title(Span::styled(
-                    format!(
-                        " Core Web Vitals - Desktop & Mobile ({}) ",
-                        app.full_filtered_table_data.len()
-                    ),
-                    Style::default()
-                        .fg(Color::Yellow)
-                        .add_modifier(Modifier::BOLD),
-                ))
-                .title_bottom(
-                    Line::from(Span::styled(
-                        format!(
-                            " Page {} of {} {} ",
-                            app.current_page + 1,
-                            total_pages,
-                            scroll_indicator
-                        ),
-                        Style::default().fg(Color::DarkGray).italic(),
-                    ))
-                    .alignment(Alignment::Right),
-                )
+                .title_bottom(footer_right)
                 .border_style(Style::default().fg(border_color)),
         )
         .column_spacing(1)

@@ -50,26 +50,25 @@ pub fn render_js_urls_table(f: &mut Frame, app: &mut App, area: Rect) {
     let total_pages = calculate_total_pages(app);
     let pagination_info = format!(" Page {} of {} ", app.js_urls_current_page + 1, total_pages);
 
+    let footer_right = Line::from(vec![
+        Span::styled(
+            format!(" {} JS URLs ", app.js_urls_full_filtered_table_data.len()),
+            Style::default().fg(ACCENT_COLOR).bold(),
+        ),
+        Span::styled(
+            pagination_info,
+            Style::default().fg(Color::DarkGray).italic(),
+        ),
+    ])
+    .alignment(Alignment::Right);
+
     let table = Table::new(rows, widths)
         .header(header)
         .block(
             Block::default()
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(BORDER_COLOR))
-                .title(Span::styled(
-                    format!(
-                        " Javascript URLs ({}) ",
-                        app.js_urls_full_filtered_table_data.len()
-                    ),
-                    Style::default().fg(Color::Yellow).bold(),
-                ))
-                .title_bottom(
-                    Line::from(Span::styled(
-                        pagination_info,
-                        Style::default().fg(Color::DarkGray).italic(),
-                    ))
-                    .alignment(Alignment::Right),
-                ),
+                .title_bottom(footer_right),
         )
         .column_spacing(1)
         .row_highlight_style(Style::default().bg(ACCENT_COLOR))

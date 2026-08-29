@@ -247,33 +247,105 @@ impl App {
                 self.log(format!("Copied URL to clipboard: {}", url));
             }
             1 => {
+                // Copy Title
+                let title = row.get(2).cloned().unwrap_or_default();
+                crate::ui::modals::dashboard_menu::copy_to_clipboard(title.clone());
+                self.log(format!("Copied title to clipboard: {}", title));
+            }
+            2 => {
+                // Copy Meta Description
+                let desc = row.get(6).cloned().unwrap_or_default();
+                crate::ui::modals::dashboard_menu::copy_to_clipboard(desc.clone());
+                self.log("Copied meta description to clipboard".to_string());
+            }
+            3 => {
+                // Copy H1
+                let h1 = row.get(4).cloned().unwrap_or_default();
+                crate::ui::modals::dashboard_menu::copy_to_clipboard(h1.clone());
+                self.log(format!("Copied H1 to clipboard: {}", h1));
+            }
+            4 => {
+                // Copy as Markdown Link
+                let title = row.get(2).cloned().unwrap_or_default();
+                let markdown = format!("[{}]({})", title, url);
+                crate::ui::modals::dashboard_menu::copy_to_clipboard(markdown);
+                self.log("Copied Markdown link to clipboard".to_string());
+            }
+            5 => {
                 // Open URL in Browser
                 crate::ui::modals::dashboard_menu::open_in_browser(&url);
                 self.log(format!("Opened URL in browser: {}", url));
             }
-            2 => {
+            6 => {
+                // Open Domain robots.txt
+                match url::Url::parse(&url) {
+                    Ok(parsed) => {
+                        let robots_url =
+                            format!("{}://{}/robots.txt", parsed.scheme(), parsed.authority());
+                        crate::ui::modals::dashboard_menu::open_in_browser(&robots_url);
+                        self.log(format!("Opened robots.txt: {}", robots_url));
+                    }
+                    Err(_) => self.log(format!("Could not parse URL for robots.txt: {}", url)),
+                }
+            }
+            7 => {
                 // Open in Google
                 let google_url = format!("https://www.google.com/search?q={}", url);
                 crate::ui::modals::dashboard_menu::open_in_browser(&google_url);
                 self.log(format!("Opening URL in Google: {}", url));
             }
-            3 => {
+            8 => {
+                // Open in Google Cache (Wayback Machine)
+                let cache_url = format!("https://web.archive.org/web/2/{}", url);
+                crate::ui::modals::dashboard_menu::open_in_browser(&cache_url);
+                self.log(format!("Opening cached URL: {}", url));
+            }
+            9 => {
+                // Open in PageSpeed Insights
+                let psi_url = format!("https://pagespeed.web.dev/analysis?url={}", url);
+                crate::ui::modals::dashboard_menu::open_in_browser(&psi_url);
+                self.log(format!("Opening PageSpeed Insights for: {}", url));
+            }
+            10 => {
+                // Open in Rich Results Test
+                let rich_url = format!("https://search.google.com/test/rich-results?url={}", url);
+                crate::ui::modals::dashboard_menu::open_in_browser(&rich_url);
+                self.log(format!("Opening Rich Results Test for: {}", url));
+            }
+            11 => {
+                // View Page Details
+                if let Ok(id) = row[0].parse::<usize>() {
+                    self.open_details(id);
+                }
+            }
+            12 => {
                 // View SEO Score
                 let link_score = self.link_scores.get(&url).copied();
                 self.seo_score_data =
                     Some(crate::app::menu_actions::calculate(&url, &row, link_score));
                 self.show_seo_score_modal = true;
             }
-            4 => {
+            13 => {
                 // Extract Links
                 self.open_page_links_for_url(&url);
             }
-            5 => {
+            14 => {
                 // Screenshot
                 self.spawn_screenshot(url);
             }
-            6 => {
-                // Export Data
+            15 => {
+                // Bookmark URL
+                crate::db::add_bookmark(&url);
+                self.bookmarks = crate::db::load_bookmarks();
+                self.sync_bookmarks_state();
+                self.log(format!("Bookmarked URL: {}", url));
+            }
+            16 => {
+                // Export Current Tab (.xlsx)
+                self.export_current_tab();
+            }
+            17 => {
+                // Export All Tabs (.xlsx)
                 self.export_all_tabs();
             }
             _ => {}

@@ -11,7 +11,7 @@ pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
 
     let checklist = vec![
         Line::from(vec![Span::styled(
-            " ⚔️  SEO Health Check ",
+            " SEO Health Check ",
             Style::default()
                 .add_modifier(Modifier::BOLD)
                 .fg(accent_color),
@@ -63,7 +63,7 @@ pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
         }),
         Line::from(""),
         Line::from(vec![Span::styled(
-            " 💡 Recommendations ",
+            " Recommendations ",
             Style::default()
                 .add_modifier(Modifier::BOLD)
                 .fg(Color::Yellow),
@@ -81,11 +81,6 @@ pub fn render(f: &mut Frame, row_data: &[String], area: Rect, block: Block) {
             Span::raw("Add ALT tags to images for better accessibility."),
         ]),
     ];
-    let p = Paragraph::new(checklist)
-        .block(block.title(Span::styled(
-            "Automated SEO Audit Checklist ",
-            Style::default().fg(Color::Yellow),
-        )))
-        .wrap(Wrap { trim: true });
+    let p = Paragraph::new(checklist).block(block).wrap(Wrap { trim: true });
     f.render_widget(p, area.inner(Margin::new(1, 0)));
 }

@@ -1,8 +1,8 @@
 use ratatui::{
     Frame,
-    layout::{Constraint, Rect},
+    layout::{Alignment, Constraint, Rect},
     style::{Color, Modifier, Style},
-    text::Span,
+    text::{Line, Span},
     widgets::{Block, Cell, Row, Table, TableState},
 };
 
@@ -105,16 +105,20 @@ pub fn render(
         String::new()
     };
 
+    let badge = Line::from(vec![Span::styled(
+        format!(" {} Headings {}", headings.len(), scroll_indicator.trim()),
+        Style::default()
+            .bg(accent_color)
+            .fg(Color::Rgb(10, 10, 20))
+            .add_modifier(Modifier::BOLD),
+    )])
+    .alignment(Alignment::Right);
+
     let table = Table::new(rows, widths)
         .header(header)
         .block(
             block
-                .title(Span::styled(
-                    format!(" Headings ({}) {} ", headings.len(), scroll_indicator),
-                    Style::default()
-                        .fg(Color::Yellow)
-                        .add_modifier(Modifier::BOLD),
-                ))
+                .title_bottom(badge)
                 .border_style(Style::default().fg(accent_color)),
         )
         .column_spacing(1)

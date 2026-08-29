@@ -299,8 +299,9 @@ fn render_help_modal(f: &mut Frame) {
     f.render_widget(
         Paragraph::new(Line::from(vec![Span::styled(
             "Everything below is keyboard-first — clicking tabs, rows and the sidebar works too",
-            Style::default().fg(dim_color).italic(),
+            Style::default().fg(dim_color).bg(bg_color).italic(),
         )]))
+        .style(Style::default().bg(bg_color))
         .alignment(Alignment::Center),
         rows[0],
     );
@@ -330,6 +331,7 @@ fn render_help_modal(f: &mut Frame) {
         kv("Shift+L", "Toggle System Logs", mod_color),
         Line::from(""),
         hdr("MAIN TABS", header_color, bg_color),
+        kv("a / d", "Prev / next main tab (cycles)", key_color),
         kv("← / →", "Prev / next main tab", key_color),
         kv("Tab", "Next main tab", key_color),
         kv("Backspace", "Previous main tab", key_color),
@@ -338,15 +340,23 @@ fn render_help_modal(f: &mut Frame) {
         Line::from(""),
         hdr("TABLE NAVIGATION", header_color, bg_color),
         kv("↑ / ↓", "Move row", key_color),
+        kv("w / s", "Move row (Overview) / Connectors sub-tab", key_color),
         kv("G", "Jump to bottom", key_color),
         kv("[ / ]", "Prev / next page", key_color),
         kv("Enter", "Open details / assets", key_color),
         kv("m", "Actions menu", key_color),
+        kv("Right-click", "Actions menu (Overview row)", mod_color),
         Line::from(""),
         hdr("OVERVIEW SUB-PANEL", header_color, bg_color),
         kv("O", "Show / hide sub-panel", key_color),
         kv("j / k", "Navigate sub-panel", key_color),
         kv("h / l", "Prev / next panel tab", key_color),
+        Line::from(""),
+        hdr("CONTENT TAB PANES", header_color, bg_color),
+        kv("Ctrl+h/l", "Table ↔ side panels", mod_color),
+        kv("Ctrl+j/k", "N-Grams ↔ Duplicates", mod_color),
+        kv("c", "Copy focused row", key_color),
+        kv("Enter", "Open focused URL", key_color),
         Line::from(""),
         hdr("SEARCH & FILTER", header_color, bg_color),
         kv("Ctrl+f", "Search active tab", mod_color),
@@ -365,7 +375,7 @@ fn render_help_modal(f: &mut Frame) {
         kv("g", "General", key_color),
         kv("i", "Issues", key_color),
         kv("b / f", "Bookmarks", key_color),
-        kv("t / a", "Tree View", key_color),
+        kv("t", "Tree View", key_color),
         kv("s / +", "Settings", key_color),
         Line::from(""),
         hdr("SIDEBAR CONTROLS", header_color, bg_color),
@@ -415,20 +425,28 @@ fn render_help_modal(f: &mut Frame) {
         kv("Shift+↑/↓", "Navigate tab content", mod_color),
         kv("Scroll", "Mouse wheel supported", key_color),
         Line::from(""),
-        hdr("ACTIONS MENU (m)", header_color, bg_color),
+        hdr("ACTIONS MENU (m / right-click)", header_color, bg_color),
         kv("k/↑  j/↓", "Navigate actions", key_color),
         kv("Enter", "Run action", key_color),
         kv("q/Esc", "Close", key_color),
         Line::from(vec![Span::styled(
-            "   Copy · Browser · Google",
+            "   Copy URL/Title/Desc/H1/Markdown",
             Style::default().fg(dim_color),
         )]),
         Line::from(vec![Span::styled(
-            "   SEO Score · Extract Links",
+            "   Open: Browser/Google/robots.txt",
             Style::default().fg(dim_color),
         )]),
         Line::from(vec![Span::styled(
-            "   Screenshot · Export Data",
+            "   Cache/PageSpeed/Rich Results",
+            Style::default().fg(dim_color),
+        )]),
+        Line::from(vec![Span::styled(
+            "   Details/SEO Score/Links/Shot",
+            Style::default().fg(dim_color),
+        )]),
+        Line::from(vec![Span::styled(
+            "   Bookmark · Export tab/all",
             Style::default().fg(dim_color),
         )]),
         Line::from(""),
@@ -474,31 +492,32 @@ fn render_help_modal(f: &mut Frame) {
     ];
 
     f.render_widget(
-        Paragraph::new(col1).style(Style::default().fg(Color::Gray)),
+        Paragraph::new(col1).style(Style::default().fg(Color::Gray).bg(bg_color)),
         cols[0],
     );
     f.render_widget(
-        Paragraph::new(col2).style(Style::default().fg(Color::Gray)),
+        Paragraph::new(col2).style(Style::default().fg(Color::Gray).bg(bg_color)),
         cols[1],
     );
     f.render_widget(
-        Paragraph::new(col3).style(Style::default().fg(Color::Gray)),
+        Paragraph::new(col3).style(Style::default().fg(Color::Gray).bg(bg_color)),
         cols[2],
     );
     f.render_widget(
-        Paragraph::new(col4).style(Style::default().fg(Color::Gray)),
+        Paragraph::new(col4).style(Style::default().fg(Color::Gray).bg(bg_color)),
         cols[3],
     );
 
     f.render_widget(
         Paragraph::new(Line::from(vec![
             Span::styled(" q ", Style::default().fg(bg_color).bg(Color::Red).bold()),
-            Span::raw(" / "),
+            Span::styled(" / ", Style::default().fg(dim_color)),
             Span::styled(" Esc ", Style::default().fg(bg_color).bg(key_color).bold()),
-            Span::raw(" / "),
+            Span::styled(" / ", Style::default().fg(dim_color)),
             Span::styled(" ? ", Style::default().fg(bg_color).bg(key_color).bold()),
-            Span::raw("  to close this cheat-sheet"),
+            Span::styled("  to close this cheat-sheet", Style::default().fg(dim_color)),
         ]))
+        .style(Style::default().bg(bg_color))
         .alignment(Alignment::Center),
         rows[4],
     );

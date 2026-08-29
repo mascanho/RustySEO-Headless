@@ -13,7 +13,7 @@ const ACCENT_COLOR: Color = Color::Rgb(80, 140, 255);
 const BORDER_COLOR: Color = Color::Rgb(40, 45, 60);
 
 /// Renders the internal links table, replicating the dashboard's look and feel.
-pub fn render_internal_links_table(f: &mut Frame, app: &mut App, area: Rect, title: &str) {
+pub fn render_internal_links_table(f: &mut Frame, app: &mut App, area: Rect, _title: &str) {
     app.table_rect = Some(area);
 
     // Initial population if empty
@@ -66,27 +66,25 @@ pub fn render_internal_links_table(f: &mut Frame, app: &mut App, area: Rect, tit
         total_pages
     );
 
+    let footer_right = Line::from(vec![
+        Span::styled(
+            format!(" {} Links ", app.internal_full_filtered_table_data.len()),
+            Style::default().fg(ACCENT_COLOR).bold(),
+        ),
+        Span::styled(
+            pagination_info,
+            Style::default().fg(Color::DarkGray).italic(),
+        ),
+    ])
+    .alignment(Alignment::Right);
+
     let table = Table::new(rows, widths)
         .header(header)
         .block(
             Block::default()
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(BORDER_COLOR))
-                .title(Span::styled(
-                    format!(
-                        " {} ({}) ",
-                        title,
-                        app.internal_full_filtered_table_data.len()
-                    ),
-                    Style::default().fg(Color::Yellow).bold(),
-                ))
-                .title_bottom(
-                    Line::from(Span::styled(
-                        pagination_info,
-                        Style::default().fg(Color::DarkGray).italic(),
-                    ))
-                    .alignment(Alignment::Right),
-                ),
+                .title_bottom(footer_right),
         )
         .column_spacing(1)
         .row_highlight_style(Style::default().fg(Color::Red))

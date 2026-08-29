@@ -2,7 +2,7 @@ use clap::Parser;
 use crossterm::{
     event::{
         self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind, KeyModifiers,
-        MouseEventKind,
+        MouseButton, MouseEventKind,
     },
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
@@ -465,11 +465,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                 KeyCode::Left => app.previous_detail_tab(),
                                 KeyCode::Right => app.next_detail_tab(),
                                 KeyCode::Char('k') => {
-                                    if app.detail_tab == 3
-                                        || app.detail_tab == 4
-                                        || app.detail_tab == 5
-                                        || app.detail_tab == 8
-                                    {
+                                    if [0, 3, 4, 5, 8].contains(&app.detail_tab) {
                                         let len = app.get_current_detail_len();
                                         app.previous_detail_row(len);
                                     } else if app.detail_scroll > 0 {
@@ -477,11 +473,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                     }
                                 }
                                 KeyCode::Char('j') => {
-                                    if app.detail_tab == 3
-                                        || app.detail_tab == 4
-                                        || app.detail_tab == 5
-                                        || app.detail_tab == 8
-                                    {
+                                    if [0, 3, 4, 5, 8].contains(&app.detail_tab) {
                                         let len = app.get_current_detail_len();
                                         app.next_detail_row(len);
                                     } else {
@@ -491,24 +483,16 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                 KeyCode::Up => {
                                     if key.modifiers.contains(KeyModifiers::SHIFT) {
                                         // Shift+Up for navigating content in detail tab
-                                        if app.detail_tab == 3
-                                            || app.detail_tab == 4
-                                            || app.detail_tab == 5
-                                            || app.detail_tab == 8
-                                        {
+                                        if [0, 3, 4, 5, 8].contains(&app.detail_tab) {
                                             let len = app.get_current_detail_len();
                                             app.previous_detail_row(len);
-                                        } else if [0, 1, 2, 6, 7].contains(&app.detail_tab) {
+                                        } else if [1, 2, 6, 7].contains(&app.detail_tab) {
                                             if app.detail_scroll > 0 {
                                                 app.detail_scroll =
                                                     app.detail_scroll.saturating_sub(1);
                                             }
                                         }
-                                    } else if app.detail_tab == 3
-                                        || app.detail_tab == 4
-                                        || app.detail_tab == 5
-                                        || app.detail_tab == 8
-                                    {
+                                    } else if [0, 3, 4, 5, 8].contains(&app.detail_tab) {
                                         let len = app.get_current_detail_len();
                                         app.previous_detail_row(len);
                                     } else if app.detail_scroll > 0 {
@@ -518,21 +502,13 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                 KeyCode::Down => {
                                     if key.modifiers.contains(KeyModifiers::SHIFT) {
                                         // Shift+Down for navigating content in detail tab
-                                        if app.detail_tab == 3
-                                            || app.detail_tab == 4
-                                            || app.detail_tab == 5
-                                            || app.detail_tab == 8
-                                        {
+                                        if [0, 3, 4, 5, 8].contains(&app.detail_tab) {
                                             let len = app.get_current_detail_len();
                                             app.next_detail_row(len);
-                                        } else if [0, 1, 2, 6, 7].contains(&app.detail_tab) {
+                                        } else if [1, 2, 6, 7].contains(&app.detail_tab) {
                                             app.detail_scroll += 1;
                                         }
-                                    } else if app.detail_tab == 3
-                                        || app.detail_tab == 4
-                                        || app.detail_tab == 5
-                                        || app.detail_tab == 8
-                                    {
+                                    } else if [0, 3, 4, 5, 8].contains(&app.detail_tab) {
                                         let len = app.get_current_detail_len();
                                         app.next_detail_row(len);
                                     } else {
@@ -899,7 +875,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                 if app.current_state == AppState::Dashboard
                                     && app.show_overview_subtable =>
                             {
-                                if [3, 4, 5, 8].contains(&app.detail_tab) {
+                                if [0, 3, 4, 5, 8].contains(&app.detail_tab) {
                                     let len = app.get_current_detail_len();
                                     app.previous_detail_row(len);
                                 } else {
@@ -910,16 +886,67 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                 if app.current_state == AppState::Dashboard
                                     && app.show_overview_subtable =>
                             {
-                                if [3, 4, 5, 8].contains(&app.detail_tab) {
+                                if [0, 3, 4, 5, 8].contains(&app.detail_tab) {
                                     let len = app.get_current_detail_len();
                                     app.next_detail_row(len);
                                 } else {
                                     app.detail_scroll = app.detail_scroll.saturating_add(1);
                                 }
                             }
+                            // On the Overview tab, w/s move the main table selection
+                            // (k/j are reserved for the docked sub-table above). On the
+                            // Data & Insights (Connectors) tab, w/s cycle its connector
+                            // sub-tabs instead - a/d always stay on the top-level tabs.
+                            KeyCode::Char('w') if app.current_state == AppState::Dashboard => {
+                                app.previous_row()
+                            }
+                            KeyCode::Char('s') if app.current_state == AppState::Dashboard => {
+                                app.next_row()
+                            }
+                            KeyCode::Char('w') if app.current_state == AppState::DataInsights => {
+                                app.previous_data_insights_tab()
+                            }
+                            KeyCode::Char('s') if app.current_state == AppState::DataInsights => {
+                                app.next_data_insights_tab()
+                            }
+                            // a/d cycle the top-level main tabs, wrapping around.
+                            KeyCode::Char('a') => app.previous_state(),
+                            KeyCode::Char('d') => app.next_state(),
+
+                            // Content tab: Neovim split-style focus switching between the
+                            // main table (left) and the N-Grams / Duplicate Content panes
+                            // stacked on the right, plus copy/open on the focused pane.
+                            KeyCode::Char('h')
+                                if app.current_state == AppState::Content
+                                    && key.modifiers.contains(KeyModifiers::CONTROL) =>
+                            {
+                                app.content_focus_left();
+                            }
+                            KeyCode::Char('l')
+                                if app.current_state == AppState::Content
+                                    && key.modifiers.contains(KeyModifiers::CONTROL) =>
+                            {
+                                app.content_focus_right();
+                            }
+                            KeyCode::Char('j')
+                                if app.current_state == AppState::Content
+                                    && key.modifiers.contains(KeyModifiers::CONTROL) =>
+                            {
+                                app.content_focus_down();
+                            }
+                            KeyCode::Char('k')
+                                if app.current_state == AppState::Content
+                                    && key.modifiers.contains(KeyModifiers::CONTROL) =>
+                            {
+                                app.content_focus_up();
+                            }
+                            KeyCode::Char('c') if app.current_state == AppState::Content => {
+                                app.copy_content_focus_row();
+                            }
+
                             KeyCode::Char('k') | KeyCode::Up => match app.current_state {
                                 AppState::Dashboard | AppState::CoreWebVitals => app.previous_row(),
-                                AppState::Content => app.previous_content_row(),
+                                AppState::Content => app.previous_content_focus_row(),
                                 AppState::External => app.previous_external_row(),
                                 AppState::Internal => app.previous_internal_row(),
                                 AppState::CustomExtractor => app.previous_extractor_row(),
@@ -957,7 +984,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             },
                             KeyCode::Char('j') | KeyCode::Down => match app.current_state {
                                 AppState::Dashboard | AppState::CoreWebVitals => app.next_row(),
-                                AppState::Content => app.next_content_row(),
+                                AppState::Content => app.next_content_focus_row(),
                                 AppState::External => app.next_external_row(),
                                 AppState::Internal => app.next_internal_row(),
                                 AppState::CustomExtractor => app.next_extractor_row(),
@@ -1054,6 +1081,8 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                             app.show_css_pages_for_url(css_url.url.clone());
                                         }
                                     }
+                                } else if app.current_state == AppState::Content {
+                                    app.activate_content_focus_row();
                                 } else if app.current_state == AppState::DataInsights {
                                     app.trigger_data_insights_fetch();
                                 }
@@ -1124,7 +1153,6 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             KeyCode::Char('t') => app.set_sidebar_tab(3), // Tree View
                             KeyCode::Char('s') => app.set_sidebar_tab(4), // Settings
                             KeyCode::Char('f') => app.set_sidebar_tab(2),
-                            KeyCode::Char('a') => app.set_sidebar_tab(3),
                             KeyCode::Char('A') => app.toggle_ai_modal(),
                             // KeyCode::Char('b') | KeyCode::Char('+') => app.set_sidebar_tab(4),
                             KeyCode::Char('L') => app.toggle_logs(),
@@ -1140,12 +1168,50 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             KeyCode::Char('9') => app.current_state = AppState::Content,
                             KeyCode::Char('0') => app.current_state = AppState::Files,
                             KeyCode::Char('e') => app.current_state = AppState::CustomExtractor,
-                            KeyCode::Char('d') => app.current_state = AppState::DataInsights,
                             _ => {}
                         }
                     }
                 }
                 Event::Mouse(mouse) => {
+                    // Right-click on an Overview row opens the same Actions Menu as 'm',
+                    // anchored to the row that was clicked (RustySEO-style context menu).
+                    if mouse.kind == MouseEventKind::Down(MouseButton::Right) {
+                        let modal_open = app.show_help
+                            || app.show_details
+                            || app.show_dashboard_menu
+                            || app.show_seo_score_modal
+                            || app.show_page_links_modal
+                            || app.show_action_result_modal
+                            || app.show_js_pages_modal
+                            || app.show_css_pages_modal
+                            || app.show_issue_urls_modal
+                            || app.show_ai_modal
+                            || app.show_logs
+                            || app.show_search
+                            || app.input_mode
+                            || app.sidebar_visible;
+
+                        if !modal_open && app.current_state == AppState::Dashboard {
+                            if let Some(rect) = app.table_rect {
+                                let header_offset = rect.y.saturating_add(2); // top border + header row
+                                let bottom = rect.y + rect.height.saturating_sub(1); // bottom border
+                                if mouse.column >= rect.x
+                                    && mouse.column < rect.x + rect.width
+                                    && mouse.row >= header_offset
+                                    && mouse.row < bottom
+                                {
+                                    let local_row = (mouse.row - header_offset) as usize;
+                                    if local_row < app.filtered_table_data.len() {
+                                        app.table_state.select(Some(local_row));
+                                        app.show_dashboard_menu = true;
+                                        app.dashboard_menu_selection = 0;
+                                    }
+                                }
+                            }
+                        }
+                        continue;
+                    }
+
                     if matches!(mouse.kind, MouseEventKind::Down(_)) {
                         let mx = mouse.column;
                         let my = mouse.row;
@@ -1241,11 +1307,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                         if app.show_details {
                             match mouse.kind {
                                 MouseEventKind::ScrollUp => {
-                                    if app.detail_tab == 3
-                                        || app.detail_tab == 4
-                                        || app.detail_tab == 5
-                                        || app.detail_tab == 8
-                                    {
+                                    if [0, 3, 4, 5, 8].contains(&app.detail_tab) {
                                         let len = app.get_current_detail_len();
                                         app.previous_detail_row(len);
                                     } else if app.detail_scroll > 0 {
@@ -1253,11 +1315,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                     }
                                 }
                                 MouseEventKind::ScrollDown => {
-                                    if app.detail_tab == 3
-                                        || app.detail_tab == 4
-                                        || app.detail_tab == 5
-                                        || app.detail_tab == 8
-                                    {
+                                    if [0, 3, 4, 5, 8].contains(&app.detail_tab) {
                                         let len = app.get_current_detail_len();
                                         app.next_detail_row(len);
                                     } else {
@@ -1277,7 +1335,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                     && mouse.row >= r.y
                                     && mouse.row < r.y + r.height
                                 {
-                                    let table_tab = [3, 4, 5, 8].contains(&app.detail_tab);
+                                    let table_tab = [0, 3, 4, 5, 8].contains(&app.detail_tab);
                                     match mouse.kind {
                                         MouseEventKind::ScrollUp => {
                                             if table_tab {

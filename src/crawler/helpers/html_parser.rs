@@ -133,6 +133,24 @@ pub struct PageData {
     pub content_fingerprint: u64,
     pub extraction: Option<ExtractionResult>,
     pub redirect_chain: Vec<crate::models::RedirectHop>,
+    /// Open Graph meta tags found on the page, as (property, content) pairs,
+    /// e.g. ("og:title", "Home"). Populated by `extract_page_elements`.
+    #[serde(default)]
+    pub og_tags: Vec<(String, String)>,
+    /// Raw `Set-Cookie` header values returned by the response. Only
+    /// populated for standard (non-JS) fetches - headless browser cookies
+    /// aren't captured. Set in `fetching.rs`.
+    #[serde(default)]
+    pub cookies: Vec<String>,
+    /// Total wall-clock time to fetch the page (request + body download),
+    /// in milliseconds. Set in `fetching.rs`.
+    #[serde(default)]
+    pub response_time_ms: f64,
+    /// Text-to-HTML ratio: body text length divided by raw HTML byte size,
+    /// as a percentage. Set in `fetching.rs` (needs the raw HTML source,
+    /// which isn't available inside `extract_page_elements`).
+    #[serde(default)]
+    pub text_ratio: f64,
 }
 
 // Define static CSS selectors for common page elements using LazyLock
@@ -157,6 +175,8 @@ static CONTENT_TYPE_SELECTOR: LazyLock<Selector> =
     LazyLock::new(|| Selector::parse("meta[http-equiv=content-type]").unwrap());
 static CANONICAL_SELECTOR: LazyLock<Selector> =
     LazyLock::new(|| Selector::parse("link[rel=canonical], link[rel=alternate]").unwrap());
+static OG_SELECTOR: LazyLock<Selector> =
+    LazyLock::new(|| Selector::parse("meta[property]").unwrap());
 static BODY_SELECTOR: LazyLock<Selector> = LazyLock::new(|| Selector::parse("body").unwrap());
 static STYLE_SELECTOR: LazyLock<Selector> =
     LazyLock::new(|| Selector::parse("link[rel='stylesheet'], style").unwrap());
@@ -270,6 +290,19 @@ pub fn extract_page_elements(document: &Html) -> PageData {
             let href = e.value().attr("href").unwrap_or_default().to_string();
             let hreflang = e.value().attr("hreflang").map(|s| s.to_string());
             (rel, href, hreflang)
+        })
+        .collect();
+
+    // Extract Open Graph meta tags (property="og:...")
+    let og_tags: Vec<(String, String)> = document
+        .select(&OG_SELECTOR)
+        .filter_map(|e| {
+            let property = e.value().attr("property")?;
+            if !property.starts_with("og:") {
+                return None;
+            }
+            let content = e.value().attr("content").unwrap_or("").to_string();
+            Some((property.to_string(), content))
         })
         .collect();
 
@@ -415,6 +448,10 @@ pub fn extract_page_elements(document: &Html) -> PageData {
         content_fingerprint: compute_fingerprint(document),
         extraction,
         redirect_chain: vec![],
+        og_tags,
+        cookies: vec![],       // Will be set by calling code (needs response headers)
+        response_time_ms: 0.0, // Will be set by calling code (needs request timing)
+        text_ratio: 0.0,       // Will be set by calling code (needs raw HTML byte size)
     }
 }
 

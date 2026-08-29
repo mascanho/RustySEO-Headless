@@ -61,10 +61,7 @@ pub fn render(f: &mut Frame, schema: &[String], scroll: u16, area: Rect, block: 
     }
 
     let p = Paragraph::new(content)
-        .block(block.title(Span::styled(
-            " Schema Markup Details ",
-            Style::default().fg(Color::Yellow),
-        )))
+        .block(block)
         .wrap(Wrap { trim: true })
         .scroll((scroll as u16, 0));
     f.render_widget(p, area.inner(Margin::new(1, 0)));

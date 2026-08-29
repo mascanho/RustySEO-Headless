@@ -1,8 +1,8 @@
 use ratatui::{
     Frame,
-    layout::{Constraint, Rect},
+    layout::{Alignment, Constraint, Rect},
     style::{Color, Modifier, Style},
-    text::Span,
+    text::{Line, Span},
     widgets::{Block, Cell, Row, Table, TableState},
 };
 
@@ -44,7 +44,7 @@ pub fn render(
                 .add_modifier(Modifier::BOLD);
         }
 
-        let size_text = if image_info.size_formatted.contains("KB") {
+        let (size_text, size_color) = if image_info.size_formatted.contains("KB") {
             let kb_value = image_info
                 .size_formatted
                 .replace("~", "")
@@ -53,31 +53,16 @@ pub fn render(
                 .parse::<f64>()
                 .unwrap_or(0.0);
 
+            let clean = format!("{}KB", image_info.size_formatted.replace("~KB", ""));
             if kb_value > 500.0 {
-                format!(
-                    "{}{}KB",
-                    if is_selected { "" } else { "🔴 " },
-                    image_info.size_formatted.replace("~KB", "")
-                )
+                (clean, Color::Red)
             } else if kb_value > 100.0 {
-                format!(
-                    "{}{}KB",
-                    if is_selected { "" } else { "🟡 " },
-                    image_info.size_formatted.replace("~KB", "")
-                )
+                (clean, Color::Yellow)
             } else {
-                format!(
-                    "{}{}KB",
-                    if is_selected { "" } else { "🟢 " },
-                    image_info.size_formatted.replace("~KB", "")
-                )
+                (clean, Color::Green)
             }
         } else {
-            format!(
-                "{}{}",
-                if is_selected { "" } else { "⚪ " },
-                image_info.size_formatted
-            )
+            (image_info.size_formatted.clone(), Color::Gray)
         };
 
         let displayed_data = [
@@ -128,7 +113,11 @@ pub fn render(
                 content
             };
 
-            Cell::from(padded_content)
+            if j == 3 && !is_selected {
+                Cell::from(padded_content).style(row_style.fg(size_color))
+            } else {
+                Cell::from(padded_content)
+            }
         });
 
         Row::new(cells).style(row_style).height(1)
@@ -147,16 +136,20 @@ pub fn render(
         String::new()
     };
 
+    let badge = Line::from(vec![Span::styled(
+        format!(" {} Images {}", images.len(), scroll_indicator.trim()),
+        Style::default()
+            .bg(accent_color)
+            .fg(Color::Rgb(10, 10, 20))
+            .add_modifier(Modifier::BOLD),
+    )])
+    .alignment(Alignment::Right);
+
     let table = Table::new(rows, widths)
         .header(header)
         .block(
             block
-                .title(Span::styled(
-                    format!(" 🖼️  Images ({}) {} ", images.len(), scroll_indicator),
-                    Style::default()
-                        .fg(Color::Yellow)
-                        .add_modifier(Modifier::BOLD),
-                ))
+                .title_bottom(badge)
                 .border_style(Style::default().fg(accent_color)),
         )
         .column_spacing(1)
