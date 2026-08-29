@@ -88,7 +88,7 @@ impl Default for App {
             detail_horizontal_scroll: 0,
             detail_table_state: ratatui::widgets::TableState::default(),
             show_overview_subtable: true,
-            overview_subtable_height: 29,
+            overview_subtable_height: 27,
             overview_subtable_rect: None,
             overview_subtable_last_key: None,
             input_url: String::new(),

@@ -21,7 +21,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         // a readable minimum.
         let panel_h = app
             .overview_subtable_height
-            .min(area.height.saturating_mul(3) / 5)
+            .min(area.height.saturating_mul(11) / 20)
             .max(8);
         let parts = Layout::default()
             .direction(Direction::Vertical)
