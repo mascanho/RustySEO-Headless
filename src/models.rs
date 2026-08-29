@@ -614,6 +614,12 @@ pub struct App {
     pub detail_scroll: u16,
     pub detail_horizontal_scroll: usize,
     pub detail_table_state: ratatui::widgets::TableState,
+    // Overview tab docked sub-table (Screaming Frog / RustySEO style lower pane).
+    // Mirrors the Page Details modal for the currently highlighted row.
+    pub show_overview_subtable: bool,
+    pub overview_subtable_height: u16,
+    pub overview_subtable_rect: Option<ratatui::layout::Rect>,
+    pub overview_subtable_last_key: Option<(usize, usize)>,
     pub input_url: String,
     pub crawl_receiver: Option<tokio::sync::mpsc::Receiver<crate::crawler::CrawlMessage>>,
     pub is_crawling: bool,

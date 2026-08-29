@@ -860,6 +860,63 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             //         app.next_state();
                             //     }
                             // }
+
+                            // Arrow keys cycle the main tabs (Overview → Connectors).
+                            KeyCode::Right => {
+                                if app.current_state == AppState::DataInsights {
+                                    app.next_data_insights_tab();
+                                } else {
+                                    app.next_state();
+                                }
+                            }
+                            KeyCode::Left => {
+                                if app.current_state == AppState::DataInsights {
+                                    app.previous_data_insights_tab();
+                                } else {
+                                    app.previous_state();
+                                }
+                            }
+
+                            // Overview docked sub-table (Screaming Frog style lower pane)
+                            KeyCode::Char('O') if app.current_state == AppState::Dashboard => {
+                                app.show_overview_subtable = !app.show_overview_subtable;
+                            }
+                            KeyCode::Char(',')
+                                if app.current_state == AppState::Dashboard
+                                    && app.show_overview_subtable =>
+                            {
+                                app.previous_detail_tab();
+                            }
+                            KeyCode::Char('.')
+                                if app.current_state == AppState::Dashboard
+                                    && app.show_overview_subtable =>
+                            {
+                                app.next_detail_tab();
+                            }
+                            // On the Overview tab, vim keys drive the docked sub-table;
+                            // the arrow keys still move the main table selection.
+                            KeyCode::Char('k')
+                                if app.current_state == AppState::Dashboard
+                                    && app.show_overview_subtable =>
+                            {
+                                if [3, 4, 5, 8].contains(&app.detail_tab) {
+                                    let len = app.get_current_detail_len();
+                                    app.previous_detail_row(len);
+                                } else {
+                                    app.detail_scroll = app.detail_scroll.saturating_sub(1);
+                                }
+                            }
+                            KeyCode::Char('j')
+                                if app.current_state == AppState::Dashboard
+                                    && app.show_overview_subtable =>
+                            {
+                                if [3, 4, 5, 8].contains(&app.detail_tab) {
+                                    let len = app.get_current_detail_len();
+                                    app.next_detail_row(len);
+                                } else {
+                                    app.detail_scroll = app.detail_scroll.saturating_add(1);
+                                }
+                            }
                             KeyCode::Char('k') | KeyCode::Up => match app.current_state {
                                 AppState::Dashboard | AppState::CoreWebVitals => app.previous_row(),
                                 AppState::Content => app.previous_content_row(),
@@ -1175,6 +1232,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                 _ => {}
                             }
                         }
+
                     } else if matches!(
                         mouse.kind,
                         MouseEventKind::ScrollUp | MouseEventKind::ScrollDown
@@ -1209,6 +1267,41 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                                 _ => {}
                             }
                             continue;
+                        }
+
+                        // Wheel over the Overview docked sub-table scrolls its content.
+                        if app.current_state == AppState::Dashboard && app.show_overview_subtable {
+                            if let Some(r) = app.overview_subtable_rect {
+                                if mouse.column >= r.x
+                                    && mouse.column < r.x + r.width
+                                    && mouse.row >= r.y
+                                    && mouse.row < r.y + r.height
+                                {
+                                    let table_tab = [3, 4, 5, 8].contains(&app.detail_tab);
+                                    match mouse.kind {
+                                        MouseEventKind::ScrollUp => {
+                                            if table_tab {
+                                                let len = app.get_current_detail_len();
+                                                app.previous_detail_row(len);
+                                            } else {
+                                                app.detail_scroll =
+                                                    app.detail_scroll.saturating_sub(1);
+                                            }
+                                        }
+                                        MouseEventKind::ScrollDown => {
+                                            if table_tab {
+                                                let len = app.get_current_detail_len();
+                                                app.next_detail_row(len);
+                                            } else {
+                                                app.detail_scroll =
+                                                    app.detail_scroll.saturating_add(1);
+                                            }
+                                        }
+                                        _ => {}
+                                    }
+                                    continue;
+                                }
+                            }
                         }
 
                         // Handle mouse wheel scrolling on tables

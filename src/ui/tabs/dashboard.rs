@@ -1,17 +1,39 @@
 use ratatui::{
     Frame,
-    layout::{Alignment, Constraint, Rect},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table},
+    widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table, Tabs},
 };
 
 use crate::models::App;
+use crate::ui::modals::details::{DETAIL_TAB_TITLES, render_detail_body};
 
 pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
-    app.table_rect = Some(area);
     let accent_color = Color::Rgb(80, 140, 255);
     let border_color = Color::Rgb(40, 45, 60);
+
+    // Split off the docked sub-table pane (lower window) when enabled.
+    let show_sub = app.show_overview_subtable
+        && !(app.filtered_table_data.is_empty() && app.table_data.is_empty());
+    let (area, subtable_area) = if show_sub {
+        // The sub-table gets the lion's share of the height; the main table keeps
+        // a readable minimum.
+        let panel_h = app
+            .overview_subtable_height
+            .min(area.height.saturating_mul(3) / 5)
+            .max(8);
+        let parts = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Min(6), Constraint::Length(panel_h)])
+            .split(area);
+        (parts[0], Some(parts[1]))
+    } else {
+        app.overview_subtable_rect = None;
+        (area, None)
+    };
+
+    app.table_rect = Some(area);
 
     // Ensure we have filtered data if it was just initialized
     if app.filtered_table_data.is_empty()
@@ -366,4 +388,63 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         f.render_widget(Clear, search_area);
         f.render_widget(search_paragraph, search_area);
     }
+
+    if let Some(subtable_area) = subtable_area {
+        render_subtable(f, app, subtable_area);
+    }
+}
+
+/// Docked lower pane that mirrors the Page Details modal for the highlighted
+/// row - the Overview equivalent of Screaming Frog's / RustySEO's bottom window.
+fn render_subtable(f: &mut Frame, app: &mut App, area: Rect) {
+    app.overview_subtable_rect = Some(area);
+
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Rgb(40, 45, 60)))
+        .title_bottom(
+            Line::from(Span::styled(
+                " j/k navigate · , . tabs · Enter full view · O hide ",
+                Style::default().fg(Color::DarkGray).italic(),
+            ))
+            .alignment(Alignment::Right),
+        )
+        .bg(Color::Rgb(15, 15, 25));
+
+    let inner = block.inner(area);
+    f.render_widget(Clear, area);
+    f.render_widget(block, area);
+
+    if inner.height < 2 {
+        return;
+    }
+
+    if app.selected_page_details.is_none() {
+        f.render_widget(
+            Paragraph::new(" Loading page details… ")
+                .style(Style::default().fg(Color::DarkGray)),
+            inner,
+        );
+        return;
+    }
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(1), Constraint::Min(0)])
+        .split(inner);
+
+    let tabs = Tabs::new(DETAIL_TAB_TITLES.to_vec())
+        .select(app.detail_tab)
+        .style(Style::default().fg(Color::DarkGray))
+        .highlight_style(
+            Style::default()
+                .fg(Color::White)
+                .bg(Color::Rgb(80, 140, 255))
+                .add_modifier(Modifier::BOLD),
+        )
+        .divider(Span::styled("|", Style::default().fg(Color::Rgb(40, 45, 60))));
+    f.render_widget(tabs, chunks[0]);
+
+    let current_tab = app.detail_tab;
+    render_detail_body(f, app, current_tab, chunks[1]);
 }

@@ -1,16 +1,133 @@
 use crate::{models::App, ui::centered_rect};
 use ratatui::{
     Frame,
-    layout::{Alignment, Constraint, Direction, Layout},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Borders, Clear, Padding, Paragraph, Tabs},
 };
 
-mod modal_tabs;
+pub mod modal_tabs;
 
 const ACCENT_COLOR: Color = Color::Rgb(80, 140, 255);
 const BORDER_COLOR: Color = Color::Rgb(40, 45, 60);
+
+/// Tab labels shared by the full-screen Page Details modal and the docked
+/// Overview sub-table so both stay in lock-step.
+pub const DETAIL_TAB_TITLES: [&str; 9] = [
+    " General ",
+    " Analysis ",
+    " Checklist ",
+    " Inlinks ",
+    " Outlinks ",
+    " Images ",
+    " Schema ",
+    " Headers ",
+    " Headings ",
+];
+
+/// Renders the body of the Page Details view for `tab` (0..=8) into `area`,
+/// reusing the exact per-tab widgets shown in the modal. Shared by the modal
+/// and the Overview tab's docked sub-table (Screaming Frog / RustySEO style).
+pub fn render_detail_body(f: &mut Frame, app: &mut App, tab: usize, area: Rect) {
+    let selected_idx = app.table_state.selected().unwrap_or(0);
+    if selected_idx >= app.filtered_table_data.len() {
+        return;
+    }
+
+    let page_details = match &app.selected_page_details {
+        Some(details) => details,
+        None => return,
+    };
+    let row_data = &app.filtered_table_data[selected_idx];
+
+    // Outlinks should only ever be links that leave the crawled domain - same-domain
+    // links already have their own "Inlinks" (internal links) tab, so without this
+    // filter the Outlinks tab just duplicates it.
+    let base_domain = url::Url::parse(&app.input_url)
+        .ok()
+        .and_then(|u| u.host_str().map(str::to_string));
+    let external_outlinks: Vec<crate::crawler::helpers::html_parser::AnchorLink> = page_details
+        .outlinks
+        .iter()
+        .filter(|link| {
+            let link_domain = url::Url::parse(&link.href)
+                .ok()
+                .and_then(|u| u.host_str().map(str::to_string));
+            !crate::crawler::url_normalizer::is_same_domain(
+                link_domain.as_deref(),
+                base_domain.as_deref(),
+            )
+        })
+        .cloned()
+        .collect();
+
+    let content_block = Block::default().bg(Color::Rgb(20, 20, 30));
+    match tab {
+        0 => modal_tabs::general::render(
+            f,
+            row_data,
+            &page_details.canonicals,
+            app.detail_scroll,
+            area,
+            content_block,
+        ),
+        1 => modal_tabs::analysis::render(f, row_data, area, content_block),
+        2 => modal_tabs::checklist::render(f, row_data, area, content_block),
+        3 => modal_tabs::inlinks::render(
+            f,
+            &page_details.anchor_links,
+            &app.url_to_status,
+            app.detail_horizontal_scroll,
+            &mut app.detail_table_state,
+            area,
+            content_block,
+        ),
+        4 => modal_tabs::outlinks::render(
+            f,
+            &external_outlinks,
+            &app.url_to_status,
+            app.detail_horizontal_scroll,
+            &mut app.detail_table_state,
+            area,
+            content_block,
+        ),
+        5 => modal_tabs::images::render(
+            f,
+            &page_details.images,
+            app.detail_horizontal_scroll,
+            &mut app.detail_table_state,
+            area,
+            content_block,
+        ),
+        6 => {
+            let schema_block = Block::default().bg(Color::Rgb(25, 15, 35));
+            modal_tabs::schema::render(
+                f,
+                &page_details.schema.clone(),
+                app.detail_scroll,
+                area,
+                schema_block,
+            );
+        }
+        7 => modal_tabs::headers::render(
+            f,
+            &page_details.headers.clone(),
+            app.detail_scroll,
+            area,
+            content_block,
+        ),
+        8 => modal_tabs::headings::render(
+            f,
+            &page_details.headings.clone(),
+            app.detail_horizontal_scroll,
+            &mut app.detail_table_state,
+            area,
+            content_block,
+        ),
+        _ => {}
+    }
+}
 
 pub fn render(f: &mut Frame, app: &mut App) {
     let area = f.area();
@@ -48,6 +165,11 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     let row_data = &app.filtered_table_data[selected_idx];
 
+    // Values needed after `render_detail_body` takes a mutable borrow of `app`.
+    let title_url = row_data.get(1).cloned().unwrap_or_default();
+    let status = row_data.get(10).cloned().unwrap_or_default();
+    let file_size = page_details.size as u64;
+
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -58,24 +180,11 @@ pub fn render(f: &mut Frame, app: &mut App) {
         ])
         .split(inner_area);
 
-    // Render Tabs
-    let titles = vec![
-        " General ",
-        " Analysis ",
-        " Checklist ",
-        " Inlinks ",
-        " Outlinks ",
-        " Images ",
-        " Schema ",
-        " Headers ",
-        " Headings ",
-    ];
-
-    let tabs = Tabs::new(titles)
+    let tabs = Tabs::new(DETAIL_TAB_TITLES.to_vec())
         .block(
             Block::default()
                 .title(Span::styled(
-                    format!(" {} ", row_data[1]),
+                    format!(" {} ", title_url),
                     Style::default()
                         .fg(Color::White)
                         .bg(ACCENT_COLOR)
@@ -95,102 +204,14 @@ pub fn render(f: &mut Frame, app: &mut App) {
                 .add_modifier(Modifier::BOLD)
                 .add_modifier(Modifier::REVERSED),
         )
-        .divider(Span::styled("|", Style::default().fg(border_color)));
+        .divider(Span::styled("|", Style::default().fg(BORDER_COLOR)));
 
     f.render_widget(tabs, chunks[0]);
 
-    // Outlinks should only ever be links that leave the crawled domain - same-domain
-    // links already have their own "Inlinks" (internal links) tab, so without this
-    // filter the Outlinks tab just duplicates it.
-    let base_domain = url::Url::parse(&app.input_url)
-        .ok()
-        .and_then(|u| u.host_str().map(str::to_string));
-    let external_outlinks: Vec<crate::crawler::helpers::html_parser::AnchorLink> = page_details
-        .outlinks
-        .iter()
-        .filter(|link| {
-            let link_domain = url::Url::parse(&link.href)
-                .ok()
-                .and_then(|u| u.host_str().map(str::to_string));
-            !crate::crawler::url_normalizer::is_same_domain(
-                link_domain.as_deref(),
-                base_domain.as_deref(),
-            )
-        })
-        .cloned()
-        .collect();
-
-    // Render Content based on tab
-    let content_block = Block::default().bg(Color::Rgb(20, 20, 30));
-    match app.detail_tab {
-        0 => modal_tabs::general::render(
-            f,
-            row_data,
-            &page_details.canonicals,
-            app.detail_scroll,
-            chunks[1],
-            content_block,
-        ),
-        1 => modal_tabs::analysis::render(f, row_data, chunks[1], content_block),
-        2 => modal_tabs::checklist::render(f, row_data, chunks[1], content_block),
-        3 => modal_tabs::inlinks::render(
-            f,
-            &page_details.anchor_links,
-            &app.url_to_status,
-            app.detail_horizontal_scroll,
-            &mut app.detail_table_state,
-            chunks[1],
-            content_block,
-        ),
-        4 => modal_tabs::outlinks::render(
-            f,
-            &external_outlinks,
-            &app.url_to_status,
-            app.detail_horizontal_scroll,
-            &mut app.detail_table_state,
-            chunks[1],
-            content_block,
-        ),
-        5 => modal_tabs::images::render(
-            f,
-            &page_details.images,
-            app.detail_horizontal_scroll,
-            &mut app.detail_table_state,
-            chunks[1],
-            content_block,
-        ),
-        6 => {
-            let schema_block = Block::default().bg(Color::Rgb(25, 15, 35));
-            modal_tabs::schema::render(
-                f,
-                &page_details.schema.clone(),
-                app.detail_scroll,
-                chunks[1],
-                schema_block,
-            );
-        }
-        7 => modal_tabs::headers::render(
-            f,
-            &page_details.headers.clone(),
-            app.detail_scroll,
-            chunks[1],
-            content_block,
-        ),
-        8 => modal_tabs::headings::render(
-            f,
-            &page_details.headings.clone(),
-            app.detail_horizontal_scroll,
-            &mut app.detail_table_state,
-            chunks[1],
-            content_block,
-        ),
-        _ => {}
-    }
+    let current_tab = app.detail_tab;
+    render_detail_body(f, app, current_tab, chunks[1]);
 
     // Render Footers
-    let _url = &row_data[1];
-    let status = &row_data[10];
-
     let status_code = status
         .split_whitespace()
         .next()
@@ -219,7 +240,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
     let status_line = Line::from(vec![
         Span::styled("Status: ", Style::default().fg(Color::Yellow)),
         Span::styled(
-            status,
+            status.as_str(),
             Style::default()
                 .bg(Color::Rgb(10, 10, 20))
                 .fg(status_color)
@@ -231,9 +252,6 @@ pub fn render(f: &mut Frame, app: &mut App) {
     let status_p = Paragraph::new(status_line)
         .block(Block::default().bg(Color::Rgb(10, 10, 20)))
         .alignment(Alignment::Right);
-
-    // File Size
-    let file_size = page_details.size as u64;
 
     let format_size = |size: u64| -> String {
         if size >= 1024 * 1024 {

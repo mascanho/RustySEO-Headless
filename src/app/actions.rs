@@ -545,6 +545,21 @@ impl App {
             }
             self.apply_log_filter();
         }
+
+        // Keep the Overview docked sub-table in sync with the highlighted row.
+        if self.current_state == crate::app::AppState::Dashboard
+            && self.show_overview_subtable
+            && !self.show_details
+        {
+            let key = (self.current_page, self.table_state.selected().unwrap_or(0));
+            if self.overview_subtable_last_key != Some(key) {
+                self.overview_subtable_last_key = Some(key);
+                self.detail_scroll = 0;
+                self.detail_horizontal_scroll = 0;
+                self.detail_table_state.select(Some(0));
+                self.refresh_details_for_current_selection();
+            }
+        }
     }
 
     pub fn open_details(&mut self, id: usize) {
