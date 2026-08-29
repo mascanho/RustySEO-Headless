@@ -234,12 +234,12 @@ pub fn render(
             let mut value_style = r.value_style;
 
             if is_selected {
-                bg = ACCENT_COLOR;
+                bg = Color::Rgb(20, 50, 120);
                 label_style = Style::default()
-                    .fg(Color::Rgb(10, 10, 20))
+                    .fg(Color::Rgb(255, 255, 255))
                     .add_modifier(Modifier::BOLD);
                 value_style = Style::default()
-                    .fg(Color::Rgb(10, 10, 20))
+                    .fg(Color::Rgb(255, 255, 255))
                     .add_modifier(Modifier::BOLD);
             }
 
