@@ -404,7 +404,7 @@ fn render_subtable(f: &mut Frame, app: &mut App, area: Rect) {
         .border_style(Style::default().fg(Color::Rgb(40, 45, 60)))
         .title_bottom(
             Line::from(Span::styled(
-                " j/k navigate · , . tabs · Enter full view · O hide ",
+                " j/k navigate · h/l tabs · Enter full view · O hide ",
                 Style::default().fg(Color::DarkGray).italic(),
             ))
             .alignment(Alignment::Right),

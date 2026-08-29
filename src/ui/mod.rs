@@ -346,7 +346,7 @@ fn render_help_modal(f: &mut Frame) {
         hdr("OVERVIEW SUB-PANEL", header_color, bg_color),
         kv("O", "Show / hide sub-panel", key_color),
         kv("j / k", "Navigate sub-panel", key_color),
-        kv(", / .", "Prev / next panel tab", key_color),
+        kv("h / l", "Prev / next panel tab", key_color),
         Line::from(""),
         hdr("SEARCH & FILTER", header_color, bg_color),
         kv("Ctrl+f", "Search active tab", mod_color),

@@ -881,13 +881,13 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             KeyCode::Char('O') if app.current_state == AppState::Dashboard => {
                                 app.show_overview_subtable = !app.show_overview_subtable;
                             }
-                            KeyCode::Char(',')
+                            KeyCode::Char(',') | KeyCode::Char('h')
                                 if app.current_state == AppState::Dashboard
                                     && app.show_overview_subtable =>
                             {
                                 app.previous_detail_tab();
                             }
-                            KeyCode::Char('.')
+                            KeyCode::Char('.') | KeyCode::Char('l')
                                 if app.current_state == AppState::Dashboard
                                     && app.show_overview_subtable =>
                             {
