@@ -229,7 +229,7 @@ pub fn render(
                 Color::Rgb(25, 25, 40)
             };
             let mut label_style = Style::default()
-                .fg(ACCENT_COLOR)
+                .fg(Color::Rgb(255, 140, 0))
                 .add_modifier(Modifier::BOLD);
             let mut value_style = r.value_style;
 
