@@ -469,21 +469,39 @@ impl CrawlEngine {
                         let scanned = self.success_count.load(Ordering::SeqCst) as usize;
                         let queued = queue.len();
                         let processing = join_set.len();
+                        let failed = self.stats.pages_failed.load(Ordering::SeqCst);
                         let _ = tx
                             .send(crate::crawler::CrawlMessage::Progress {
                                 scanned,
                                 queued,
                                 processing,
+                                failed,
                             })
                             .await;
                     }
                     Ok(Err(e)) => {
                         self.stats.increment_failed();
                         tracing::error!("Crawl Error: {}", e);
+                        let _ = tx
+                            .send(crate::crawler::CrawlMessage::Progress {
+                                scanned: self.success_count.load(Ordering::SeqCst),
+                                queued: queue.len(),
+                                processing: join_set.len(),
+                                failed: self.stats.pages_failed.load(Ordering::SeqCst),
+                            })
+                            .await;
                     }
                     Err(e) => {
                         self.stats.increment_failed();
                         tracing::error!("Task Panic/Error: {}", e);
+                        let _ = tx
+                            .send(crate::crawler::CrawlMessage::Progress {
+                                scanned: self.success_count.load(Ordering::SeqCst),
+                                queued: queue.len(),
+                                processing: join_set.len(),
+                                failed: self.stats.pages_failed.load(Ordering::SeqCst),
+                            })
+                            .await;
                     }
                 }
             }

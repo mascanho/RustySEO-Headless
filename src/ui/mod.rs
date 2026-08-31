@@ -10,6 +10,7 @@ use crate::{app::AppState, models::App};
 
 pub mod components;
 pub mod footer;
+pub mod menu_panel;
 pub mod modals;
 pub mod side_panel;
 pub mod sidebar;
@@ -137,6 +138,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
     // Render Modals (Side Panel, Help)
     side_panel::render(f, app);
+    menu_panel::render(f, app);
 
     if app.show_details {
         modals::details::render(f, app);
@@ -326,6 +328,7 @@ fn render_help_modal(f: &mut Frame) {
         kv("?", "Toggle this help", key_color),
         kv("Esc", "Reset / close panel", key_color),
         kv("Ctrl+i", "Open URL input", key_color),
+        kv("Ctrl+m", "Toggle Menus panel", mod_color),
         kv("Shift+D", "Export tab (.xlsx)", mod_color),
         kv("Shift+A", "Toggle AI Copilot", mod_color),
         kv("Shift+L", "Toggle System Logs", mod_color),

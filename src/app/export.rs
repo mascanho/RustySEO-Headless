@@ -623,7 +623,7 @@ fn build_content_sheet(app: &App) -> ExportSheet {
     }
 
     let rows = app
-        .content_full_filtered_table_data
+        .content_rows()
         .iter()
         .enumerate()
         .map(|(i, data)| {
@@ -702,7 +702,6 @@ mod tests {
         let mut app = App::default();
         app.table_data = vec![sample_overview_row()];
         app.full_filtered_table_data = app.table_data.clone();
-        app.content_full_filtered_table_data = app.table_data.clone();
         app.link_scores
             .insert("https://example.com/".to_string(), 72);
         app.url_to_status

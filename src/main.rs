@@ -2,10 +2,14 @@ use clap::Parser;
 use crossterm::{
     event::{
         self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind, KeyModifiers,
-        MouseButton, MouseEventKind,
+        KeyboardEnhancementFlags, MouseButton, MouseEventKind, PopKeyboardEnhancementFlags,
+        PushKeyboardEnhancementFlags,
     },
     execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+    terminal::{
+        EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
+        supports_keyboard_enhancement,
+    },
 };
 use ratatui::{
     Terminal,
@@ -57,9 +61,63 @@ async fn main() -> Result<(), Box<dyn Error>> {
     } else {
         // In case no arguments are passed then continue rendering the UI for CLI
         // setup terminal
+        // Install a panic hook that leaves the terminal usable and captures the
+        // panic. A TUI panic otherwise vanishes: the alternate screen is torn
+        // down on exit and the message scrolls away unread, making crashes
+        // impossible to diagnose. On panic we best-effort restore the terminal,
+        // write a full report (message + backtrace) to `crash.log` in the data
+        // dir, and echo it to stderr. Does not fire for OS kills (e.g. the OOM
+        // killer) - a crash with no `crash.log` is that, not a panic.
+        std::panic::set_hook(Box::new(move |info| {
+            // Fully undo the terminal setup, in reverse order, before printing
+            // anything. Skipping any of these (raw mode, mouse capture, the
+            // kitty keyboard flags, the alternate screen, the hidden cursor)
+            // leaves the shell spewing escape sequences as "strange characters".
+            let _ = disable_raw_mode();
+            let _ = execute!(
+                io::stdout(),
+                PopKeyboardEnhancementFlags,
+                DisableMouseCapture,
+                LeaveAlternateScreen,
+                crossterm::cursor::Show,
+            );
+
+            let report = format!(
+                "RustySEO-CLI panic — {}\n{info}\n\nbacktrace:\n{}\n",
+                chrono::Local::now().to_rfc3339(),
+                std::backtrace::Backtrace::force_capture(),
+            );
+
+            let mut written_to = String::from("(could not write crash.log)");
+            if let Some(dirs) = directories::ProjectDirs::from("", "", "rustyseo") {
+                let _ = std::fs::create_dir_all(dirs.data_dir());
+                let path = dirs.data_dir().join("crash.log");
+                if std::fs::write(&path, &report).is_ok() {
+                    written_to = path.display().to_string();
+                }
+            }
+
+            // Keep the terminal output short: dumping a full backtrace into a
+            // terminal that may still be mid-escape-sequence is itself a source
+            // of screen garbage. The detail lives in the file.
+            eprintln!(
+                "\n\nRustySEO-CLI crashed.\n  {info}\n  full report: {written_to}\n  if the terminal looks broken, run:  reset\n"
+            );
+        }));
+
         enable_raw_mode()?;
         let mut stdout = io::stdout();
         execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+        // Without this, terminals fold Ctrl+M into Enter (both are 0x0D), so the
+        // Menus panel toggle would be indistinguishable from pressing Return.
+        // The flag is a no-op on terminals that don't advertise support.
+        let keyboard_enhanced = matches!(supports_keyboard_enhancement(), Ok(true));
+        if keyboard_enhanced {
+            let _ = execute!(
+                stdout,
+                PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES)
+            );
+        }
         let backend = CrosstermBackend::new(stdout);
         let mut terminal = Terminal::new(backend)?;
 
@@ -80,6 +138,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
         // restore terminal
         disable_raw_mode()?;
+        if keyboard_enhanced {
+            let _ = execute!(terminal.backend_mut(), PopKeyboardEnhancementFlags);
+        }
         execute!(
             terminal.backend_mut(),
             LeaveAlternateScreen,
@@ -599,8 +660,37 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             continue;
                         }
 
+                        // MODAL PRIORITY 2.9: Menus panel (Ctrl+M) - a navigable
+                        // reference of every RustySEO desktop-app menu.
+                        if app.menu_panel_visible {
+                            match key.code {
+                                KeyCode::Char('m')
+                                    if key.modifiers.contains(KeyModifiers::CONTROL) =>
+                                {
+                                    app.toggle_menu_panel();
+                                }
+                                KeyCode::Char('q')
+                                | KeyCode::Esc
+                                | KeyCode::Char('h')
+                                | KeyCode::Left => app.toggle_menu_panel(),
+                                KeyCode::Char('j') | KeyCode::Down => app.menu_panel_next(),
+                                KeyCode::Char('k') | KeyCode::Up => app.menu_panel_prev(),
+                                KeyCode::Char('g') => app.menu_panel_first(),
+                                KeyCode::Char('G') => app.menu_panel_last(),
+                                _ => {}
+                            }
+                            continue;
+                        }
+
                         // MODAL PRIORITY 3: Sidebar
                         if app.sidebar_visible {
+                            // Ctrl+M swaps the regular sidebar for the Menus panel.
+                            if key.code == KeyCode::Char('m')
+                                && key.modifiers.contains(KeyModifiers::CONTROL)
+                            {
+                                app.toggle_menu_panel();
+                                continue;
+                            }
                             if app.sidebar_tab == 1 {
                                 match key.code {
                                     KeyCode::Up | KeyCode::Char('k') => app.previous_issues_row(),
@@ -784,6 +874,9 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
                             KeyCode::Esc => app.reset(),
                             KeyCode::Char('i') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                                 app.input_mode = true
+                            }
+                            KeyCode::Char('m') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                                app.toggle_menu_panel()
                             }
                             KeyCode::Char('f') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                                 if app.show_logs {

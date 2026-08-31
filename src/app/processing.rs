@@ -298,11 +298,26 @@ impl App {
         }
     }
 
+    /// Rows backing the Content tab table. When no content search is active no
+    /// separate copy is kept - the live crawl rows in `table_data` are read
+    /// directly. With a search active, `content_full_filtered_table_data` holds
+    /// the scored subset.
+    pub fn content_rows(&self) -> &[Vec<String>] {
+        if self.content_search_query.is_empty() {
+            &self.table_data
+        } else {
+            &self.content_full_filtered_table_data
+        }
+    }
+
+    pub fn content_rows_len(&self) -> usize {
+        self.content_rows().len()
+    }
+
     pub fn apply_content_filter(&mut self) {
         if self.content_search_query.is_empty() {
-            if self.content_full_filtered_table_data.len() != self.table_data.len() {
-                self.content_full_filtered_table_data = self.table_data.clone();
-            }
+            // No separate copy kept - `content_rows()` reads `table_data`.
+            self.content_full_filtered_table_data = Vec::new();
         } else {
             let matcher = SkimMatcherV2::default();
             let mut scored_data = Vec::new();
@@ -317,9 +332,8 @@ impl App {
                 scored_data.into_iter().map(|(_, row)| row).collect();
         }
 
-        let total_pages = (self.content_full_filtered_table_data.len() + self.content_page_size
-            - 1)
-            / self.content_page_size;
+        let total_pages =
+            (self.content_rows_len() + self.content_page_size - 1) / self.content_page_size;
         if self.content_current_page >= total_pages {
             self.content_current_page = total_pages.saturating_sub(1);
         }
@@ -329,14 +343,14 @@ impl App {
 
     pub fn apply_content_pagination(&mut self) {
         let start = self.content_current_page * self.content_page_size;
-        let end = (start + self.content_page_size).min(self.content_full_filtered_table_data.len());
+        let rows = self.content_rows();
+        let end = (start + self.content_page_size).min(rows.len());
 
-        if start < self.content_full_filtered_table_data.len() {
-            self.content_filtered_table_data =
-                self.content_full_filtered_table_data[start..end].to_vec();
+        self.content_filtered_table_data = if start < rows.len() {
+            rows[start..end].to_vec()
         } else {
-            self.content_filtered_table_data = Vec::new();
-        }
+            Vec::new()
+        };
 
         if let Some(selected) = self.content_table_state.selected() {
             if selected >= self.content_filtered_table_data.len() {

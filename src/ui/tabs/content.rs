@@ -26,13 +26,13 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
     // and click handling target for this tab.
     app.table_rect = Some(area);
 
-    // Ensure we have filtered data if it was just initialized
+    // Ensure the visible page slice is populated if it was just initialized
+    // (e.g. tab opened before the first on_tick pagination pass).
     if app.content_filtered_table_data.is_empty()
         && !app.table_data.is_empty()
         && app.content_search_query.is_empty()
     {
-        app.content_filtered_table_data = app.table_data.clone();
-        app.content_full_filtered_table_data = app.table_data.clone();
+        app.apply_content_pagination();
     }
 
     let header_titles = [
@@ -153,13 +153,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             Row::new(cells).style(row_style).height(1)
         });
 
-    let max_id_width = app
-        .content_full_filtered_table_data
-        .len()
-        .to_string()
-        .len()
-        .max(2) as u16
-        + 2;
+    let max_id_width = app.content_rows_len().to_string().len().max(2) as u16 + 2;
     let mut widths = vec![
         Constraint::Length(max_id_width), // ID
         Constraint::Min(40),              // URL
@@ -171,8 +165,8 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         widths.push(Constraint::Length(20));
     }
 
-    let total_pages = (app.content_full_filtered_table_data.len() + app.content_page_size - 1)
-        / app.content_page_size;
+    let total_pages =
+        (app.content_rows_len() + app.content_page_size - 1) / app.content_page_size;
     let scroll_indicator = if app.content_horizontal_scroll > 0 {
         format!(" [Scroll: {}] ", app.content_horizontal_scroll)
     } else {
@@ -185,10 +179,7 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
             Block::default()
                 .borders(Borders::ALL)
                 .title(Span::styled(
-                    format!(
-                        " Content Audit ({}) ",
-                        app.content_full_filtered_table_data.len()
-                    ),
+                    format!(" Content Audit ({}) ", app.content_rows_len()),
                     Style::default()
                         .fg(Color::Yellow)
                         .add_modifier(Modifier::BOLD),

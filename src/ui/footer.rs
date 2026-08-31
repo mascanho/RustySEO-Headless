@@ -87,6 +87,17 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         ),
         Span::styled(" | ", Style::default().fg(border_color)),
         Span::styled(
+            format!(" Failed: {} ", app.failed_urls),
+            Style::default()
+                .fg(if app.failed_urls > 0 {
+                    Color::Rgb(255, 80, 80)
+                } else {
+                    Color::DarkGray
+                })
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(" | ", Style::default().fg(border_color)),
+        Span::styled(
             format!(" Logs(L): {} ", app.logs_data.len()),
             Style::default().fg(Color::Yellow),
         ),
@@ -191,6 +202,8 @@ pub fn render(f: &mut Frame, app: &mut App, area: Rect) {
         } else {
             Span::raw("")
         },
+        Span::styled(" Menus: Ctrl+M ", Style::default().fg(Color::DarkGray)),
+        Span::styled(" | ", Style::default().fg(border_color)),
         Span::styled(" Help: '?' ", Style::default().fg(Color::Gray)),
     ])];
 

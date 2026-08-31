@@ -24,6 +24,8 @@ impl App {
 
         self.is_crawling = true;
         self.crawl_progress = 0.0;
+        self.queued_urls = 0;
+        self.failed_urls = 0;
         self.table_data.clear();
         self.page_summaries.clear();
         self.css_counts.clear();

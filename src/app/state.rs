@@ -33,6 +33,9 @@ impl Default for App {
         Self {
             sidebar_visible: false,
             task_panel_visible: false,
+            menu_panel_visible: false,
+            menu_panel_selected: 0,
+            menu_panel_scroll: 0,
             current_state: AppState::Dashboard,
             sidebar_tab: 0,
             sidebar_scroll: 0,
@@ -80,6 +83,7 @@ impl Default for App {
             action_result_success: true,
             crawl_progress: 0.0,
             queued_urls: 0,
+            failed_urls: 0,
             input: String::new(),
             input_mode: false,
             cursor_position: 0,

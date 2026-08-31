@@ -561,6 +561,11 @@ pub struct DuplicatePair {
 pub struct App {
     pub sidebar_visible: bool,
     pub task_panel_visible: bool,
+    /// "Menus" side panel (Ctrl+M): a navigable reference of every RustySEO
+    /// desktop-app menu. See `crate::ui::menu_panel`.
+    pub menu_panel_visible: bool,
+    pub menu_panel_selected: usize,
+    pub menu_panel_scroll: usize,
     pub current_state: AppState,
     pub sidebar_tab: usize,
     pub sidebar_scroll: usize,
@@ -607,6 +612,10 @@ pub struct App {
     pub action_result_success: bool,
     pub crawl_progress: f64,
     pub queued_urls: usize,
+    /// Running count of URLs that failed to fetch during the current crawl
+    /// (network errors after retries, exhausted 429/5xx retries, task panics).
+    /// Surfaced in the footer status line.
+    pub failed_urls: usize,
     pub input: String,
     pub input_mode: bool,
     pub cursor_position: usize,

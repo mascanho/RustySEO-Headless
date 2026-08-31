@@ -18,5 +18,6 @@ pub enum CrawlMessage {
         scanned: usize,
         queued: usize,
         processing: usize,
+        failed: usize,
     },
 }

@@ -3,6 +3,15 @@ use crate::models::App;
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
 
+/// Caps on the in-memory link tables. The full link graph is persisted to
+/// SQLite by the crawl engine as part of each page's data; these vectors back
+/// only the TUI link tables. A large-site crawl (hundreds of links per page
+/// across hundreds of thousands of pages) would otherwise push them into the
+/// tens of millions of rows - each row four heap strings - and exhaust memory.
+/// Once a cap is hit the crawl keeps running; the table simply stops growing.
+const MAX_INTERNAL_LINK_ROWS: usize = 1_000_000;
+const MAX_EXTERNAL_LINK_ROWS: usize = 250_000;
+
 impl App {
     pub fn on_tick(&mut self) {
         // 0. Check for robots analysis results
@@ -21,6 +30,7 @@ impl App {
                         scanned,
                         queued,
                         processing,
+                        failed,
                     }) => {
                         let total = scanned + queued + processing;
                         self.crawl_progress = if total == 0 {
@@ -29,6 +39,7 @@ impl App {
                             (scanned as f64 / total as f64).min(1.0)
                         };
                         self.queued_urls = queued;
+                        self.failed_urls = failed;
                     }
                     Err(mpsc::error::TryRecvError::Empty) => break,
                     Err(mpsc::error::TryRecvError::Disconnected) => {
@@ -249,18 +260,26 @@ impl App {
                     });
 
                     if is_internal {
-                        let internal_link = crate::models::InternalLink {
-                            id: self.internal_table_data.len() + 1,
-                            source: page_data.url.clone(),
-                            destination: normalized_to.clone(),
-                            anchor: link.text.clone(),
-                            rel: link.rel.clone(),
-                        };
-                        self.internal_table_data.push(internal_link.clone());
-                        if self.internal_search_query.is_empty() {
-                            self.internal_full_filtered_table_data.push(internal_link);
+                        if self.internal_table_data.len() < MAX_INTERNAL_LINK_ROWS {
+                            let internal_link = crate::models::InternalLink {
+                                id: self.internal_table_data.len() + 1,
+                                source: page_data.url.clone(),
+                                destination: normalized_to.clone(),
+                                anchor: link.text.clone(),
+                                rel: link.rel.clone(),
+                            };
+                            self.internal_table_data.push(internal_link.clone());
+                            if self.internal_search_query.is_empty() {
+                                self.internal_full_filtered_table_data.push(internal_link);
+                            }
+                            if self.internal_table_data.len() == MAX_INTERNAL_LINK_ROWS {
+                                self.log(format!(
+                                    "SYSTEM - Internal links table capped at {} rows; full link graph is still saved to the database.",
+                                    MAX_INTERNAL_LINK_ROWS
+                                ));
+                            }
                         }
-                    } else {
+                    } else if self.external_table_data.len() < MAX_EXTERNAL_LINK_ROWS {
                         let external_link = crate::models::ExternalLink {
                             id: self.external_table_data.len() + 1,
                             source: page_data.url.clone(),
@@ -271,6 +290,12 @@ impl App {
                         self.external_table_data.push(external_link.clone());
                         if self.external_search_query.is_empty() {
                             self.external_full_filtered_table_data.push(external_link);
+                        }
+                        if self.external_table_data.len() == MAX_EXTERNAL_LINK_ROWS {
+                            self.log(format!(
+                                "SYSTEM - External links table capped at {} rows; full link graph is still saved to the database.",
+                                MAX_EXTERNAL_LINK_ROWS
+                            ));
                         }
                     }
 
@@ -432,11 +457,13 @@ impl App {
                     .insert(page_data.url.clone(), page_data.status.clone());
                 self.table_data.push(row.clone());
                 if self.search_query.is_empty() {
-                    self.full_filtered_table_data.push(row.clone());
+                    self.full_filtered_table_data.push(row);
                 }
-                if self.content_search_query.is_empty() {
-                    self.content_full_filtered_table_data.push(row);
-                }
+                // The Content tab no longer keeps its own copy of every row:
+                // when no content search is active it reads `table_data`
+                // directly via `content_rows()`. This drops a full third copy
+                // of the ~40-column row set, which on a large crawl was
+                // hundreds of MB of pure duplication.
             }
 
             // Apply pagination incrementally

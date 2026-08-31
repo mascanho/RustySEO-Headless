@@ -464,7 +464,7 @@ impl App {
             Some(i) => {
                 if i >= len - 1 {
                     let total_pages =
-                        (self.content_full_filtered_table_data.len() + self.content_page_size - 1)
+                        (self.content_rows_len() + self.content_page_size - 1)
                             / self.content_page_size;
                     if self.content_current_page + 1 < total_pages {
                         self.content_current_page += 1;
@@ -507,9 +507,8 @@ impl App {
     }
 
     pub fn next_content_page(&mut self) {
-        let total_pages = (self.content_full_filtered_table_data.len() + self.content_page_size
-            - 1)
-            / self.content_page_size;
+        let total_pages =
+            (self.content_rows_len() + self.content_page_size - 1) / self.content_page_size;
         if self.content_current_page + 1 < total_pages {
             self.content_current_page += 1;
             self.apply_content_pagination();
